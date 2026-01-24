@@ -1,20 +1,6 @@
+<%# Update PR card status %>
 <%= turbo_stream.replace "pull_request_card_#{@review_task.pull_request.id}" do %>
   <%= render partial: "pull_requests/pull_request_card", locals: { pr: @review_task.pull_request } %>
-<% end %>
-
-<%# Add task card to the board if viewing review tasks page %>
-<%= turbo_stream.append "review_task_column_#{@review_task.state}" do %>
-  <%= render partial: "review_tasks/review_task_card", locals: { task: @review_task } %>
-<% end %>
-
-<%# Update pending_review count %>
-<%= turbo_stream.update "review_task_count_pending_review" do %>
-  <%= ReviewTask.pending_review.count %>
-<% end %>
-
-<%# Hide empty state for pending_review if it was showing %>
-<%= turbo_stream.replace "review_task_empty_pending_review" do %>
-  <%= render partial: "review_tasks/empty_state", locals: { state: "pending_review", hidden: true } %>
 <% end %>
 
 <%= turbo_stream.update "flash-messages" do %>
