@@ -1,0 +1,104 @@
+<%# Partial for displaying a historical review iteration in an accordion %>
+<%# Locals: iteration - a ReviewIteration instance, expanded - boolean for initial state %>
+
+<% expanded ||= false %>
+
+<div class="linear-accordion-item <%= 'is-expanded' if expanded %>"
+     data-review-accordion-target="item">
+  <div class="linear-accordion-header"
+       data-action="click->review-accordion#toggle">
+    <div class="linear-accordion-header-left">
+      <span class="linear-iteration-badge">
+        #<%= iteration.iteration_number %>
+      </span>
+      <div>
+        <span class="linear-accordion-title">
+          Review #<%= iteration.iteration_number %>
+        </span>
+        <div class="linear-accordion-meta">
+          <span class="flex items-center gap-1">
+            <%= cli_client_icon(iteration.cli_client, class: "w-3 h-3") %>
+            <%= iteration.cli_client.capitalize %>
+          </span>
+          <% if iteration.swarm_review? %>
+            <span class="text-purple-600">Swarm</span>
+          <% end %>
+          <% if iteration.completed_at %>
+            <span title="<%= iteration.completed_at.iso8601 %>">
+              <%= iteration.completed_at.strftime("%b %d, %Y %H:%M") %>
+            </span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <div class="linear-accordion-header-right">
+      <span class="linear-badge linear-badge-default text-[10px]">
+        <%= iteration.from_state.titleize %>
+      </span>
+      <svg class="linear-accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+  </div>
+
+  <div class="linear-accordion-content">
+    <% if iteration.review_output.present? %>
+      <% items = ReviewOutputParser.parse(iteration.review_output) %>
+      <% if items.any? %>
+        <div class="linear-checklist">
+          <% items.each do |item| %>
+            <%
+              severity_class = case item.severity.to_s
+                when "critical", "error" then "severity-critical"
+                when "major", "warning" then "severity-major"
+                when "minor" then "severity-minor"
+                when "suggestion" then "severity-suggestion"
+                when "nitpick" then "severity-nitpick"
+                else "severity-nitpick"
+              end
+            %>
+            <div class="linear-checklist-item">
+              <div class="linear-checklist-item-content <%= severity_class %>">
+                <span class="text-lg flex-shrink-0 leading-none mt-0.5"><%= severity_emoji(item.severity) %></span>
+                <div class="flex-1 min-w-0">
+                  <div class="linear-checklist-header">
+                    <div class="linear-checklist-meta">
+                      <code class="linear-checklist-location">
+                        <%= item.file %><%= ":#{item.lines}" if item.lines.present? %>
+                      </code>
+                    </div>
+                  </div>
+
+                  <% if item.comment.present? %>
+                    <div class="linear-checklist-body">
+                      <%= render_markdown(item.comment) %>
+                    </div>
+                  <% end %>
+
+                  <% if item.suggested_fix.present? %>
+                    <div class="mt-4">
+                      <p class="text-[12px] font-medium text-[color:var(--color-text-tertiary)] mb-2">Suggested fix:</p>
+                      <% language = detect_language_from_file(item.file) %>
+                      <%= render_code_block(item.suggested_fix, language) %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="bg-[color:var(--color-bg-tertiary)] rounded-lg border border-[color:var(--color-border-default)] p-4">
+          <h4 class="font-medium text-[color:var(--color-text-primary)] text-[12px] mb-2">Raw Output</h4>
+          <div class="prose prose-sm max-w-none text-[12px]">
+            <%= render_markdown(iteration.review_output) %>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-4 text-[color:var(--color-text-tertiary)] text-[13px]">
+        No review output recorded for this iteration.
+      </div>
+    <% end %>
+  </div>
+</div>

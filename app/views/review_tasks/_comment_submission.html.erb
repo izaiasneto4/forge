@@ -1,0 +1,40 @@
+<%# Partial for rendering the submit button and selection counter toolbar %>
+<%# Locals: review_task - a ReviewTask instance, comments - collection of ReviewComment instances %>
+
+<!-- Checklist Toolbar -->
+<div id="comment-submission-toolbar" class="linear-checklist-toolbar">
+  <div class="linear-checklist-toolbar-left">
+    <button type="button"
+            class="linear-btn linear-btn-ghost text-[12px]"
+            data-comment-checklist-target="selectAllButton"
+            data-action="click->comment-checklist#toggleAll">
+      Select All
+    </button>
+    <span class="linear-checklist-counter"
+          data-comment-checklist-target="counter">
+      0 of <%= comments.count { |c| c.pending? } %> selected
+    </span>
+  </div>
+  <div class="linear-checklist-toolbar-right">
+    <%= form_with url: submit_review_task_review_comments_path(review_task),
+                  method: :post,
+                  data: { turbo_stream: true, comment_checklist_target: "form" },
+                  class: "flex items-center gap-2" do |f| %>
+      <select name="event" class="linear-input">
+        <option value="COMMENT">Comment only</option>
+        <option value="APPROVE">Approve</option>
+        <option value="REQUEST_CHANGES">Request changes</option>
+      </select>
+      <button type="submit"
+              class="linear-btn linear-btn-primary text-[12px] opacity-50 cursor-not-allowed"
+              data-comment-checklist-target="submitButton"
+              data-action="click->comment-checklist#prepareSubmission"
+              disabled>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Submit to GitHub
+      </button>
+    <% end %>
+  </div>
+</div>

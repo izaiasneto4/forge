@@ -1,0 +1,84 @@
+<div class="min-h-screen bg-gray-100 p-6">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-900">Select Repository</h1>
+      <div class="flex gap-2">
+        <%= link_to "Settings", edit_settings_path,
+            class: "bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium" %>
+        <%= link_to "Back to Dashboard", pull_requests_path,
+            class: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium" %>
+      </div>
+    </div>
+
+    <% if flash[:notice] %>
+      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        <%= flash[:notice] %>
+      </div>
+    <% end %>
+
+    <% if flash[:alert] %>
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <%= flash[:alert] %>
+      </div>
+    <% end %>
+
+    <% if @repos_folder.blank? %>
+      <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+        <p class="font-medium">No repos folder configured</p>
+        <p class="text-sm mt-1">
+          <%= link_to "Configure your repos folder", edit_settings_path, class: "underline" %>
+          to see your repositories.
+        </p>
+      </div>
+    <% else %>
+      <div class="bg-gray-50 border border-gray-200 px-4 py-3 rounded mb-4">
+        <p class="text-sm text-gray-600">
+          Scanning folder: <code class="bg-gray-200 px-1 rounded"><%= @repos_folder %></code>
+        </p>
+      </div>
+
+      <% if @repositories.empty? %>
+        <div class="bg-white rounded-lg shadow p-8 text-center">
+          <p class="text-gray-500">No git repositories found in this folder</p>
+        </div>
+      <% else %>
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <ul class="divide-y divide-gray-200">
+            <% @repositories.each do |repo| %>
+              <li class="hover:bg-gray-50 transition-colors">
+                <%= link_to switch_repositories_path(repo_path: repo[:path]),
+                    method: :post,
+                    data: { turbo_method: :post },
+                    class: "block p-4 #{'bg-blue-50 border-l-4 border-blue-500' if @current_repo == repo[:path]}" do %>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h3 class="font-semibold text-gray-900 flex items-center">
+                        <% if @current_repo == repo[:path] %>
+                          <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        <% end %>
+                        <%= repo[:name] %>
+                      </h3>
+                      <p class="text-sm text-gray-500 mt-1">
+                        <code class="text-xs"><%= repo[:path] %></code>
+                      </p>
+                      <% if repo[:branch].present? %>
+                        <p class="text-xs text-gray-400 mt-1">
+                          Branch: <span class="font-mono"><%= repo[:branch] %></span>
+                        </p>
+                      <% end %>
+                    </div>
+                    <div class="text-gray-400">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

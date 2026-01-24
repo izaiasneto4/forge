@@ -1,0 +1,19 @@
+<%
+  last_synced = Setting.last_synced_at
+  sync_needed = Setting.sync_needed?
+  seconds_remaining = Setting.seconds_until_sync_allowed
+%>
+<div id="sync-status" class="flex items-center gap-2 text-[12px] text-[color:var(--color-text-tertiary)]">
+  <% if last_synced.present? %>
+    <span>Last synced: <%= time_ago_in_words(last_synced) %> ago</span>
+    <% unless sync_needed %>
+      <span class="text-[color:var(--color-text-quaternary)]">·</span>
+      <button type="button"
+              data-action="click->sync#forceSync"
+              data-sync-target="forceButton"
+              class="text-[color:var(--color-accent)] hover:underline">
+        Force sync
+      </button>
+    <% end %>
+  <% end %>
+</div>

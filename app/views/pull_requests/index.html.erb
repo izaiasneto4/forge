@@ -1,0 +1,182 @@
+<% content_for :full_width, true %>
+<%
+  repos_folder = Setting.repos_folder
+  repositories = repos_folder.present? ? RepoScannerService.new(repos_folder).scan : []
+%>
+<div class="min-h-screen flex flex-col" data-controller="kanban repo-selector sync review-modal bulk-actions">
+  <!-- Header Bar -->
+  <header class="linear-header">
+    <div class="flex items-center gap-3">
+      <!-- Breadcrumb -->
+      <div class="linear-header-breadcrumb">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+        <span class="text-[color:var(--color-text-tertiary)]">Pull Requests</span>
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+
+      <!-- Repo Selector -->
+      <div class="relative">
+        <button type="button"
+                data-action="click->repo-selector#toggle"
+                data-repo-selector-target="button"
+                class="linear-btn linear-btn-secondary text-[13px] py-1.5">
+          <span data-repo-selector-target="currentRepoName" class="<%= @current_repo.blank? ? 'text-[color:var(--color-status-todo)]' : '' %>">
+            <%= @current_repo.present? ? File.basename(@current_repo) : "Select repository" %>
+          </span>
+          <svg class="w-4 h-4 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <!-- Dropdown Panel -->
+        <div data-repo-selector-target="dropdown"
+             class="hidden absolute left-0 top-full mt-1 w-72 linear-dropdown z-50">
+          <%= render partial: "repositories/dropdown_list", locals: {
+            repositories: repositories,
+            current_repo: @current_repo,
+            repos_folder: repos_folder
+          } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <%= link_to sync_pull_requests_path,
+          method: :post,
+          data: { turbo_method: :post, sync_target: "button", action: "click->sync#sync" },
+          class: "linear-btn linear-btn-primary" do %>
+        <svg data-sync-target="spinner" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span data-sync-target="buttonText">Sync</span>
+      <% end %>
+    </div>
+  </header>
+
+  <!-- Filter Bar (like Linear's "Assignee is Paulo" bar) -->
+  <div class="linear-filter-bar flex items-center justify-between">
+    <span id="pr-count" class="text-[12px] text-[color:var(--color-text-tertiary)]">
+      <%= @pending_review.to_a.count + @in_review.to_a.count + @reviewed_by_me.to_a.count + @reviewed_by_others.to_a.count + @review_failed.to_a.count %> pull requests
+    </span>
+    <%= render partial: "pull_requests/sync_status" %>
+  </div>
+
+  <!-- Bulk Action Toolbar -->
+  <%= render partial: "pull_requests/bulk_action_toolbar" %>
+
+  <!-- Repo Selector Loading Overlay -->
+  <div data-repo-selector-target="loading"
+       class="hidden fixed inset-0 bg-black/20 z-40 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-[color:var(--color-bg-secondary)] rounded-lg p-6 shadow-xl flex items-center gap-4 border border-[color:var(--color-border-default)]">
+      <svg class="animate-spin h-5 w-5 text-[color:var(--color-accent)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span class="text-[13px] font-medium">Switching repository...</span>
+    </div>
+  </div>
+
+  <!-- Sync Loading Modal -->
+  <div data-sync-target="modal"
+       class="hidden fixed inset-0 bg-black/30 z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-[color:var(--color-bg-secondary)] rounded-lg p-8 shadow-xl flex flex-col items-center gap-4 border border-[color:var(--color-border-default)] max-w-sm mx-4">
+      <svg class="animate-spin h-8 w-8 text-[color:var(--color-accent)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <div class="text-center">
+        <h3 class="text-[15px] font-semibold text-[color:var(--color-text-primary)] mb-1">Syncing with GitHub</h3>
+        <p class="text-[13px] text-[color:var(--color-text-secondary)]">Fetching pull requests from GitHub CLI...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kanban Board -->
+  <div class="flex-1 overflow-x-auto">
+    <%= render partial: "pull_requests/columns" %>
+  </div>
+
+  <!-- Review Configuration Modal -->
+  <div data-review-modal-target="modal"
+       data-action="click->review-modal#closeOnBackdrop"
+       class="hidden linear-modal-backdrop backdrop-blur-sm">
+    <div class="linear-modal-panel">
+      <div class="linear-modal-accent" aria-hidden="true"></div>
+      <div class="linear-modal-header">
+        <div>
+          <p class="linear-modal-aux">AI Review</p>
+          <h2 class="linear-modal-title">Configure Review</h2>
+          <p data-review-modal-target="prTitle" class="linear-modal-subtitle mt-2 line-clamp-2"></p>
+        </div>
+        <button type="button"
+                data-action="click->review-modal#close"
+                class="linear-modal-close">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form data-review-modal-target="form"
+            data-action="submit->review-modal#submit"
+            class="linear-modal-body">
+        <input type="hidden" data-review-modal-target="prId" name="pull_request_id" value="">
+
+        <div class="linear-modal-field">
+          <label class="text-[13px] font-medium text-[color:var(--color-text-primary)]">
+            Agent
+          </label>
+          <div class="flex items-center gap-3">
+            <div data-review-modal-target="cliClientIcon" class="flex items-center justify-center w-10 h-10 rounded-lg bg-[color:var(--color-bg-tertiary)] border border-[color:var(--color-border-default)]">
+              <%= cli_client_icon(Setting.default_cli_client, class: "w-5 h-5") %>
+            </div>
+            <select data-review-modal-target="cliClient"
+                    name="cli_client"
+                    data-action="change->review-modal#updateIcon"
+                    class="flex-1 linear-select text-[13px] py-2.5 px-3 rounded-lg">
+              <% Setting::CLI_CLIENTS.each do |client| %>
+                <option value="<%= client %>" <%= "selected" if client == Setting.default_cli_client %>>
+                  <%= client.capitalize %>
+                </option>
+              <% end %>
+            </select>
+          </div>
+          <p class="linear-modal-note">
+            Choose which AI agent will perform the code review
+          </p>
+        </div>
+
+        <div class="linear-modal-field">
+          <label class="text-[13px] font-medium text-[color:var(--color-text-primary)]">
+            Review Type
+          </label>
+          <select data-review-modal-target="reviewType"
+                  name="review_type"
+                  class="w-full linear-select text-[13px] py-2.5 px-3 rounded-lg">
+            <option value="review">Standard Review</option>
+            <option value="swarm">Swarm Review (Multi-Agent)</option>
+          </select>
+          <div class="linear-modal-note space-y-1">
+            <p><strong>Standard:</strong> Single-pass review focusing on code quality, bugs, and security.</p>
+            <p><strong>Swarm:</strong> Deep analysis using 7 specialized reviewers (Security, Data Consistency, Code Smells, Design Patterns, Performance, Maintainability, Regression).</p>
+          </div>
+        </div>
+
+        <button type="submit"
+                class="w-full linear-btn linear-btn-primary py-2.5 text-[13px] font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          Start Review
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bulk Delete Modal -->
+  <%= render partial: "pull_requests/bulk_delete_modal" %>
+</div>

@@ -1,0 +1,262 @@
+<% content_for :full_width, true %>
+<div class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="linear-header">
+    <div class="flex items-center gap-3">
+      <div class="linear-header-breadcrumb">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <span class="text-[color:var(--color-text-tertiary)]">Reviews</span>
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="linear-header-title">PR #<%= @review_task.pull_request.number %></span>
+      </div>
+      <%
+        status_class = case @review_task.state
+          when 'pending_review' then 'linear-badge-default'
+          when 'in_review' then 'linear-badge-yellow'
+          when 'reviewed' then 'linear-badge-blue'
+          when 'waiting_implementation' then 'linear-badge-purple'
+          when 'done' then 'linear-badge-green'
+          end
+      %>
+      <span class="linear-badge <%= status_class %>"><%= @review_task.state.titleize %></span>
+      <span class="linear-badge linear-badge-default text-[10px] flex items-center gap-1">
+        <%= cli_client_icon(@review_task.cli_client) %>
+        <%= @review_task.cli_client.capitalize %>
+      </span>
+      <% if @review_task.swarm_review? %>
+        <span class="linear-badge linear-badge-purple text-[10px] flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          Swarm
+        </span>
+      <% end %>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <%= link_to @review_task.pull_request.url, target: "_blank", class: "linear-btn linear-btn-secondary" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+        GitHub
+      <% end %>
+      <%= link_to pull_requests_path, class: "linear-btn linear-btn-ghost" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back
+      <% end %>
+    </div>
+  </header>
+
+  <!-- PR Info Bar -->
+  <div class="linear-filter-bar border-b border-[color:var(--color-border-default)]">
+    <div class="flex items-center gap-4 flex-1">
+      <h2 class="text-[14px] font-medium text-[color:var(--color-text-primary)]">
+        <%= @review_task.pull_request.title %>
+      </h2>
+    </div>
+    <span class="text-[12px] text-[color:var(--color-text-tertiary)]">
+      by <%= @review_task.pull_request.author %> in <%= @review_task.pull_request.repo_full_name %>
+    </span>
+  </div>
+
+  <% if @review_task.reviewed? || @review_task.waiting_implementation? || @review_task.done? %>
+    <!-- Review Metadata -->
+    <div class="px-6 py-3 border-b border-[color:var(--color-border-default)] bg-[color:var(--color-bg-secondary)]">
+      <div class="max-w-4xl mx-auto flex items-center gap-4 text-[12px] text-[color:var(--color-text-tertiary)]">
+        <div class="flex items-center gap-2">
+          <%= cli_client_icon(@review_task.cli_client, class: "w-4 h-4") %>
+          <span class="text-[color:var(--color-text-secondary)] font-medium"><%= @review_task.cli_client.capitalize %></span>
+        </div>
+        <span class="text-[color:var(--color-border-default)]">•</span>
+        <% if @review_task.started_at %>
+          <div class="flex items-center gap-1">
+            <span>Started:</span>
+            <span title="<%= @review_task.started_at.iso8601 %>"><%= @review_task.started_at.strftime("%b %d, %Y %H:%M") %></span>
+          </div>
+        <% end %>
+        <% if @review_task.completed_at %>
+          <span class="text-[color:var(--color-border-default)]">•</span>
+          <div class="flex items-center gap-1">
+            <span>Finished:</span>
+            <span title="<%= @review_task.completed_at.iso8601 %>"><%= @review_task.completed_at.strftime("%b %d, %Y %H:%M") %></span>
+          </div>
+        <% end %>
+        <% duration = format_review_duration(@review_task.started_at, @review_task.completed_at) %>
+        <% if duration %>
+          <span class="text-[color:var(--color-border-default)]">•</span>
+          <div class="flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-[color:var(--color-text-secondary)] font-medium"><%= duration %></span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Content -->
+  <div class="flex-1 overflow-y-auto p-6">
+    <div class="max-w-4xl mx-auto">
+      <%# Display Review History if there are prior iterations %>
+      <% if @review_task.has_review_history? %>
+        <div data-controller="review-accordion" class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-[14px] font-medium text-[color:var(--color-text-primary)] flex items-center gap-2">
+              <svg class="w-4 h-4 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Review History
+              <span class="linear-badge linear-badge-default text-[10px]">
+                <%= @review_task.review_iterations.count %> previous
+              </span>
+            </h3>
+            <div class="flex items-center gap-2">
+              <button type="button"
+                      class="linear-btn linear-btn-ghost text-[11px] py-1 px-2"
+                      data-action="click->review-accordion#expandAll">
+                Expand All
+              </button>
+              <button type="button"
+                      class="linear-btn linear-btn-ghost text-[11px] py-1 px-2"
+                      data-action="click->review-accordion#collapseAll">
+                Collapse All
+              </button>
+            </div>
+          </div>
+
+          <div class="linear-accordion">
+            <% @review_task.review_history.each do |iteration| %>
+              <%= render partial: "review_tasks/review_iteration", locals: { iteration: iteration, expanded: false } %>
+            <% end %>
+          </div>
+        </div>
+
+        <%# Current Review Header %>
+        <% if @review_task.reviewed? || @review_task.waiting_implementation? || @review_task.done? %>
+          <div class="flex items-center gap-2 mb-3">
+            <h3 class="text-[14px] font-medium text-[color:var(--color-text-primary)] flex items-center gap-2">
+              <svg class="w-4 h-4 text-[color:var(--color-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Current Review
+            </h3>
+            <span class="linear-iteration-badge is-current">
+              #<%= @review_task.current_iteration_number + 1 %>
+            </span>
+          </div>
+        <% end %>
+      <% end %>
+
+      <% comments = @review_task.review_comments.by_severity %>
+      <% if comments.any? %>
+        <!-- Review Comments Checklist UI -->
+        <div data-controller="comment-checklist"
+             data-comment-checklist-review-task-id-value="<%= @review_task.id %>"
+             data-action="keydown->comment-checklist#keydown">
+
+          <%= render "review_tasks/comment_submission", review_task: @review_task, comments: comments %>
+
+          <!-- Flash Messages Container -->
+          <div id="review-flash-messages"></div>
+
+          <!-- Comments List with Checkboxes -->
+          <div id="review-comments-list" class="linear-checklist">
+            <% comments.each do |comment| %>
+              <%= render partial: "review_comments/review_comment_checklist_item", locals: { comment: comment } %>
+            <% end %>
+          </div>
+        </div>
+      <% elsif @review_task.review_output.present? %>
+        <!-- Fallback: Show parsed review items if no review_comments exist -->
+        <div class="linear-checklist">
+          <% @review_task.parsed_review_items.each do |item| %>
+            <%
+              severity_class = case item.severity.to_s
+                when "critical", "error" then "severity-critical"
+                when "major", "warning" then "severity-major"
+                when "minor" then "severity-minor"
+                when "suggestion" then "severity-suggestion"
+                when "nitpick" then "severity-nitpick"
+                else "severity-nitpick"
+              end
+            %>
+            <div class="linear-checklist-item">
+              <div class="linear-checklist-item-content <%= severity_class %>">
+                <span class="text-lg flex-shrink-0 leading-none mt-0.5"><%= severity_emoji(item.severity) %></span>
+                <div class="flex-1 min-w-0">
+                  <div class="linear-checklist-header">
+                    <div class="linear-checklist-meta">
+                      <code class="linear-checklist-location">
+                        <%= item.file %><%= ":#{item.lines}" if item.lines.present? %>
+                      </code>
+                    </div>
+                  </div>
+
+                  <% if item.comment.present? %>
+                    <div class="linear-checklist-body">
+                      <%= render_markdown(item.comment) %>
+                    </div>
+                  <% end %>
+
+                  <% if item.suggested_fix.present? %>
+                    <div class="mt-4">
+                      <p class="text-[12px] font-medium text-[color:var(--color-text-tertiary)] mb-2">Suggested fix:</p>
+                      <% language = detect_language_from_file(item.file) %>
+                      <%= render_code_block(item.suggested_fix, language) %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+          <% if @review_task.parsed_review_items.empty? %>
+            <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] p-6">
+              <h4 class="font-medium text-[color:var(--color-text-primary)] text-[13px] mb-3">Raw Output</h4>
+              <div class="prose prose-sm max-w-none text-[13px]">
+                <%= render_markdown(@review_task.review_output) %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <% if @review_task.in_review? || @review_task.pending_review? %>
+          <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] overflow-hidden"
+               data-controller="agent-logs"
+               data-agent-logs-review-task-id-value="<%= @review_task.id %>">
+            <div class="p-4 border-b border-[color:var(--color-border-default)] flex items-center gap-3">
+              <svg class="animate-spin h-5 w-5 text-[color:var(--color-accent)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span class="text-[14px] font-medium text-[color:var(--color-text-primary)]">Agent Output</span>
+              <span class="text-[12px] text-[color:var(--color-text-tertiary)]">Live stream from <%= @review_task.cli_client %></span>
+            </div>
+            <div class="p-4 bg-[color:var(--color-bg-tertiary)] max-h-[500px] overflow-y-auto"
+                 data-agent-logs-target="container">
+              <% @review_task.agent_logs.recent.each do |log| %>
+                <div class="font-mono text-[13px] leading-relaxed py-0.5 <%= log_type_class(log.log_type) %>">
+                  <%= log.message %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% else %>
+          <div class="linear-empty py-16">
+            <svg class="w-8 h-8 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span class="text-[14px]">No review output available yet</span>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

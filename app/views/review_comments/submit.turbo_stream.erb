@@ -1,0 +1,50 @@
+<% if @success %>
+  <%= turbo_stream.update "review-flash-messages" do %>
+    <div class="flex items-center gap-2 px-4 py-3 rounded-md border text-[13px] bg-[color:var(--color-status-done-bg)] border-[color:var(--color-status-done)]/20 text-[#059669] mb-4"
+         data-controller="flash"
+         data-flash-auto-dismiss-value="true"
+         data-flash-delay-value="5000"
+         role="alert">
+      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <span class="flex-1">Review submitted successfully to GitHub</span>
+      <button type="button" class="flex-shrink-0 hover:opacity-70" data-action="click->flash#dismiss" aria-label="Dismiss">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  <% end %>
+
+  <%# Update each comment that was submitted (now addressed) %>
+  <% @review_task.review_comments.addressed.each do |comment| %>
+    <%= turbo_stream.replace dom_id(comment) do %>
+      <%= render partial: "review_comments/review_comment_checklist_item", locals: { comment: comment } %>
+    <% end %>
+  <% end %>
+
+  <%# Update the toolbar with refreshed counter %>
+  <% comments = @review_task.review_comments.by_severity %>
+  <%= turbo_stream.replace "comment-submission-toolbar" do %>
+    <%= render "review_tasks/comment_submission", review_task: @review_task, comments: comments %>
+  <% end %>
+<% else %>
+  <%= turbo_stream.update "review-flash-messages" do %>
+    <div class="flex items-center gap-2 px-4 py-3 rounded-md border text-[13px] bg-[color:var(--color-status-blocked-bg)] border-[color:var(--color-status-blocked)]/20 text-[#dc2626] mb-4"
+         data-controller="flash"
+         data-flash-auto-dismiss-value="true"
+         data-flash-delay-value="8000"
+         role="alert">
+      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="flex-1">Failed to submit review: <%= @error %></span>
+      <button type="button" class="flex-shrink-0 hover:opacity-70" data-action="click->flash#dismiss" aria-label="Dismiss">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  <% end %>
+<% end %>

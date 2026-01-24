@@ -1,0 +1,81 @@
+<%# Partial for rendering a single review comment in checklist format %>
+<%# Locals: comment - a ReviewComment instance %>
+<%
+  severity_class = case comment.severity.to_s
+    when "critical", "error" then "severity-critical"
+    when "major", "warning" then "severity-major"
+    when "minor" then "severity-minor"
+    when "suggestion" then "severity-suggestion"
+    when "nitpick" then "severity-nitpick"
+    else "severity-nitpick"
+  end
+%>
+<div id="<%= dom_id(comment) %>"
+     data-comment-id="<%= comment.id %>"
+     class="linear-checklist-item <%= 'is-dismissed' if comment.dismissed? %>">
+  <div class="linear-checklist-item-content <%= severity_class %>">
+    <!-- Checkbox / Status Icon -->
+    <div class="flex-shrink-0">
+      <% if comment.pending? %>
+        <input type="checkbox"
+               class="linear-checkbox"
+               data-comment-checklist-target="checkbox"
+               data-comment-id="<%= comment.id %>"
+               data-action="change->comment-checklist#toggle">
+      <% elsif comment.addressed? %>
+        <svg class="linear-status-icon is-addressed" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+      <% else %>
+        <svg class="linear-status-icon is-dismissed" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      <% end %>
+    </div>
+
+    <!-- Severity Emoji -->
+    <span class="text-lg flex-shrink-0 leading-none mt-0.5"><%= severity_emoji(comment.severity) %></span>
+
+    <!-- Main Content -->
+    <div class="flex-1 min-w-0">
+      <!-- Header Row -->
+      <div class="linear-checklist-header">
+        <div class="linear-checklist-meta">
+          <code class="linear-checklist-location"><%= comment.location %></code>
+          <span class="linear-badge <%= severity_badge_class(comment.severity) %>">
+            <%= comment.severity.capitalize %>
+          </span>
+        </div>
+
+        <div class="linear-checklist-meta">
+          <span class="linear-badge <%= status_badge_class(comment.status) %>">
+            <%= comment.status.capitalize %>
+          </span>
+          <%= button_to toggle_review_comment_path(comment),
+                        method: :patch,
+                        class: "linear-btn linear-btn-ghost text-[11px] py-1 px-2",
+                        data: { turbo_stream: true } do %>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Toggle
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Comment Body -->
+      <% if comment.body.present? %>
+        <div class="linear-checklist-body">
+          <%= render_markdown(comment.body) %>
+        </div>
+      <% end %>
+
+      <!-- Resolution Note -->
+      <% if comment.resolution_note.present? %>
+        <div class="linear-checklist-note">
+          <strong>Note:</strong> <%= comment.resolution_note %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

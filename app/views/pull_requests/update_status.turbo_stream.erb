@@ -1,0 +1,33 @@
+<%# Replace the PR card with updated status %>
+<%= turbo_stream.replace "pull_request_card_#{@pull_request.id}" do %>
+  <%= render partial: "pull_requests/pull_request_card", locals: { pr: @pull_request } %>
+<% end %>
+
+<%# Update column counts %>
+<% counts = {
+  pending_review: PullRequest.pending_review.count,
+  in_review: PullRequest.in_review.count,
+  reviewed_by_me: PullRequest.reviewed_by_me.count,
+  reviewed_by_others: PullRequest.reviewed_by_others.count
+} %>
+
+<%= turbo_stream.update "pr_count_pending_review" do %>
+  <%= counts[:pending_review] %>
+<% end %>
+
+<%= turbo_stream.update "pr_count_in_review" do %>
+  <%= counts[:in_review] %>
+<% end %>
+
+<%= turbo_stream.update "pr_count_reviewed_by_me" do %>
+  <%= counts[:reviewed_by_me] %>
+<% end %>
+
+<%= turbo_stream.update "pr_count_reviewed_by_others" do %>
+  <%= counts[:reviewed_by_others] %>
+<% end %>
+
+<%# Update total PR count %>
+<%= turbo_stream.update "pr-count" do %>
+  <%= counts.values.sum %> pull requests
+<% end %>

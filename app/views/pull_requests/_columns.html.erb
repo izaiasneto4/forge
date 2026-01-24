@@ -1,0 +1,113 @@
+<%
+  pending_review = local_assigns[:pending_review] || @pending_review || []
+  in_review = local_assigns[:in_review] || @in_review || []
+  reviewed_by_me = local_assigns[:reviewed_by_me] || @reviewed_by_me || []
+  reviewed_by_others = local_assigns[:reviewed_by_others] || @reviewed_by_others || []
+  review_failed = local_assigns[:review_failed] || @review_failed || []
+%>
+<div id="pr-columns" class="linear-board">
+  <!-- Needs Review Column -->
+  <div class="linear-column">
+    <div class="linear-column-header">
+      <span class="status-dot bg-[color:var(--color-status-todo)]"></span>
+      <span>Needs Review</span>
+      <span class="count"><%= pending_review.count %></span>
+    </div>
+    <div class="linear-column-content"
+         data-kanban-target="column"
+         data-status="pending_review">
+      <%= render partial: "pull_requests/pull_request_card", collection: pending_review, as: :pr %>
+      <% if pending_review.empty? %>
+        <div class="linear-empty">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>No PRs pending</span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- In Review Column -->
+  <div class="linear-column">
+    <div class="linear-column-header">
+      <span class="status-dot bg-[color:var(--color-status-review)] animate-pulse"></span>
+      <span>In Review</span>
+      <span class="count"><%= in_review.count %></span>
+    </div>
+    <div class="linear-column-content"
+         data-kanban-target="column"
+         data-status="in_review">
+      <%= render partial: "pull_requests/pull_request_card", collection: in_review, as: :pr %>
+      <% if in_review.empty? %>
+        <div class="linear-empty">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          <span>No PRs in review</span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Reviewed Column -->
+  <div class="linear-column">
+    <div class="linear-column-header">
+      <span class="status-dot bg-[color:var(--color-status-inprogress)]"></span>
+      <span>Reviewed</span>
+      <span class="count"><%= reviewed_by_me.count %></span>
+    </div>
+    <div class="linear-column-content"
+         data-kanban-target="column"
+         data-status="reviewed_by_me">
+      <%= render partial: "pull_requests/pull_request_card", collection: reviewed_by_me, as: :pr, locals: { show_checkbox: true } %>
+      <% if reviewed_by_me.empty? %>
+        <div class="linear-empty">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          <span>No PRs reviewed yet</span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Done / Reviewed By Others Column -->
+  <div class="linear-column">
+    <div class="linear-column-header">
+      <span class="status-dot bg-[color:var(--color-status-done)]"></span>
+      <span>Done</span>
+      <span class="count"><%= reviewed_by_others.count %></span>
+    </div>
+    <div class="linear-column-content"
+         data-kanban-target="column"
+         data-status="reviewed_by_others">
+      <%= render partial: "pull_requests/pull_request_card", collection: reviewed_by_others, as: :pr, locals: { show_checkbox: true } %>
+      <% if reviewed_by_others.empty? %>
+        <div class="linear-empty">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>No completed PRs</span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Failed Review Column -->
+  <% if review_failed.any? %>
+  <div class="linear-column">
+    <div class="linear-column-header">
+      <span class="status-dot bg-red-500"></span>
+      <span>Failed</span>
+      <span class="count bg-red-100 text-red-700"><%= review_failed.count %></span>
+    </div>
+    <div class="linear-column-content"
+         data-kanban-target="column"
+         data-status="review_failed">
+      <%= render partial: "pull_requests/pull_request_card", collection: review_failed, as: :pr %>
+    </div>
+  </div>
+  <% end %>
+</div>

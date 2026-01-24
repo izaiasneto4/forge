@@ -1,0 +1,53 @@
+<% if repos_folder.blank? %>
+  <div class="p-4 text-[13px] text-[color:var(--color-status-todo)]">
+    <p class="font-medium">No repos folder configured</p>
+    <p class="text-[12px] mt-1 text-[color:var(--color-text-secondary)]">
+      <%= link_to "Configure settings", edit_settings_path, class: "text-[color:var(--color-accent)] hover:underline" %>
+    </p>
+  </div>
+<% elsif repositories.empty? %>
+  <div class="p-4 text-[13px] text-[color:var(--color-text-secondary)]">
+    No git repositories found
+  </div>
+<% else %>
+  <ul class="max-h-96 overflow-y-auto py-1">
+    <% repositories.each do |repo| %>
+      <li>
+        <button type="button"
+                class="linear-dropdown-item w-full text-left <%= 'active' if current_repo == repo[:path] %>"
+                data-action="click->repo-selector#selectRepo"
+                data-repo-path="<%= repo[:path] %>"
+                data-repo-name="<%= repo[:name] %>">
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-[13px] flex items-center gap-2">
+              <% if current_repo == repo[:path] %>
+                <svg class="w-4 h-4 text-[color:var(--color-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              <% else %>
+                <svg class="w-4 h-4 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+              <% end %>
+              <span class="truncate"><%= repo[:name] %></span>
+            </div>
+            <% if repo[:branch].present? %>
+              <div class="text-[11px] text-[color:var(--color-text-tertiary)] mt-0.5 ml-6">
+                <span class="font-mono"><%= repo[:branch] %></span>
+              </div>
+            <% end %>
+          </div>
+        </button>
+      </li>
+    <% end %>
+  </ul>
+  <div class="border-t border-[color:var(--color-border-default)] px-3 py-2">
+    <%= link_to edit_settings_path, class: "linear-dropdown-item text-[12px] text-[color:var(--color-text-secondary)] rounded" do %>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+      Settings
+    <% end %>
+  </div>
+<% end %>
