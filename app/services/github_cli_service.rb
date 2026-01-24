@@ -98,9 +98,10 @@ class GithubCliService
   end
 
   def get_repo_info
-    return nil unless @repo_path.present? && Dir.exist?(@repo_path)
+    validated_path = validate_path(@repo_path)
+    return nil unless validated_path && Dir.exist?(validated_path)
 
-    remote, status = Open3.capture2("git", "-C", @repo_path, "remote", "get-url", "origin")
+    remote, status = Open3.capture2("git", "-C", validated_path, "remote", "get-url", "origin")
     return nil unless status.success?
 
     remote = remote.strip
@@ -138,6 +139,19 @@ class GithubCliService
         review_status: review_status
       }
     end
+  end
+
+  def validate_path(path)
+    return nil unless path.is_a?(String)
+    return nil if path.empty?
+
+    expanded_path = File.expand_path(path)
+
+    # Ensure path doesn't contain shell metacharacters or dangerous patterns
+    return nil if expanded_path =~ /[;&|`$()<>]/
+    return nil unless expanded_path =~ %r{\A[A-Za-z0-9_\-./]+\z}
+
+    expanded_path
   end
 
   def extract_github_id(url)

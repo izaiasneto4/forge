@@ -19,7 +19,7 @@ class WorktreeService
   ].freeze
 
   def initialize(repo_path:)
-    @repo_path = repo_path
+    @repo_path = File.expand_path(repo_path)
     @worktrees_base = File.join(@repo_path, WORKTREES_DIR)
   end
 
@@ -101,15 +101,43 @@ class WorktreeService
     TRANSIENT_ERROR_PATTERNS.any? { |pattern| message.match?(pattern) }
   end
 
+  def validate_path(path)
+    return nil unless path.is_a?(String)
+
+    # Ensure path doesn't contain shell metacharacters or dangerous patterns
+    return nil if path =~ /[;&|`$()<>]/
+    return nil unless path =~ %r{\A[A-Za-z0-9_\-./]+\z}
+
+    path
+  end
+
+  def validate_branch_name(branch_name)
+    return nil unless branch_name.is_a?(String)
+
+    # Branch names are typically safe but let's validate
+    return nil if branch_name =~ /[;&|`$()<> ]/
+    return nil unless branch_name =~ %r{\A[A-Za-z0-9_\-./]+\z}
+
+    branch_name
+  end
+
   def create_worktree(worktree_path, branch_name, pull_request)
+    validated_worktree = validate_path(worktree_path)
+    validated_branch = validate_branch_name(branch_name)
+
+    raise Error, "Invalid worktree path" unless validated_worktree
+    raise Error, "Invalid branch name" unless validated_branch
+
+    branch_ref = "forge-review-pr-#{pull_request.number}"
+    remote_ref = "origin/#{validated_branch}"
+
     stdout, stderr, status = Open3.capture3(
-      "git", "-C", @repo_path, "worktree", "add", worktree_path, "-b", "forge-review-pr-#{pull_request.number}",
-      "origin/#{branch_name}"
+      "git", "-C", @repo_path, "worktree", "add", validated_worktree, "-b", branch_ref, remote_ref
     )
 
     unless status.success?
       stdout, stderr, status = Open3.capture3(
-        "git", "-C", @repo_path, "worktree", "add", worktree_path, "FETCH_HEAD"
+        "git", "-C", @repo_path, "worktree", "add", validated_worktree, "FETCH_HEAD"
       )
       raise Error, "Failed to create worktree: #{stderr}" unless status.success?
     end
