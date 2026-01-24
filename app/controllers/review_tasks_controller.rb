@@ -1,5 +1,5 @@
 class ReviewTasksController < ApplicationController
-  before_action :set_review_task, only: %i[show update_state]
+  before_action :set_review_task, only: %i[show update_state retry]
 
   def index
     @review_tasks = ReviewTask.includes(:pull_request).order(created_at: :desc)
@@ -43,6 +43,8 @@ class ReviewTasksController < ApplicationController
     new_state = params[:state]
     is_backward_move = params[:backward_move] == true || params[:backward_move] == "true"
 
+    Rails.logger.info "[ReviewTasksController#update_state] Task ##{@review_task.id}: #{@review_task.state} → #{new_state}"
+
     if ReviewTask::STATES.include?(new_state)
       if is_backward_move && @review_task.backward_movement?(new_state)
         @review_task.move_backward!(new_state)
@@ -50,17 +52,47 @@ class ReviewTasksController < ApplicationController
         @review_task.update!(state: new_state)
       end
 
+      Rails.logger.info "[ReviewTasksController#update_state] State updated successfully, rendering turbo_stream"
+
       respond_to do |format|
         format.turbo_stream
         format.html { redirect_to review_tasks_path, notice: "Task state updated" }
         format.json { head :ok }
       end
     else
+      Rails.logger.error "[ReviewTasksController#update_state] Invalid state: #{new_state}"
       respond_to do |format|
         format.turbo_stream { head :unprocessable_entity }
         format.html { redirect_to review_tasks_path, alert: "Invalid state" }
         format.json { head :unprocessable_entity }
       end
+    end
+  end
+
+  def retry
+    unless @review_task.failed_review?
+      return respond_to do |format|
+        format.html { redirect_to review_tasks_path, alert: "Can only retry failed reviews" }
+        format.turbo_stream { head :unprocessable_entity }
+        format.json { render json: { error: "Can only retry failed reviews" }, status: :unprocessable_entity }
+      end
+    end
+
+    unless @review_task.can_retry?
+      return respond_to do |format|
+        format.html { redirect_to review_tasks_path, alert: "Maximum retry attempts (#{ReviewTask::MAX_RETRY_ATTEMPTS}) reached" }
+        format.turbo_stream { head :unprocessable_entity }
+        format.json { render json: { error: "Maximum retry attempts reached" }, status: :unprocessable_entity }
+      end
+    end
+
+    @review_task.retry_review!
+    ReviewTaskJob.perform_later(@review_task.id, is_retry: true)
+
+    respond_to do |format|
+      format.html { redirect_to review_tasks_path, notice: "Retry initiated for PR ##{@review_task.pull_request.number}" }
+      format.turbo_stream
+      format.json { render json: { success: true, state: @review_task.state }, status: :ok }
     end
   end
 
