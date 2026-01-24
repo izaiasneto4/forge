@@ -3,5 +3,9 @@ require "rubygems"
 require "bundler/setup"
 
 ARGV.unshift("--ensure-latest")
+ignore_file = File.join(Dir.pwd, ".brakeman.ignore")
+if File.exist?(ignore_file)
+  ARGV.unshift("-i", ignore_file)
+end
 
 load Gem.bin_path("brakeman", "brakeman")

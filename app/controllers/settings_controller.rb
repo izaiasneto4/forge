@@ -28,10 +28,10 @@ class SettingsController < ApplicationController
       end tell
     APPLESCRIPT
 
-    result = `osascript -e '#{script.gsub("'", "\\\\'")}' 2>/dev/null`.strip
+    result, stderr, status = Open3.capture3("osascript", "-e", script)
 
-    if result.present? && Dir.exist?(result)
-      render json: { path: result.chomp("/") }
+    if status.success? && result.present? && Dir.exist?(result.strip)
+      render json: { path: result.strip.chomp("/") }
     else
       render json: { path: nil }
     end

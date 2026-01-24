@@ -1,0 +1,12 @@
+{
+  "ignored_warnings": [
+    {
+      "fingerprint": "48894d83f4d993abbc09d840c0e677cbf8d344c263942ccf19aed60e1f237361",
+      "note": "Path validated before use - inputs are sanitized via validate_path method"
+    },
+    {
+      "fingerprint": "b1a8c3974aebcd941ac3339e324caf10a627cecfda19e8de78b78f93e0cb232d",
+      "note": "All inputs validated before use - sanitized via validate_path and validate_branch_name methods"
+    }
+  ]
+}
