@@ -1,39 +1,52 @@
 <% content_for :full_width, true %>
+<% content_for :hide_global_header, true %>
 <%= turbo_stream_from "review_tasks_board" %>
-<div class="min-h-screen bg-gray-100 p-6" data-controller="review-kanban">
-  <div class="w-full px-4">
-    <div class="flex justify-between items-center mb-6">
-      <div class="flex items-center gap-4">
-        <h1 class="text-2xl font-bold text-gray-900">Code Review Tasks</h1>
-        <%= link_to root_path, class: "flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 border border-gray-300" do %>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+<div class="min-h-screen flex flex-col" data-controller="review-kanban">
+  <!-- Header -->
+  <header class="linear-header">
+    <div class="flex items-center gap-3">
+      <!-- Logo/Home Link -->
+      <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity" do %>
+        <div class="w-6 h-6 rounded bg-[color:var(--color-accent)] flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
-          Back to PRs
-        <% end %>
+        </div>
+        <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Forge</span>
+      <% end %>
+
+      <!-- Divider -->
+      <span class="text-[color:var(--color-border-default)]">/</span>
+
+      <div class="linear-header-breadcrumb">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+        <span class="text-[color:var(--color-text-tertiary)]">Code Review Tasks</span>
       </div>
     </div>
 
-    <% if flash[:notice] %>
-      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-        <%= flash[:notice] %>
-      </div>
-    <% end %>
+    <div class="flex items-center gap-2">
+      <!-- Settings Link -->
+      <%= link_to edit_settings_path, class: "linear-btn linear-btn-ghost p-2", title: "Settings" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      <% end %>
+    </div>
+  </header>
 
-    <% if flash[:alert] %>
-      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        <%= flash[:alert] %>
-      </div>
-    <% end %>
+  <div class="flex-1 overflow-x-auto p-6">
 
     <div class="grid grid-cols-1 md:grid-cols-6 gap-4 overflow-x-auto">
       <!-- Pending Review Column -->
-      <div class="bg-white rounded-lg shadow min-w-[250px]">
-        <div class="p-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-          <h2 class="font-semibold text-gray-900 flex items-center text-sm">
-            <span class="w-2.5 h-2.5 bg-gray-400 rounded-full mr-2"></span>
+      <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] min-w-[250px]">
+        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-[color:var(--color-bg-tertiary)] rounded-t-lg">
+          <h2 class="font-medium text-[color:var(--color-text-primary)] flex items-center text-[13px]">
+            <span class="w-2.5 h-2.5 bg-[color:var(--color-status-todo)] rounded-full mr-2"></span>
             Pending Review
-            <span id="review_task_count_pending_review" class="ml-2 bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
+            <span id="review_task_count_pending_review" class="ml-2 linear-badge linear-badge-default text-[10px]">
               <%= @grouped_tasks[:pending_review].count %>
             </span>
           </h2>
@@ -43,17 +56,17 @@
              data-review-kanban-target="column"
              data-state="pending_review">
           <%= render partial: "review_task_card", collection: @grouped_tasks[:pending_review], as: :task %>
-          <p id="review_task_empty_pending_review" class="text-gray-400 text-center py-6 text-sm <%= 'hidden' unless @grouped_tasks[:pending_review].empty? %>">No pending reviews</p>
+          <p id="review_task_empty_pending_review" class="text-[color:var(--color-text-tertiary)] text-center py-6 text-[13px] <%= 'hidden' unless @grouped_tasks[:pending_review].empty? %>">No pending reviews</p>
         </div>
       </div>
 
       <!-- In Review Column -->
-      <div class="bg-white rounded-lg shadow min-w-[250px]">
-        <div class="p-3 border-b border-gray-200 bg-yellow-50 rounded-t-lg">
-          <h2 class="font-semibold text-gray-900 flex items-center text-sm">
-            <span class="w-2.5 h-2.5 bg-yellow-500 rounded-full mr-2 animate-pulse"></span>
+      <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] min-w-[250px]">
+        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-[color:var(--color-status-in-progress)]/10 rounded-t-lg">
+          <h2 class="font-medium text-[color:var(--color-text-primary)] flex items-center text-[13px]">
+            <span class="w-2.5 h-2.5 bg-[color:var(--color-status-in-progress)] rounded-full mr-2 animate-pulse"></span>
             In Review
-            <span id="review_task_count_in_review" class="ml-2 bg-yellow-200 text-yellow-800 text-xs px-2 py-0.5 rounded-full">
+            <span id="review_task_count_in_review" class="ml-2 linear-badge linear-badge-yellow text-[10px]">
               <%= @grouped_tasks[:in_review].count %>
             </span>
           </h2>
@@ -63,17 +76,17 @@
              data-review-kanban-target="column"
              data-state="in_review">
           <%= render partial: "review_task_card", collection: @grouped_tasks[:in_review], as: :task %>
-          <p id="review_task_empty_in_review" class="text-gray-400 text-center py-6 text-sm <%= 'hidden' unless @grouped_tasks[:in_review].empty? %>">No active reviews</p>
+          <p id="review_task_empty_in_review" class="text-[color:var(--color-text-tertiary)] text-center py-6 text-[13px] <%= 'hidden' unless @grouped_tasks[:in_review].empty? %>">No active reviews</p>
         </div>
       </div>
 
       <!-- Reviewed Column -->
-      <div class="bg-white rounded-lg shadow min-w-[250px]">
-        <div class="p-3 border-b border-gray-200 bg-blue-50 rounded-t-lg">
-          <h2 class="font-semibold text-gray-900 flex items-center text-sm">
-            <span class="w-2.5 h-2.5 bg-blue-500 rounded-full mr-2"></span>
+      <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] min-w-[250px]">
+        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-[color:var(--color-accent)]/10 rounded-t-lg">
+          <h2 class="font-medium text-[color:var(--color-text-primary)] flex items-center text-[13px]">
+            <span class="w-2.5 h-2.5 bg-[color:var(--color-accent)] rounded-full mr-2"></span>
             Reviewed
-            <span id="review_task_count_reviewed" class="ml-2 bg-blue-200 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+            <span id="review_task_count_reviewed" class="ml-2 linear-badge linear-badge-blue text-[10px]">
               <%= @grouped_tasks[:reviewed].count %>
             </span>
           </h2>
@@ -83,17 +96,17 @@
              data-review-kanban-target="column"
              data-state="reviewed">
           <%= render partial: "review_task_card", collection: @grouped_tasks[:reviewed], as: :task %>
-          <p id="review_task_empty_reviewed" class="text-gray-400 text-center py-6 text-sm <%= 'hidden' unless @grouped_tasks[:reviewed].empty? %>">No reviewed tasks</p>
+          <p id="review_task_empty_reviewed" class="text-[color:var(--color-text-tertiary)] text-center py-6 text-[13px] <%= 'hidden' unless @grouped_tasks[:reviewed].empty? %>">No reviewed tasks</p>
         </div>
       </div>
 
       <!-- Waiting Implementation Column -->
-      <div class="bg-white rounded-lg shadow min-w-[250px]">
-        <div class="p-3 border-b border-gray-200 bg-orange-50 rounded-t-lg">
-          <h2 class="font-semibold text-gray-900 flex items-center text-sm">
+      <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] min-w-[250px]">
+        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-orange-500/10 rounded-t-lg">
+          <h2 class="font-medium text-[color:var(--color-text-primary)] flex items-center text-[13px]">
             <span class="w-2.5 h-2.5 bg-orange-500 rounded-full mr-2"></span>
             Waiting Impl
-            <span id="review_task_count_waiting_implementation" class="ml-2 bg-orange-200 text-orange-800 text-xs px-2 py-0.5 rounded-full">
+            <span id="review_task_count_waiting_implementation" class="ml-2 linear-badge linear-badge-purple text-[10px]">
               <%= @grouped_tasks[:waiting_implementation].count %>
             </span>
           </h2>
@@ -103,17 +116,17 @@
              data-review-kanban-target="column"
              data-state="waiting_implementation">
           <%= render partial: "review_task_card", collection: @grouped_tasks[:waiting_implementation], as: :task %>
-          <p id="review_task_empty_waiting_implementation" class="text-gray-400 text-center py-6 text-sm <%= 'hidden' unless @grouped_tasks[:waiting_implementation].empty? %>">No tasks waiting</p>
+          <p id="review_task_empty_waiting_implementation" class="text-[color:var(--color-text-tertiary)] text-center py-6 text-[13px] <%= 'hidden' unless @grouped_tasks[:waiting_implementation].empty? %>">No tasks waiting</p>
         </div>
       </div>
 
       <!-- Done Column -->
-      <div class="bg-white rounded-lg shadow min-w-[250px]">
-        <div class="p-3 border-b border-gray-200 bg-green-50 rounded-t-lg">
-          <h2 class="font-semibold text-gray-900 flex items-center text-sm">
-            <span class="w-2.5 h-2.5 bg-green-500 rounded-full mr-2"></span>
+      <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] min-w-[250px]">
+        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-[color:var(--color-status-done)]/10 rounded-t-lg">
+          <h2 class="font-medium text-[color:var(--color-text-primary)] flex items-center text-[13px]">
+            <span class="w-2.5 h-2.5 bg-[color:var(--color-status-done)] rounded-full mr-2"></span>
             Done
-            <span id="review_task_count_done" class="ml-2 bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded-full">
+            <span id="review_task_count_done" class="ml-2 linear-badge linear-badge-green text-[10px]">
               <%= @grouped_tasks[:done].count %>
             </span>
           </h2>
@@ -123,17 +136,17 @@
              data-review-kanban-target="column"
              data-state="done">
           <%= render partial: "review_task_card", collection: @grouped_tasks[:done], as: :task %>
-          <p id="review_task_empty_done" class="text-gray-400 text-center py-6 text-sm <%= 'hidden' unless @grouped_tasks[:done].empty? %>">No completed tasks</p>
+          <p id="review_task_empty_done" class="text-[color:var(--color-text-tertiary)] text-center py-6 text-[13px] <%= 'hidden' unless @grouped_tasks[:done].empty? %>">No completed tasks</p>
         </div>
       </div>
 
       <!-- Failed Review Column -->
-      <div class="bg-white rounded-lg shadow min-w-[250px]">
-        <div class="p-3 border-b border-gray-200 bg-red-50 rounded-t-lg">
-          <h2 class="font-semibold text-gray-900 flex items-center text-sm">
+      <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] min-w-[250px]">
+        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-red-500/10 rounded-t-lg">
+          <h2 class="font-medium text-[color:var(--color-text-primary)] flex items-center text-[13px]">
             <span class="w-2.5 h-2.5 bg-red-500 rounded-full mr-2"></span>
             Failed
-            <span id="review_task_count_failed_review" class="ml-2 bg-red-200 text-red-800 text-xs px-2 py-0.5 rounded-full">
+            <span id="review_task_count_failed_review" class="ml-2 linear-badge linear-badge-red text-[10px]">
               <%= @grouped_tasks[:failed_review].count %>
             </span>
           </h2>
@@ -143,7 +156,7 @@
              data-review-kanban-target="column"
              data-state="failed_review">
           <%= render partial: "review_task_card", collection: @grouped_tasks[:failed_review], as: :task %>
-          <p id="review_task_empty_failed_review" class="text-gray-400 text-center py-6 text-sm <%= 'hidden' unless @grouped_tasks[:failed_review].empty? %>">No failed reviews</p>
+          <p id="review_task_empty_failed_review" class="text-[color:var(--color-text-tertiary)] text-center py-6 text-[13px] <%= 'hidden' unless @grouped_tasks[:failed_review].empty? %>">No failed reviews</p>
         </div>
       </div>
     </div>

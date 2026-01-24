@@ -31,9 +31,14 @@
   </head>
 
   <body>
+    <%# Global unified header %>
+    <% unless content_for?(:hide_global_header) %>
+      <%= render partial: "shared/header" %>
+    <% end %>
+
     <%# Global flash messages - fixed at top of viewport %>
     <% if flash[:notice].present? || flash[:alert].present? %>
-      <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-lg px-4">
+      <div class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-lg px-4">
         <%= render partial: "shared/flash", locals: { notice: flash[:notice], alert: flash[:alert] } %>
       </div>
     <% end %>

@@ -1,13 +1,31 @@
-<div class="min-h-screen">
+<% content_for :full_width, true %>
+<% content_for :hide_global_header, true %>
+<div class="min-h-screen flex flex-col">
   <!-- Header -->
   <header class="linear-header">
-    <div class="linear-header-breadcrumb">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-      <span class="linear-header-title">Settings</span>
+    <div class="flex items-center gap-3">
+      <!-- Logo/Home Link -->
+      <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity" do %>
+        <div class="w-6 h-6 rounded bg-[color:var(--color-accent)] flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Forge</span>
+      <% end %>
+
+      <!-- Divider -->
+      <span class="text-[color:var(--color-border-default)]">/</span>
+
+      <div class="linear-header-breadcrumb">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span class="linear-header-title">Settings</span>
+      </div>
     </div>
+
     <%= link_to pull_requests_path, class: "linear-btn linear-btn-secondary" do %>
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -16,7 +34,7 @@
     <% end %>
   </header>
 
-  <div class="p-6">
+  <div class="flex-1 p-6">
     <div class="max-w-xl mx-auto">
       <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] p-6">
         <%= form_with url: settings_path, method: :patch, local: true do |f| %>
