@@ -202,9 +202,7 @@ export default class extends Controller {
         this.pendingMove = { taskId, newState, card: this.draggedCard, targetColumn: column }
         this.showBackwardConfirmation(currentState, newState)
       } else {
-        // Optimistic UI update
-        column.appendChild(this.draggedCard)
-        this.draggedCard.dataset.currentState = newState
+        // Let turbo stream handle the DOM update (no optimistic update)
         this.updateState(taskId, newState)
       }
     }
@@ -474,14 +472,9 @@ export default class extends Controller {
 
   confirmBackwardMove() {
     if (this.pendingMove) {
-      const { taskId, newState, card, targetColumn } = this.pendingMove
+      const { taskId, newState } = this.pendingMove
 
-      // Ensure card is in target column
-      if (card.parentNode !== targetColumn) {
-        targetColumn.appendChild(card)
-      }
-      card.dataset.currentState = newState
-
+      // Let turbo stream handle the DOM update (no optimistic update)
       this.updateState(taskId, newState, true)
       this.pendingMove = null
       this.originalPosition = null
@@ -575,6 +568,18 @@ export default class extends Controller {
     if (taskId) {
       window.location.href = `/review_tasks/${taskId}`
     }
+  }
+
+  navigateToReview(event) {
+    // Stop propagation to prevent card's click handler
+    event.stopPropagation()
+    // Let the link navigate normally
+  }
+
+  openGithub(event) {
+    // Stop propagation to prevent card's click handler
+    event.stopPropagation()
+    // Let the link open GitHub in new tab
   }
 
   closeModal() {
