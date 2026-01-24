@@ -1,12 +1,12 @@
 {
   "ignored_warnings": [
     {
-      "fingerprint": "48894d83f4d993abbc09d840c0e677cbf8d344c263942ccf19aed60e1f237361",
-      "note": "Path validated before use - inputs are sanitized via validate_path method"
+      "fingerprint": "41d2a5d2d8628191955f427a8429e8fb4ffc824f658ab8fc232499d48cd2bac9",
+      "note": "Path validated via PathValidator before use - safe with Open3 array form"
     },
     {
-      "fingerprint": "b1a8c3974aebcd941ac3339e324caf10a627cecfda19e8de78b78f93e0cb232d",
-      "note": "All inputs validated before use - sanitized via validate_path and validate_branch_name methods"
+      "fingerprint": "b7ae16dd64c24430c59cf4d599a1527865d4af25f2b05e6c87f3d3159910293b",
+      "note": "Path validated via PathValidator before use - safe with Open3 array form"
     }
   ]
 }
