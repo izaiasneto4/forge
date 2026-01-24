@@ -3,6 +3,8 @@ class PullRequest < ApplicationRecord
 
   has_one :review_task, dependent: :destroy
 
+  after_commit :invalidate_header_cache, on: [ :create, :update, :destroy ]
+
   validates :github_id, presence: true, uniqueness: true
   validates :number, presence: true
   validates :title, presence: true
@@ -54,6 +56,18 @@ class PullRequest < ApplicationRecord
     deleted_at.present?
   end
 
+  def soft_delete!
+    update!(deleted_at: Time.current)
+  end
+
+  def restore!
+    update!(deleted_at: nil, review_status: "pending_review")
+  end
+
+  def deleted?
+    deleted_at.present?
+  end
+
   # Fix orphaned reviewed PRs that have no review_task
   def self.fix_orphaned_review_states
     fixed_count = 0
@@ -72,6 +86,10 @@ class PullRequest < ApplicationRecord
   end
 
   private
+
+  def invalidate_header_cache
+    HeaderPresenter.invalidate_cache
+  end
 
   def review_status_consistency
     # Ensure reviewed_by_me status requires an actual reviewed review_task

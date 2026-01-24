@@ -63,11 +63,15 @@ class GithubCliService
     "number,title,body,url,author,headRepositoryOwner,headRefName,createdAt,updatedAt"
   end
 
-  def run_gh_command(*args)
+  def run_gh_command(*args, timeout: nil)
     options = {}
     options[:chdir] = @repo_path if @repo_path.present? && Dir.exist?(@repo_path)
 
-    stdout, stderr, status = Open3.capture3("gh", *args, **options)
+    if timeout
+      stdout, stderr, status = Open3.capture3("gh", *args, **options, timeout: timeout)
+    else
+      stdout, stderr, status = Open3.capture3("gh", *args, **options)
+    end
     raise Error, "GitHub CLI error: #{stderr}" unless status.success?
     stdout
   end
@@ -98,9 +102,10 @@ class GithubCliService
   end
 
   def get_repo_info
-    validated_path = validate_path(@repo_path)
+    validated_path = PathValidator.validate(@repo_path)
     return nil unless validated_path && Dir.exist?(validated_path)
 
+    # Brakeman: safe - validated_path is validated by PathValidator and array args prevent shell injection
     remote, status = Open3.capture2("git", "-C", validated_path, "remote", "get-url", "origin")
     return nil unless status.success?
 
@@ -141,18 +146,7 @@ class GithubCliService
     end
   end
 
-  def validate_path(path)
-    return nil unless path.is_a?(String)
-    return nil if path.empty?
 
-    expanded_path = File.expand_path(path)
-
-    # Ensure path doesn't contain shell metacharacters or dangerous patterns
-    return nil if expanded_path =~ /[;&|`$()<>]/
-    return nil unless expanded_path =~ %r{\A[A-Za-z0-9_\-./]+\z}
-
-    expanded_path
-  end
 
   def extract_github_id(url)
     # Extract a unique ID from the URL (using hash as pseudo-ID)
@@ -170,26 +164,27 @@ class GithubCliService
   end
 
   def mark_reviewed_by_others
-    # PRs that were pending but no longer appear in review requests
-    # and haven't been reviewed by me - mark as reviewed by others
-    PullRequest.pending_review.find_each do |pr|
-      # Check if this PR still needs review
-      unless pr_still_needs_review?(pr)
-        pr.update!(review_status: "reviewed_by_others")
-      end
-    end
-  end
+    pending_prs = PullRequest.pending_review
+    return if pending_prs.empty?
 
-  def pr_still_needs_review?(pr)
-    # Simple check - if the PR is still open and has review requested
+    pr_numbers = pending_prs.pluck(:number)
+    search_query = pr_numbers.map { |n| "number:#{n}" }.join(" ")
+
     json = run_gh_command(
-      "pr", "view", pr.number.to_s,
-      "--repo", pr.repo_full_name,
-      "--json", "reviewRequests,state"
+      "pr", "list",
+      "--search", search_query,
+      "--json", "number,state,reviewRequests",
+      "--limit", "100"
     )
+
     data = JSON.parse(json)
-    data["state"] == "OPEN" && data["reviewRequests"]&.any?
-  rescue Error
-    false
+
+    pr_status_map = data.each_with_object({}) do |pr, hash|
+      hash[pr["number"]] = pr["state"] == "OPEN" && pr["reviewRequests"]&.any?
+    end
+
+    pending_prs.each do |pr|
+      pr.update!(review_status: "reviewed_by_others") unless pr_status_map[pr.number]
+    end
   end
 end

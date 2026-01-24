@@ -15,13 +15,12 @@
     <span class="text-[color:var(--color-border-default)]">/</span>
 
     <!-- Current Repo Display -->
-    <% current_repo = Setting.current_repo %>
     <div class="flex items-center gap-2 text-[13px]">
-      <% if current_repo.present? %>
+      <% if @header_presenter.current_repo.present? %>
         <svg class="w-4 h-4 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
-        <span class="text-[color:var(--color-text-secondary)] font-medium"><%= File.basename(current_repo) %></span>
+        <span class="text-[color:var(--color-text-secondary)] font-medium"><%= @header_presenter.repo_name %></span>
       <% else %>
         <span class="text-[color:var(--color-text-tertiary)] italic">No repository selected</span>
       <% end %>
@@ -30,20 +29,18 @@
 
   <div class="flex items-center gap-2">
     <!-- Quick Stats -->
-    <% pending_count = PullRequest.pending_review.count %>
-    <% in_review_count = PullRequest.in_review.count %>
-    <% if pending_count > 0 || in_review_count > 0 %>
+    <% if @header_presenter.pending_count > 0 || @header_presenter.in_review_count > 0 %>
       <div class="flex items-center gap-3 mr-2 text-[12px]">
-        <% if pending_count > 0 %>
+        <% if @header_presenter.pending_count > 0 %>
           <span class="flex items-center gap-1 text-[color:var(--color-text-tertiary)]">
             <span class="w-2 h-2 rounded-full bg-[color:var(--color-status-todo)]"></span>
-            <%= pending_count %> pending
+            <%= @header_presenter.pending_count %> pending
           </span>
         <% end %>
-        <% if in_review_count > 0 %>
+        <% if @header_presenter.in_review_count > 0 %>
           <span class="flex items-center gap-1 text-[color:var(--color-text-tertiary)]">
             <span class="w-2 h-2 rounded-full bg-[color:var(--color-status-in-progress)] animate-pulse"></span>
-            <%= in_review_count %> reviewing
+            <%= @header_presenter.in_review_count %> reviewing
           </span>
         <% end %>
       </div>

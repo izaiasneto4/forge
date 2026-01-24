@@ -20,20 +20,8 @@ class SettingsController < ApplicationController
   end
 
   def pick_folder
-    script = <<~APPLESCRIPT
-      tell application "System Events"
-        activate
-        set selectedFolder to choose folder with prompt "Select your repositories folder"
-        return POSIX path of selectedFolder
-      end tell
-    APPLESCRIPT
+    path = FolderPickerService.call
 
-    result, stderr, status = Open3.capture3("osascript", "-e", script)
-
-    if status.success? && result.present? && Dir.exist?(result.strip)
-      render json: { path: result.strip.chomp("/") }
-    else
-      render json: { path: nil }
-    end
+    render json: { path: path }
   end
 end

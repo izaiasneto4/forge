@@ -49,24 +49,24 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "pick_folder exists and returns JSON" do
-    skip("osascript is macOS only") unless RUBY_PLATFORM =~ /darwin/
+    skip("Requires GUI interaction - test manually on macOS")
 
     # Just test that the endpoint exists and returns JSON structure
-    # We can't easily mock Open3 in minitest without additional gems
+    # We can't easily mock FolderPickerService in minitest without additional gems
     post pick_folder_settings_path, as: :json
     assert_response :success
     json_response = JSON.parse(response.body)
     assert json_response.key?("path")
   end
 
-  test "pick_folder doesn't use backticks (security test)" do
-    skip("osascript is macOS only") unless RUBY_PLATFORM =~ /darwin/
-
-    # This is a meta-test to ensure we're not using backticks
+  test "pick_folder uses FolderPickerService" do
     controller_code = File.read(Rails.root.join("app/controllers/settings_controller.rb"))
 
-    # Check that we're using Open3.capture3 instead of backticks
-    assert_includes controller_code, "Open3.capture3", "Should use Open3.capture3 for security"
+    # Check that we're using FolderPickerService
+    assert_includes controller_code, "FolderPickerService", "Should use FolderPickerService"
+
+    # Check that we're not using Open3 directly in controller
+    refute_includes controller_code, "Open3", "Should not use Open3 directly in controller"
 
     # Check that we're not using backticks for osascript
     refute_includes controller_code, "`osascript", "Should not use backticks for osascript command"
