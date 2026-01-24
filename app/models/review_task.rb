@@ -13,6 +13,7 @@ class ReviewTask < ApplicationRecord
   has_many :review_iterations, dependent: :destroy
 
   before_destroy :reset_pull_request_status
+  after_commit :broadcast_state_change, if: :saved_change_to_state?
 
   validates :state, inclusion: { in: STATES }
   validates :cli_client, inclusion: { in: Setting::CLI_CLIENTS }
@@ -58,23 +59,19 @@ class ReviewTask < ApplicationRecord
     if pull_request.pending_review? || pull_request.review_failed?
       pull_request.update!(review_status: "in_review")
     end
-    broadcast_state_change
   end
 
   def complete_review!(output)
     update!(state: "reviewed", review_output: output, completed_at: Time.current)
     pull_request.update!(review_status: "reviewed_by_me") if pull_request.pending_review? || pull_request.in_review?
-    broadcast_state_change
   end
 
   def mark_waiting_implementation!
     update!(state: "waiting_implementation")
-    broadcast_state_change
   end
 
   def mark_done!
     update!(state: "done")
-    broadcast_state_change
   end
 
   def mark_failed!(reason)
@@ -85,7 +82,19 @@ class ReviewTask < ApplicationRecord
       completed_at: Time.current
     )
     pull_request.update!(review_status: "review_failed")
-    broadcast_state_change
+  end
+
+  def retry_review!
+    raise "Cannot retry: not in failed state" unless failed_review?
+    raise "Cannot retry: max attempts reached" unless can_retry?
+
+    update!(
+      state: "pending_review",
+      started_at: nil,
+      completed_at: nil,
+      worktree_path: nil
+    )
+    pull_request.update!(review_status: "pending_review")
   end
 
   def can_retry?
@@ -263,6 +272,8 @@ class ReviewTask < ApplicationRecord
   end
 
   def broadcast_state_change
+    Rails.logger.info "[ReviewTask##{id}] Broadcasting state change to 'in_review' (previous: #{state_before_last_save}, new: #{state})"
+
     Turbo::StreamsChannel.broadcast_stream_to(
       "review_tasks_board",
       content: ApplicationController.render(
@@ -270,5 +281,10 @@ class ReviewTask < ApplicationRecord
         locals: { review_task: self }
       )
     )
+
+    Rails.logger.info "[ReviewTask##{id}] Broadcast completed"
+  rescue => e
+    Rails.logger.error "[ReviewTask##{id}] Broadcast failed: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
   end
 end
