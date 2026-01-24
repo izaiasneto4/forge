@@ -1,24 +1,23 @@
-# README
+<p align="center">
+  <img src="public/icon.png" alt="Forge" width="128">
+</p>
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+# Forge
 
-Things you may want to cover:
+A Rails application for automated GitHub PR code reviews. Syncs pull requests via GitHub CLI and runs AI-powered reviews using Claude CLI.
 
-* Ruby version
+## Requirements
 
-* System dependencies
+- Ruby 3.4.2
+- SQLite
+- [GitHub CLI](https://cli.github.com/) (`gh`) - authenticated
+- [Claude CLI](https://github.com/anthropics/claude-code) (`claude`)
 
-* Configuration
+## Installation
 
-* Database creation
+```bash
+bin/setup   # Install dependencies and prepare database
+bin/dev     # Start development server
+```
 
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+Visit `http://localhost:3000`
