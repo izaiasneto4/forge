@@ -13,6 +13,7 @@ Rails.application.routes.draw do
   resources :review_tasks, only: [ :index, :show, :create ] do
     member do
       patch :update_state
+      post :retry
     end
     resources :review_comments, only: [] do
       collection do
