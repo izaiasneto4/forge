@@ -1,0 +1,28 @@
+<%# Remove the card from its current location %>
+<%= turbo_stream.remove "pull_request_card_#{pull_request.id}" %>
+
+<%# Prepend the card to the correct column based on new status %>
+<%= turbo_stream.prepend "pull_request_column_#{pull_request.review_status}" do %>
+  <%= render partial: "pull_requests/pull_request_card", locals: { pr: pull_request } %>
+<% end %>
+
+<%# Update column counts %>
+<%= turbo_stream.update "pr_count_pending_review" do %>
+  <%= PullRequest.pending_review.count %>
+<% end %>
+
+<%= turbo_stream.update "pr_count_in_review" do %>
+  <%= PullRequest.in_review.count %>
+<% end %>
+
+<%= turbo_stream.update "pr_count_reviewed_by_me" do %>
+  <%= PullRequest.reviewed_by_me.count %>
+<% end %>
+
+<%= turbo_stream.update "pr_count_reviewed_by_others" do %>
+  <%= PullRequest.reviewed_by_others.count %>
+<% end %>
+
+<%= turbo_stream.update "pr_count_review_failed" do %>
+  <%= PullRequest.review_failed.count %>
+<% end %>
