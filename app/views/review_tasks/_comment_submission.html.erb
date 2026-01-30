@@ -1,30 +1,30 @@
 <%# Partial for rendering the submit button and selection counter toolbar %>
 <%# Locals: review_task - a ReviewTask instance, comments - collection of ReviewComment instances %>
 
-<!-- Checklist Toolbar -->
-<div id="comment-submission-toolbar" class="linear-checklist-toolbar">
-  <div class="linear-checklist-toolbar-left">
+<!-- Checklist Toolbar - Responsive -->
+<div id="comment-submission-toolbar" class="linear-checklist-toolbar relative z-10 flex-col sm:flex-row gap-3 sm:gap-2">
+  <div class="linear-checklist-toolbar-left w-full sm:w-auto">
     <button type="button"
             class="linear-btn linear-btn-ghost text-[12px]"
             data-comment-checklist-target="selectAllButton"
             data-action="click->comment-checklist#toggleAll">
       Select All
     </button>
-    <span class="linear-checklist-counter"
+    <span class="linear-checklist-counter text-[11px] md:text-[12px]"
           data-comment-checklist-target="counter">
       0 of <%= comments.count { |c| c.pending? } %> selected
     </span>
   </div>
-  <div class="linear-checklist-toolbar-right">
+  <div class="linear-checklist-toolbar-right w-full sm:w-auto">
     <%= form_with url: submit_review_task_review_comments_path(review_task),
                   method: :post,
                   data: { turbo_stream: true, comment_checklist_target: "form" },
-                  class: "flex items-center gap-2" do |f| %>
+                  class: "flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto" do |f| %>
       <!-- Custom Event Selector with Icons -->
-      <div class="relative" data-controller="event-selector">
+      <div class="relative w-full sm:w-auto" data-controller="event-selector">
         <input type="hidden" name="event" value="COMMENT" data-event-selector-target="hiddenInput">
         <button type="button"
-                class="linear-input flex items-center gap-2 pr-8 cursor-pointer"
+                class="linear-input flex items-center gap-2 pr-8 cursor-pointer w-full sm:w-auto justify-between"
                 data-event-selector-target="button"
                 data-action="click->event-selector#toggle">
           <span data-event-selector-target="selectedIcon" class="flex items-center text-[color:var(--color-text-secondary)]">
@@ -33,16 +33,16 @@
             </svg>
           </span>
           <span data-event-selector-target="selectedLabel" class="text-[13px]">Comment only</span>
-          <svg class="w-4 h-4 absolute right-2 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 absolute right-2 sm:right-2 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        <div class="hidden absolute bottom-full mb-1 right-0 w-48 bg-[color:var(--color-bg-secondary)] border border-[color:var(--color-border-default)] rounded-md shadow-lg z-50"
+        <div class="hidden absolute top-full mt-1 right-0 left-0 sm:left-auto w-full sm:w-48 bg-[color:var(--color-bg-secondary)] border border-[color:var(--color-border-default)] rounded-md shadow-lg z-50"
              data-event-selector-target="dropdown">
           <ul class="py-1">
             <li>
               <button type="button"
-                      class="w-full px-3 py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)] bg-[color:var(--color-bg-tertiary)]"
+                      class="w-full px-3 py-3 sm:py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)] bg-[color:var(--color-bg-tertiary)]"
                       data-action="click->event-selector#select"
                       data-value="COMMENT"
                       data-label="Comment only">
@@ -56,7 +56,7 @@
             </li>
             <li>
               <button type="button"
-                      class="w-full px-3 py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)]"
+                      class="w-full px-3 py-3 sm:py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)]"
                       data-action="click->event-selector#select"
                       data-value="APPROVE"
                       data-label="Approve">
@@ -70,7 +70,7 @@
             </li>
             <li>
               <button type="button"
-                      class="w-full px-3 py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)]"
+                      class="w-full px-3 py-3 sm:py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)]"
                       data-action="click->event-selector#select"
                       data-value="REQUEST_CHANGES"
                       data-label="Request changes">
@@ -86,7 +86,7 @@
         </div>
       </div>
       <button type="submit"
-              class="linear-btn linear-btn-primary text-[12px] opacity-50 cursor-not-allowed"
+              class="linear-btn linear-btn-primary text-[12px] opacity-50 cursor-not-allowed w-full sm:w-auto justify-center"
               data-comment-checklist-target="submitButton"
               data-action="click->comment-checklist#prepareSubmission"
               disabled>

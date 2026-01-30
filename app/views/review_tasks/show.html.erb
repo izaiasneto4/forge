@@ -1,107 +1,113 @@
 <% content_for :full_width, true %>
 <% content_for :hide_global_header, true %>
 <div class="min-h-screen flex flex-col">
-  <!-- Header -->
+  <!-- Header - Responsive -->
   <header class="linear-header">
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1 flex-wrap md:flex-nowrap">
       <!-- Logo/Home Link -->
-      <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity" do %>
+      <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0" do %>
         <div class="w-6 h-6 rounded bg-[color:var(--color-accent)] flex items-center justify-center">
           <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
         </div>
-        <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Forge</span>
+        <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)] hidden sm:inline">Forge</span>
       <% end %>
 
-      <!-- Divider -->
-      <span class="text-[color:var(--color-border-default)]">/</span>
+      <!-- Divider (hidden on small mobile) -->
+      <span class="text-[color:var(--color-border-default)] hidden sm:inline">/</span>
 
-      <div class="linear-header-breadcrumb">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- Breadcrumb - simplified on mobile -->
+      <div class="linear-header-breadcrumb min-w-0">
+        <svg class="w-4 h-4 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        <span class="text-[color:var(--color-text-tertiary)]">Reviews</span>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <span class="text-[color:var(--color-text-tertiary)] hidden md:inline">Reviews</span>
+        <svg class="w-4 h-4 hidden md:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 5l7 7-7 7" />
         </svg>
-        <span class="linear-header-title">PR #<%= @review_task.pull_request.number %></span>
+        <span class="linear-header-title truncate">PR #<%= @review_task.pull_request.number %></span>
       </div>
-      <%
-        status_class = case @review_task.state
-          when 'pending_review' then 'linear-badge-default'
-          when 'in_review' then 'linear-badge-yellow'
-          when 'reviewed' then 'linear-badge-blue'
-          when 'waiting_implementation' then 'linear-badge-purple'
-          when 'done' then 'linear-badge-green'
-          end
-      %>
-      <span class="linear-badge <%= status_class %>"><%= @review_task.state.titleize %></span>
-      <span class="linear-badge linear-badge-default text-[10px] flex items-center gap-1">
-        <%= cli_client_icon(@review_task.cli_client) %>
-        <%= @review_task.cli_client.capitalize %>
-      </span>
-      <% if @review_task.swarm_review? %>
-        <span class="linear-badge linear-badge-purple text-[10px] flex items-center gap-1">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          Swarm
+
+      <!-- Status badges - wrap on mobile -->
+      <div class="flex items-center gap-1 md:gap-2 flex-wrap">
+        <%
+          status_class = case @review_task.state
+            when 'pending_review' then 'linear-badge-default'
+            when 'in_review' then 'linear-badge-yellow'
+            when 'reviewed' then 'linear-badge-blue'
+            when 'waiting_implementation' then 'linear-badge-purple'
+            when 'done' then 'linear-badge-green'
+            end
+        %>
+        <span class="linear-badge <%= status_class %> text-[10px] md:text-[11px]"><%= @review_task.state.titleize %></span>
+        <span class="linear-badge linear-badge-default text-[10px] flex items-center gap-1 hidden sm:flex">
+          <%= cli_client_icon(@review_task.cli_client) %>
+          <span class="hidden md:inline"><%= @review_task.cli_client.capitalize %></span>
         </span>
-      <% end %>
+        <% if @review_task.swarm_review? %>
+          <span class="linear-badge linear-badge-purple text-[10px] flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span class="hidden md:inline">Swarm</span>
+          </span>
+        <% end %>
+      </div>
     </div>
 
-    <div class="flex items-center gap-2">
-      <%= link_to @review_task.pull_request.url, target: "_blank", class: "linear-btn linear-btn-secondary" do %>
+    <div class="flex items-center gap-1 md:gap-2 flex-shrink-0">
+      <%= link_to @review_task.pull_request.url, target: "_blank", class: "linear-btn linear-btn-secondary linear-btn-sm md:linear-btn", "aria-label": "View on GitHub" do %>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
-        GitHub
+        <span class="hidden sm:inline">GitHub</span>
       <% end %>
-      <%= link_to pull_requests_path, class: "linear-btn linear-btn-ghost" do %>
+      <%= link_to pull_requests_path, class: "linear-btn linear-btn-ghost linear-btn-sm md:linear-btn", "aria-label": "Back to pull requests" do %>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
-        Back
+        <span class="hidden sm:inline">Back</span>
       <% end %>
     </div>
   </header>
 
-  <!-- PR Info Bar -->
-  <div class="linear-filter-bar border-b border-[color:var(--color-border-default)]">
-    <div class="flex items-center gap-4 flex-1">
-      <h2 class="text-[14px] font-medium text-[color:var(--color-text-primary)]">
+  <!-- PR Info Bar - Responsive -->
+  <div class="linear-filter-bar border-b border-[color:var(--color-border-default)] flex-col md:flex-row items-start md:items-center gap-2">
+    <div class="flex items-center gap-4 flex-1 min-w-0 w-full md:w-auto">
+      <h2 class="text-[13px] md:text-[14px] font-medium text-[color:var(--color-text-primary)] line-clamp-2 md:line-clamp-1">
         <%= @review_task.pull_request.title %>
       </h2>
     </div>
-    <span class="text-[12px] text-[color:var(--color-text-tertiary)]">
-      by <%= @review_task.pull_request.author %> in <%= @review_task.pull_request.repo_full_name %>
+    <span class="text-[11px] md:text-[12px] text-[color:var(--color-text-tertiary)] flex-shrink-0">
+      by <span class="font-medium"><%= @review_task.pull_request.author %></span>
+      <span class="hidden sm:inline">in <%= @review_task.pull_request.repo_full_name %></span>
     </span>
   </div>
 
   <% if @review_task.reviewed? || @review_task.waiting_implementation? || @review_task.done? %>
-    <!-- Review Metadata -->
-    <div class="px-6 py-3 border-b border-[color:var(--color-border-default)] bg-[color:var(--color-bg-secondary)]">
-      <div class="max-w-4xl mx-auto flex items-center gap-4 text-[12px] text-[color:var(--color-text-tertiary)]">
+    <!-- Review Metadata - Responsive -->
+    <div class="px-4 md:px-6 py-3 border-b border-[color:var(--color-border-default)] bg-[color:var(--color-bg-secondary)] relative z-0">
+      <div class="max-w-4xl mx-auto flex flex-wrap items-center gap-2 md:gap-4 text-[11px] md:text-[12px] text-[color:var(--color-text-tertiary)]">
         <div class="flex items-center gap-2">
           <%= cli_client_icon(@review_task.cli_client, class: "w-4 h-4") %>
           <span class="text-[color:var(--color-text-secondary)] font-medium"><%= @review_task.cli_client.capitalize %></span>
           <% if @review_task.ai_model.present? %>
-            <span class="text-[color:var(--color-text-tertiary)]">(<%= @review_task.ai_model %>)</span>
+            <span class="text-[color:var(--color-text-tertiary)] hidden sm:inline">(<%= @review_task.ai_model %>)</span>
           <% end %>
         </div>
-        <span class="text-[color:var(--color-border-default)]">•</span>
+        <span class="text-[color:var(--color-border-default)] hidden sm:inline">•</span>
         <% if @review_task.started_at %>
           <div class="flex items-center gap-1">
-            <span>Started:</span>
-            <span title="<%= @review_task.started_at.iso8601 %>"><%= @review_task.started_at.strftime("%b %d, %Y %H:%M") %></span>
+            <span class="hidden sm:inline">Started:</span>
+            <span title="<%= @review_task.started_at.iso8601 %>"><%= @review_task.started_at.strftime("%b %d, %H:%M") %></span>
           </div>
         <% end %>
         <% if @review_task.completed_at %>
-          <span class="text-[color:var(--color-border-default)]">•</span>
-          <div class="flex items-center gap-1">
+          <span class="text-[color:var(--color-border-default)] hidden sm:inline">•</span>
+          <div class="hidden sm:flex items-center gap-1">
             <span>Finished:</span>
-            <span title="<%= @review_task.completed_at.iso8601 %>"><%= @review_task.completed_at.strftime("%b %d, %Y %H:%M") %></span>
+            <span title="<%= @review_task.completed_at.iso8601 %>"><%= @review_task.completed_at.strftime("%b %d, %H:%M") %></span>
           </div>
         <% end %>
         <% duration = format_review_duration(@review_task.started_at, @review_task.completed_at) %>
@@ -118,8 +124,8 @@
     </div>
   <% end %>
 
-  <!-- Content -->
-  <div class="flex-1 overflow-y-auto p-6">
+  <!-- Content - Responsive padding -->
+  <div class="flex-1 overflow-y-auto p-4 md:p-6">
     <div class="max-w-4xl mx-auto">
       <%# Display Review History if there are prior iterations %>
       <% if @review_task.has_review_history? %>
