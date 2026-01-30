@@ -44,6 +44,30 @@
   --color-status-done-bg: #d1fae5;
   --color-status-blocked: #ef4444;
   --color-status-blocked-bg: #fee2e2;
+
+  /* ============================================
+     Responsive Spacing Scale
+     4px, 8px, 16px, 24px, 32px, 48px, 64px
+     ============================================ */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  /* ============================================
+     Responsive Breakpoints (for reference)
+     mobile-s: 320px
+     mobile-m: 375px
+     mobile-l: 425px
+     tablet: 768px
+     laptop: 1024px
+     desktop: 1440px
+     4k: 2560px
+     ============================================ */
 }
 
 /* Base styles */
@@ -52,6 +76,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Prevent iOS zoom on input focus */
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -60,12 +86,107 @@
     color: var(--color-text-primary);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     letter-spacing: -0.011em;
+    /* Mobile: 14px base, comfortable on small screens */
     font-size: 14px;
     line-height: 1.5;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+  }
+
+  /* Tablet: larger base font for better readability */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    body {
+      font-size: 16px;
+      line-height: 1.6;
+    }
+  }
+
+  /* Desktop: standard font size */
+  @media (min-width: 1024px) {
+    body {
+      font-size: 14px;
+      line-height: 1.5;
+    }
   }
 
   * {
     border-color: var(--color-border-default);
+  }
+
+  /* ============================================
+     Fluid Typography Scale
+     Uses clamp() for smooth scaling between breakpoints
+     ============================================ */
+  h1, .text-h1 {
+    font-size: clamp(24px, 5vw, 48px);
+    line-height: 1.2;
+    font-weight: 600;
+  }
+
+  h2, .text-h2 {
+    font-size: clamp(20px, 4vw, 36px);
+    line-height: 1.25;
+    font-weight: 600;
+  }
+
+  h3, .text-h3 {
+    font-size: clamp(18px, 3vw, 28px);
+    line-height: 1.3;
+    font-weight: 600;
+  }
+
+  h4, .text-h4 {
+    font-size: clamp(16px, 2.5vw, 22px);
+    line-height: 1.35;
+    font-weight: 500;
+  }
+
+  /* Max line length for readability (65-75 chars) */
+  .prose, .max-prose {
+    max-width: 65ch;
+  }
+
+  /* Prevent iOS zoom on input focus - ensure inputs are 16px+ */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  /* Tablet: maintain 16px for inputs */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="search"],
+    input[type="url"],
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+
+  /* Desktop: can use smaller font for inputs */
+  @media (min-width: 1024px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="search"],
+    input[type="url"],
+    textarea,
+    select {
+      font-size: 14px;
+    }
   }
 }
 
@@ -82,6 +203,81 @@
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* ============================================
+   Responsive Display Utilities
+   ============================================ */
+@utility hidden-mobile {
+  @media (max-width: 767px) {
+    display: none !important;
+  }
+}
+
+@utility hidden-tablet {
+  @media (min-width: 768px) and (max-width: 1023px) {
+    display: none !important;
+  }
+}
+
+@utility hidden-desktop {
+  @media (min-width: 1024px) {
+    display: none !important;
+  }
+}
+
+@utility visible-mobile-only {
+  @media (min-width: 768px) {
+    display: none !important;
+  }
+}
+
+@utility visible-tablet-only {
+  @media (max-width: 767px) {
+    display: none !important;
+  }
+  @media (min-width: 1024px) {
+    display: none !important;
+  }
+}
+
+@utility visible-desktop-only {
+  @media (max-width: 1023px) {
+    display: none !important;
+  }
+}
+
+/* Touch target minimum size utility */
+@utility touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Touch-friendly spacing utility */
+@utility touch-spacing {
+  margin: 8px;
+}
+
+/* Safe area insets for notched devices */
+@utility safe-area-inset {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Max width container for very large screens */
+@utility max-content-width {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Linear-style scrollbar */
@@ -107,13 +303,49 @@
 
 /* Linear-style components */
 @layer components {
+  /* ============================================
+     Kanban Board - Responsive
+     Mobile: Horizontal scroll with all columns visible
+     Tablet: Horizontal scroll with larger columns
+     Desktop: Centered horizontal layout
+     ============================================ */
+
   /* Kanban board container */
   .linear-board {
     display: flex;
-    justify-content: center;
-    gap: 16px;
-    padding: 24px;
-    min-height: calc(100vh - 100px);
+    gap: 12px;
+    padding: 12px;
+    min-height: calc(100vh - 120px);
+    /* Always horizontal with scroll */
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    /* Ensure all columns are accessible */
+    padding-bottom: 16px;
+  }
+
+  /* Tablet: more spacing */
+  @media (min-width: 768px) {
+    .linear-board {
+      gap: 16px;
+      padding: 20px;
+    }
+  }
+
+  /* Desktop: more padding, center when there's space */
+  @media (min-width: 1024px) {
+    .linear-board {
+      gap: 16px;
+      padding: 24px;
+    }
+  }
+
+  /* Large desktop: center the board when all columns fit */
+  @media (min-width: 1600px) {
+    .linear-board {
+      justify-content: center;
+    }
   }
 
   /* Kanban column */
@@ -121,25 +353,71 @@
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border-default);
     border-radius: 8px;
-    min-width: 300px;
-    max-width: 340px;
-    width: 100%;
     display: flex;
     flex-direction: column;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    /* Mobile: compact columns, all visible */
+    min-width: 200px;
+    max-width: 240px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
+  /* Tablet: larger columns for better readability */
+  @media (min-width: 768px) {
+    .linear-column {
+      min-width: 260px;
+      max-width: 300px;
+    }
+  }
+
+  /* Desktop: full-size columns */
+  @media (min-width: 1024px) {
+    .linear-column {
+      min-width: 280px;
+      max-width: 320px;
+    }
+  }
+
+  /* Large desktop */
+  @media (min-width: 1440px) {
+    .linear-column {
+      min-width: 300px;
+      max-width: 340px;
+    }
   }
 
   .linear-column-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    font-size: 13px;
+    gap: 6px;
+    padding: 10px 12px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--color-text-secondary);
     border-bottom: 1px solid var(--color-border-subtle);
     background: var(--color-bg-secondary);
     border-radius: 8px 8px 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  /* Tablet: larger header text for readability */
+  @media (min-width: 768px) {
+    .linear-column-header {
+      gap: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+  }
+
+  /* Desktop: standard sizing */
+  @media (min-width: 1024px) {
+    .linear-column-header {
+      padding: 12px 16px;
+      font-size: 13px;
+    }
   }
 
   .linear-column-header .status-dot {
@@ -158,20 +436,68 @@
   .linear-column-content {
     flex: 1;
     overflow-y: auto;
-    padding: 12px;
+    padding: 8px;
     background: var(--color-bg-tertiary);
     border-radius: 0 0 8px 8px;
+    -webkit-overflow-scrolling: touch;
+    /* Ensure scrollable on all devices */
+    max-height: calc(100vh - 180px);
   }
 
-  /* Kanban card - Linear style */
+  /* Tablet: more padding */
+  @media (min-width: 768px) {
+    .linear-column-content {
+      padding: 10px;
+      max-height: calc(100vh - 180px);
+    }
+  }
+
+  /* Desktop: standard padding */
+  @media (min-width: 1024px) {
+    .linear-column-content {
+      padding: 12px;
+      max-height: calc(100vh - 200px);
+    }
+  }
+
+  /* ============================================
+     Kanban card - Responsive
+     Mobile: Compact but readable
+     Tablet: Larger text for better readability
+     Desktop: Standard sizing
+     ============================================ */
   .linear-card {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border-default);
     border-radius: 6px;
-    padding: 12px;
+    /* Mobile: compact padding for smaller columns */
+    padding: 10px 12px;
     margin-bottom: 6px;
     cursor: pointer;
     transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    /* Ensure minimum touch target size */
+    min-height: 52px;
+  }
+
+  /* Tablet: larger padding and touch targets */
+  @media (min-width: 768px) {
+    .linear-card {
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      min-height: 60px;
+    }
+  }
+
+  /* Desktop: standard sizing */
+  @media (min-width: 1024px) {
+    .linear-card {
+      padding: 12px;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      min-height: auto;
+    }
   }
 
   .linear-card:hover {
@@ -179,11 +505,33 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
 
+  @media (hover: none) {
+    .linear-card:active {
+      border-color: var(--color-border-strong);
+      background: var(--color-bg-hover);
+      transform: scale(0.99);
+    }
+  }
+
   .linear-card-id {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--color-text-tertiary);
     font-weight: 500;
     font-feature-settings: "tnum";
+  }
+
+  /* Tablet: larger ID text */
+  @media (min-width: 768px) {
+    .linear-card-id {
+      font-size: 13px;
+    }
+  }
+
+  /* Desktop: standard */
+  @media (min-width: 1024px) {
+    .linear-card-id {
+      font-size: 12px;
+    }
   }
 
   .linear-card-title {
@@ -192,6 +540,28 @@
     color: var(--color-text-primary);
     line-height: 1.4;
     margin: 4px 0;
+    /* Limit to 2 lines on mobile */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Tablet: larger, more readable text */
+  @media (min-width: 768px) {
+    .linear-card-title {
+      font-size: 15px;
+      margin: 6px 0;
+      -webkit-line-clamp: 3;
+    }
+  }
+
+  /* Desktop: standard sizing */
+  @media (min-width: 1024px) {
+    .linear-card-title {
+      font-size: 13px;
+      margin: 4px 0;
+    }
   }
 
   .linear-card-title:hover {
@@ -201,44 +571,124 @@
   .linear-card-meta {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin-top: 8px;
     font-size: 11px;
     color: var(--color-text-tertiary);
+    flex-wrap: wrap;
+  }
+
+  /* Tablet: larger meta text */
+  @media (min-width: 768px) {
+    .linear-card-meta {
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+  }
+
+  /* Desktop: standard */
+  @media (min-width: 1024px) {
+    .linear-card-meta {
+      margin-top: 8px;
+      font-size: 11px;
+    }
   }
 
   .linear-card-label {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 2px 6px;
+    padding: 3px 6px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 500;
     background: var(--color-bg-tertiary);
     color: var(--color-text-secondary);
   }
 
+  /* Tablet: larger labels */
+  @media (min-width: 768px) {
+    .linear-card-label {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+  }
+
+  /* Desktop: standard */
+  @media (min-width: 1024px) {
+    .linear-card-label {
+      padding: 2px 6px;
+      font-size: 11px;
+    }
+  }
+
   .linear-card-avatar {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     border: 1px solid var(--color-border-default);
   }
 
-  /* Linear-style button */
+  /* Tablet: larger avatars */
+  @media (min-width: 768px) {
+    .linear-card-avatar {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  /* Desktop: standard */
+  @media (min-width: 1024px) {
+    .linear-card-avatar {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  /* ============================================
+     Linear-style button - Responsive
+     Mobile: Touch-friendly sizing
+     Tablet: Larger for better usability
+     Desktop: Compact sizing
+     ============================================ */
   .linear-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 6px 12px;
-    font-size: 13px;
+    /* Mobile: touch-friendly */
+    padding: 10px 14px;
+    min-height: 44px;
+    font-size: 14px;
     font-weight: 500;
     border-radius: 6px;
     border: 1px solid transparent;
     cursor: pointer;
     transition: all 0.15s ease;
+    /* Prevent text selection on touch */
+    -webkit-user-select: none;
+    user-select: none;
+    /* Touch feedback */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Tablet: larger buttons for better touch targets */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .linear-btn {
+      padding: 12px 18px;
+      min-height: 48px;
+      font-size: 15px;
+    }
+  }
+
+  /* Desktop: compact button sizing */
+  @media (min-width: 1024px) {
+    .linear-btn {
+      padding: 6px 12px;
+      min-height: auto;
+      font-size: 13px;
+    }
   }
 
   .linear-btn-primary {
@@ -248,6 +698,14 @@
 
   .linear-btn-primary:hover {
     background: var(--color-accent-hover);
+  }
+
+  /* Touch devices: active state instead of hover */
+  @media (hover: none) {
+    .linear-btn-primary:active {
+      background: var(--color-accent-hover);
+      transform: scale(0.98);
+    }
   }
 
   .linear-btn-secondary {
@@ -261,6 +719,14 @@
     border-color: var(--color-border-strong);
   }
 
+  @media (hover: none) {
+    .linear-btn-secondary:active {
+      background: var(--color-bg-hover);
+      border-color: var(--color-border-strong);
+      transform: scale(0.98);
+    }
+  }
+
   .linear-btn-ghost {
     background: transparent;
     color: var(--color-text-secondary);
@@ -271,21 +737,62 @@
     color: var(--color-text-primary);
   }
 
-  /* Linear-style select */
+  @media (hover: none) {
+    .linear-btn-ghost:active {
+      background: var(--color-bg-hover);
+      color: var(--color-text-primary);
+      transform: scale(0.98);
+    }
+  }
+
+  /* Small button variant for icon-only buttons */
+  .linear-btn-sm {
+    padding: 8px;
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  @media (min-width: 768px) {
+    .linear-btn-sm {
+      padding: 6px;
+      min-height: auto;
+      min-width: auto;
+    }
+  }
+
+  /* ============================================
+     Linear-style select - Responsive
+     Mobile: Larger touch targets (48px min height)
+     Desktop: Compact sizing
+     ============================================ */
   .linear-select {
     appearance: none;
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border-default);
-    border-radius: 4px;
-    padding: 4px 24px 4px 8px;
-    font-size: 12px;
+    border-radius: 6px;
+    /* Mobile: larger touch target */
+    padding: 12px 32px 12px 12px;
+    min-height: 48px;
+    font-size: 16px; /* Prevent iOS zoom */
     font-weight: 500;
     color: var(--color-text-primary);
     cursor: pointer;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 4px center;
+    background-position: right 8px center;
     background-repeat: no-repeat;
-    background-size: 16px;
+    background-size: 20px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (min-width: 768px) {
+    .linear-select {
+      border-radius: 4px;
+      padding: 4px 24px 4px 8px;
+      min-height: auto;
+      font-size: 12px;
+      background-position: right 4px center;
+      background-size: 16px;
+    }
   }
 
   .linear-select:hover {
@@ -298,28 +805,60 @@
     box-shadow: 0 0 0 2px var(--color-accent-subtle);
   }
 
-  /* Linear-style dropdown */
+  /* ============================================
+     Linear-style dropdown - Responsive
+     Mobile: Full width, larger touch targets
+     Desktop: Fixed width, compact
+     ============================================ */
   .linear-dropdown {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border-default);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.02);
     overflow: hidden;
+    max-height: 60vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @media (min-width: 768px) {
+    .linear-dropdown {
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
+      max-height: 70vh;
+    }
   }
 
   .linear-dropdown-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    font-size: 13px;
+    /* Mobile: larger touch targets */
+    padding: 12px 14px;
+    min-height: 48px;
+    font-size: 14px;
     color: var(--color-text-primary);
     cursor: pointer;
     transition: background 0.1s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (min-width: 768px) {
+    .linear-dropdown-item {
+      padding: 8px 12px;
+      min-height: auto;
+      font-size: 13px;
+    }
   }
 
   .linear-dropdown-item:hover {
     background: var(--color-bg-hover);
+  }
+
+  @media (hover: none) {
+    .linear-dropdown-item:active {
+      background: var(--color-bg-hover);
+    }
   }
 
   .linear-dropdown-item.active {
@@ -327,14 +866,47 @@
     color: var(--color-accent);
   }
 
-  /* Page header */
+  /* ============================================
+     Page header - Responsive
+     Mobile: Compact header
+     Tablet: Larger touch targets, bigger text
+     Desktop: Full navigation
+     ============================================ */
   .linear-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 20px;
+    /* Mobile: compact padding */
+    padding: 10px 12px;
     border-bottom: 1px solid var(--color-border-default);
     background: var(--color-bg-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    /* Safe area support */
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    gap: 8px;
+  }
+
+  /* Tablet: larger header for better touch */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .linear-header {
+      padding: 14px 20px;
+      padding-left: max(20px, env(safe-area-inset-left));
+      padding-right: max(20px, env(safe-area-inset-right));
+      gap: 12px;
+    }
+  }
+
+  /* Desktop: standard */
+  @media (min-width: 1024px) {
+    .linear-header {
+      padding: 12px 20px;
+      padding-left: max(20px, env(safe-area-inset-left));
+      padding-right: max(20px, env(safe-area-inset-right));
+      gap: 12px;
+    }
   }
 
   .linear-header-title {
@@ -343,46 +915,156 @@
     color: var(--color-text-primary);
   }
 
+  /* Tablet: larger title */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .linear-header-title {
+      font-size: 16px;
+    }
+  }
+
   .linear-header-breadcrumb {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
+    gap: 4px;
+    font-size: 12px;
     color: var(--color-text-secondary);
+    /* Mobile: truncate long breadcrumbs */
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /* Tablet: larger breadcrumb text */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .linear-header-breadcrumb {
+      gap: 8px;
+      font-size: 15px;
+    }
+  }
+
+  /* Desktop */
+  @media (min-width: 1024px) {
+    .linear-header-breadcrumb {
+      gap: 8px;
+      font-size: 13px;
+    }
   }
 
   .linear-header-breadcrumb svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     color: var(--color-text-tertiary);
+    flex-shrink: 0;
   }
 
-  /* Filter bar */
+  /* Tablet: larger icons */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .linear-header-breadcrumb svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .linear-header-breadcrumb svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  /* Truncate breadcrumb text on mobile */
+  .linear-header-breadcrumb span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ============================================
+     Filter bar - Responsive
+     Mobile: Compact, scrollable
+     Tablet: Larger text and touch targets
+     Desktop: Single row
+     ============================================ */
   .linear-filter-bar {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 20px;
+    padding: 8px 12px;
     border-bottom: 1px solid var(--color-border-subtle);
     background: var(--color-bg-primary);
+    /* Mobile: allow wrapping */
+    flex-wrap: wrap;
+    /* Safe area support */
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  /* Tablet: more padding */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .linear-filter-bar {
+      padding: 10px 20px;
+      gap: 10px;
+      flex-wrap: nowrap;
+      padding-left: max(20px, env(safe-area-inset-left));
+      padding-right: max(20px, env(safe-area-inset-right));
+    }
+  }
+
+  /* Desktop */
+  @media (min-width: 1024px) {
+    .linear-filter-bar {
+      padding: 8px 20px;
+      flex-wrap: nowrap;
+      padding-left: max(20px, env(safe-area-inset-left));
+      padding-right: max(20px, env(safe-area-inset-right));
+    }
   }
 
   .linear-filter-btn {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 8px;
-    font-size: 12px;
+    /* Mobile: touch target */
+    padding: 8px 12px;
+    min-height: 36px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--color-text-secondary);
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Tablet: larger filter buttons */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .linear-filter-btn {
+      padding: 10px 14px;
+      min-height: 44px;
+      font-size: 15px;
+      border-radius: 6px;
+    }
+  }
+
+  /* Desktop: compact */
+  @media (min-width: 1024px) {
+    .linear-filter-btn {
+      padding: 4px 8px;
+      min-height: auto;
+      font-size: 12px;
+      border-radius: 4px;
+    }
   }
 
   .linear-filter-btn:hover {
     background: var(--color-bg-hover);
+  }
+
+  @media (hover: none) {
+    .linear-filter-btn:active {
+      background: var(--color-bg-hover);
+      transform: scale(0.98);
+    }
   }
 
   .linear-filter-btn.active {
@@ -449,27 +1131,62 @@
     color: var(--color-text-quaternary);
   }
 
-  /* Linear-style modal */
+  /* ============================================
+     Linear-style modal - Responsive
+     Desktop: Centered modal (460px max)
+     Mobile: Full-screen or bottom sheet
+     ============================================ */
   .linear-modal-backdrop {
     position: fixed;
     inset: 0;
     background: rgba(15, 23, 42, 0.65);
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
     z-index: 50;
+    /* Mobile: align to bottom for bottom sheet feel */
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+
+  /* Desktop: center the modal */
+  @media (min-width: 768px) {
+    .linear-modal-backdrop {
+      align-items: center;
+      padding: 24px;
+    }
   }
 
   .linear-modal-panel {
-    width: min(460px, 100%);
+    width: 100%;
+    max-height: 90vh;
     background: var(--color-bg-secondary);
-    border-radius: 18px;
+    /* Mobile: rounded top corners only */
+    border-radius: 18px 18px 0 0;
     border: 1px solid var(--color-border-default);
-    box-shadow: 0 25px 60px rgba(15, 23, 42, 0.18);
+    box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.18);
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    /* Safe area support for notched devices */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Desktop: centered modal with all corners rounded */
+  @media (min-width: 768px) {
+    .linear-modal-panel {
+      width: min(460px, 100%);
+      max-height: 85vh;
+      border-radius: 18px;
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.18);
+      padding-bottom: 0;
+    }
+  }
+
+  /* Large desktop: allow wider modals */
+  @media (min-width: 1024px) {
+    .linear-modal-panel {
+      width: min(520px, 100%);
+    }
   }
 
   .linear-modal-accent {
@@ -478,11 +1195,22 @@
   }
 
   .linear-modal-header {
-    padding: 22px 24px 14px;
+    padding: 18px 16px 12px;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    background: var(--color-bg-secondary);
+    z-index: 1;
+  }
+
+  @media (min-width: 768px) {
+    .linear-modal-header {
+      padding: 22px 24px 14px;
+      gap: 16px;
+    }
   }
 
   .linear-modal-title {
@@ -511,9 +1239,24 @@
     border-radius: 10px;
     border: 1px solid transparent;
     color: var(--color-text-tertiary);
-    padding: 6px;
+    /* Mobile: larger touch target */
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s ease;
     background: var(--color-bg-primary);
+    flex-shrink: 0;
+  }
+
+  @media (min-width: 768px) {
+    .linear-modal-close {
+      padding: 6px;
+      min-width: auto;
+      min-height: auto;
+    }
   }
 
   .linear-modal-close:hover {
@@ -521,11 +1264,28 @@
     color: var(--color-text-primary);
   }
 
+  @media (hover: none) {
+    .linear-modal-close:active {
+      border-color: var(--color-border-strong);
+      color: var(--color-text-primary);
+      transform: scale(0.95);
+    }
+  }
+
   .linear-modal-body {
-    padding: 0 24px 24px;
+    padding: 0 16px 16px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @media (min-width: 768px) {
+    .linear-modal-body {
+      padding: 0 24px 24px;
+      gap: 18px;
+    }
   }
 
   .linear-modal-field {
@@ -535,34 +1295,70 @@
   }
 
   .linear-modal-note {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--color-text-tertiary);
+  }
+
+  @media (min-width: 768px) {
+    .linear-modal-note {
+      font-size: 11px;
+    }
   }
 
   .linear-modal-divider {
     height: 1px;
     background: var(--color-border-subtle);
-    margin: 0 24px;
+    margin: 0 16px;
   }
 
-  /* Linear-style Checklist */
+  @media (min-width: 768px) {
+    .linear-modal-divider {
+      margin: 0 24px;
+    }
+  }
+
+  /* ============================================
+     Linear-style Checklist - Responsive
+     Mobile: Larger touch targets, more padding
+     Desktop: Compact layout
+     ============================================ */
   .linear-checklist {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+  }
+
+  @media (min-width: 768px) {
+    .linear-checklist {
+      gap: 10px;
+    }
   }
 
   .linear-checklist-item {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border-default);
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
     transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (min-width: 768px) {
+    .linear-checklist-item {
+      border-radius: 8px;
+    }
   }
 
   .linear-checklist-item:hover {
     border-color: var(--color-border-strong);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  @media (hover: none) {
+    .linear-checklist-item:active {
+      border-color: var(--color-border-strong);
+      background: var(--color-bg-hover);
+    }
   }
 
   .linear-checklist-item.is-selected {
@@ -575,10 +1371,18 @@
   }
 
   .linear-checklist-item-content {
-    padding: 14px 16px;
+    /* Mobile: larger padding */
+    padding: 16px;
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 14px;
+  }
+
+  @media (min-width: 768px) {
+    .linear-checklist-item-content {
+      padding: 14px 16px;
+      gap: 12px;
+    }
   }
 
   /* Severity left border accent */
@@ -602,23 +1406,51 @@
     border-left: 4px solid #9ca3af;
   }
 
-  /* Linear-style Checkbox */
+  /* ============================================
+     Linear-style Checkbox - Responsive
+     Mobile: Larger touch target (24x24px)
+     Desktop: Compact (16x16px)
+     ============================================ */
   .linear-checkbox {
     appearance: none;
-    width: 16px;
-    height: 16px;
-    border: 1.5px solid var(--color-border-strong);
-    border-radius: 4px;
+    /* Mobile: larger touch target */
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    border: 2px solid var(--color-border-strong);
+    border-radius: 6px;
     background: var(--color-bg-secondary);
     cursor: pointer;
     transition: all 0.15s ease;
     flex-shrink: 0;
-    margin-top: 2px;
+    margin-top: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (min-width: 768px) {
+    .linear-checkbox {
+      width: 16px;
+      height: 16px;
+      min-width: 16px;
+      min-height: 16px;
+      border-width: 1.5px;
+      border-radius: 4px;
+      margin-top: 2px;
+    }
   }
 
   .linear-checkbox:hover {
     border-color: var(--color-accent);
     background: var(--color-accent-subtle);
+  }
+
+  @media (hover: none) {
+    .linear-checkbox:active {
+      border-color: var(--color-accent);
+      background: var(--color-accent-subtle);
+      transform: scale(0.95);
+    }
   }
 
   .linear-checkbox:focus {
@@ -716,16 +1548,27 @@
     margin-top: 10px;
   }
 
-  /* Checklist Toolbar */
+  /* ============================================
+     Checklist Toolbar - Responsive
+     Mobile: Stacked layout
+     Desktop: Horizontal layout
+     ============================================ */
   .linear-checklist-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border-default);
-    border-radius: 8px;
-    padding: 10px 14px;
+    border-radius: 10px;
+    padding: 12px 14px;
     margin-bottom: 12px;
+  }
+
+  @media (min-width: 640px) {
+    .linear-checklist-toolbar {
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
   }
 
   .linear-checklist-toolbar-left {
@@ -745,22 +1588,42 @@
     color: var(--color-text-tertiary);
   }
 
-  /* Linear-style Input (for select dropdowns) */
+  /* ============================================
+     Linear-style Input - Responsive
+     Mobile: Larger touch targets (48px min height)
+     Desktop: Compact sizing
+     ============================================ */
   .linear-input {
     appearance: none;
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border-default);
-    border-radius: 6px;
-    padding: 6px 28px 6px 10px;
-    font-size: 12px;
+    border-radius: 8px;
+    /* Mobile: larger touch target */
+    padding: 12px 32px 12px 14px;
+    min-height: 48px;
+    font-size: 16px; /* Prevent iOS zoom */
     font-weight: 500;
     color: var(--color-text-primary);
     cursor: pointer;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 6px center;
+    background-position: right 10px center;
     background-repeat: no-repeat;
-    background-size: 16px;
+    background-size: 18px;
     transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    width: 100%;
+  }
+
+  @media (min-width: 768px) {
+    .linear-input {
+      border-radius: 6px;
+      padding: 6px 28px 6px 10px;
+      min-height: auto;
+      font-size: 12px;
+      background-position: right 6px center;
+      background-size: 16px;
+      width: auto;
+    }
   }
 
   .linear-input:hover {
@@ -773,20 +1636,37 @@
     box-shadow: 0 0 0 2px var(--color-accent-subtle);
   }
 
-  /* Review History Accordion */
+  /* ============================================
+     Review History Accordion - Responsive
+     Mobile: Larger touch targets
+     Desktop: Compact layout
+     ============================================ */
   .linear-accordion {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     margin-bottom: 16px;
+  }
+
+  @media (min-width: 768px) {
+    .linear-accordion {
+      gap: 8px;
+    }
   }
 
   .linear-accordion-item {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border-default);
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
     transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (min-width: 768px) {
+    .linear-accordion-item {
+      border-radius: 8px;
+    }
   }
 
   .linear-accordion-item:hover {
@@ -802,14 +1682,29 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px 16px;
+    /* Mobile: larger touch target */
+    padding: 14px 16px;
+    min-height: 52px;
     cursor: pointer;
     background: var(--color-bg-tertiary);
     transition: background 0.15s ease;
   }
 
+  @media (min-width: 768px) {
+    .linear-accordion-header {
+      padding: 12px 16px;
+      min-height: auto;
+    }
+  }
+
   .linear-accordion-header:hover {
     background: var(--color-bg-hover);
+  }
+
+  @media (hover: none) {
+    .linear-accordion-header:active {
+      background: var(--color-bg-hover);
+    }
   }
 
   .linear-accordion-header-left {
@@ -825,6 +1720,14 @@
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
+    /* Mobile: hide meta on small screens */
+  }
+
+  /* Hide meta badges on very small screens */
+  @media (max-width: 424px) {
+    .linear-accordion-header-right .linear-badge {
+      display: none;
+    }
   }
 
   .linear-accordion-icon {
@@ -840,7 +1743,7 @@
   }
 
   .linear-accordion-title {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     color: var(--color-text-primary);
     white-space: nowrap;
@@ -848,18 +1751,36 @@
     text-overflow: ellipsis;
   }
 
+  @media (min-width: 768px) {
+    .linear-accordion-title {
+      font-size: 13px;
+    }
+  }
+
   .linear-accordion-meta {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--color-text-tertiary);
+  }
+
+  @media (min-width: 768px) {
+    .linear-accordion-meta {
+      font-size: 11px;
+    }
   }
 
   .linear-accordion-content {
     display: none;
     padding: 16px;
     border-top: 1px solid var(--color-border-subtle);
+  }
+
+  @media (max-width: 767px) {
+    .linear-accordion-content {
+      padding: 14px;
+    }
   }
 
   .linear-accordion-item.is-expanded .linear-accordion-content {
@@ -1061,24 +1982,47 @@
     border: 0;
   }
 
-  /* Toast notification for announcements */
+  /* ============================================
+     Toast notification - Responsive
+     Mobile: Full width at bottom with safe area
+     Desktop: Centered floating toast
+     ============================================ */
   .kanban-toast {
     position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--color-border-default);
-    border-radius: 8px;
-    padding: 12px 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 100;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--color-text-primary);
     display: flex;
     align-items: center;
     gap: 8px;
     animation: kanban-toast-in 0.2s ease;
+    /* Mobile: full width at bottom */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: none;
+    background: var(--color-bg-secondary);
+    border: none;
+    border-top: 1px solid var(--color-border-default);
+    border-radius: 0;
+    padding: 16px 20px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  @media (min-width: 768px) {
+    .kanban-toast {
+      bottom: 24px;
+      left: 50%;
+      right: auto;
+      transform: translateX(-50%);
+      border: 1px solid var(--color-border-default);
+      border-radius: 8px;
+      padding: 12px 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      font-size: 13px;
+      max-width: 400px;
+    }
   }
 
   .kanban-toast--error {
@@ -1096,11 +2040,51 @@
   @keyframes kanban-toast-in {
     from {
       opacity: 0;
-      transform: translateX(-50%) translateY(10px);
+      transform: translateY(10px);
     }
     to {
       opacity: 1;
-      transform: translateX(-50%) translateY(0);
+      transform: translateY(0);
+    }
+  }
+
+  @media (min-width: 768px) {
+    @keyframes kanban-toast-in {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+  }
+
+  /* ============================================
+     Reduced Motion Support
+     Respect user's motion preferences
+     ============================================ */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    .kanban-toast {
+      animation: none;
+    }
+
+    .kanban-card--dragging {
+      transform: none;
+    }
+
+    .linear-accordion-icon {
+      transition: none;
     }
   }
 }
