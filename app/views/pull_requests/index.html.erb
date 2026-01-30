@@ -4,48 +4,49 @@
   repos_folder = Setting.repos_folder
   repositories = repos_folder.present? ? RepoScannerService.new(repos_folder).scan : []
 %>
+<%= turbo_stream_from "pull_requests_board" %>
 <div class="min-h-screen flex flex-col" data-controller="kanban repo-selector sync review-modal bulk-actions">
-  <!-- Header Bar -->
+  <!-- Header Bar - Responsive -->
   <header class="linear-header">
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
       <!-- Logo/Home Link -->
-      <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity" do %>
+      <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0" do %>
         <div class="w-6 h-6 rounded bg-[color:var(--color-accent)] flex items-center justify-center">
           <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
         </div>
-        <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Forge</span>
+        <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)] hidden sm:inline">Forge</span>
       <% end %>
 
-      <!-- Divider -->
-      <span class="text-[color:var(--color-border-default)]">/</span>
+      <!-- Divider (hidden on small mobile) -->
+      <span class="text-[color:var(--color-border-default)] hidden sm:inline">/</span>
 
-      <!-- Breadcrumb -->
-      <div class="linear-header-breadcrumb">
+      <!-- Breadcrumb (hidden on mobile) -->
+      <div class="linear-header-breadcrumb hidden md:flex">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
         <span class="text-[color:var(--color-text-tertiary)]">Pull Requests</span>
       </div>
 
-      <!-- Repo Selector -->
-      <div class="relative">
+      <!-- Repo Selector - responsive width -->
+      <div class="relative min-w-0">
         <button type="button"
                 data-action="click->repo-selector#toggle"
                 data-repo-selector-target="button"
-                class="linear-btn linear-btn-secondary text-[13px] py-1.5">
-          <span data-repo-selector-target="currentRepoName" class="<%= @current_repo.blank? ? 'text-[color:var(--color-status-todo)]' : '' %>">
-            <%= @current_repo.present? ? File.basename(@current_repo) : "Select repository" %>
+                class="linear-btn linear-btn-secondary text-[12px] md:text-[13px] py-1.5 px-2 md:px-3 max-w-[140px] md:max-w-none">
+          <span data-repo-selector-target="currentRepoName" class="truncate <%= @current_repo.blank? ? 'text-[color:var(--color-status-todo)]' : '' %>">
+            <%= @current_repo.present? ? File.basename(@current_repo) : "Select repo" %>
           </span>
-          <svg class="w-4 h-4 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-[color:var(--color-text-tertiary)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
-        <!-- Dropdown Panel -->
+        <!-- Dropdown Panel - responsive positioning -->
         <div data-repo-selector-target="dropdown"
-             class="hidden absolute left-0 top-full mt-1 w-72 linear-dropdown z-50">
+             class="hidden absolute left-0 md:left-0 top-full mt-1 w-[calc(100vw-32px)] md:w-72 max-w-sm linear-dropdown z-50">
           <%= render partial: "repositories/dropdown_list", locals: {
             repositories: repositories,
             current_repo: @current_repo,
@@ -55,12 +56,12 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-2">
-      <!-- Quick Stats -->
+    <div class="flex items-center gap-1 md:gap-2 flex-shrink-0">
+      <!-- Quick Stats (hidden on mobile) -->
       <% pending_count = @pending_review.to_a.count %>
       <% in_review_count = @in_review.to_a.count %>
       <% if pending_count > 0 || in_review_count > 0 %>
-        <div class="flex items-center gap-3 mr-2 text-[12px]">
+        <div class="hidden lg:flex items-center gap-3 mr-2 text-[12px]">
           <% if pending_count > 0 %>
             <span class="flex items-center gap-1 text-[color:var(--color-text-tertiary)]">
               <span class="w-2 h-2 rounded-full bg-[color:var(--color-status-todo)]"></span>
@@ -79,16 +80,17 @@
       <%= link_to sync_pull_requests_path,
           method: :post,
           data: { turbo_method: :post, sync_target: "button", action: "click->sync#sync" },
-          class: "linear-btn linear-btn-primary" do %>
+          class: "linear-btn linear-btn-primary",
+          "aria-label": "Sync pull requests" do %>
         <svg data-sync-target="spinner" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
-        <span data-sync-target="buttonText">Sync</span>
+        <span data-sync-target="buttonText" class="hidden sm:inline">Sync</span>
       <% end %>
 
       <!-- Settings Link -->
-      <%= link_to edit_settings_path, class: "linear-btn linear-btn-ghost p-2", title: "Settings" do %>
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <%= link_to edit_settings_path, class: "linear-btn linear-btn-ghost linear-btn-sm", title: "Settings", "aria-label": "Settings" do %>
+        <svg class="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
@@ -96,10 +98,10 @@
     </div>
   </header>
 
-  <!-- Filter Bar (like Linear's "Assignee is Paulo" bar) -->
+  <!-- Filter Bar - Responsive -->
   <div class="linear-filter-bar flex items-center justify-between">
-    <span id="pr-count" class="text-[12px] text-[color:var(--color-text-tertiary)]">
-      <%= @pending_review.to_a.count + @in_review.to_a.count + @reviewed_by_me.to_a.count + @reviewed_by_others.to_a.count + @review_failed.to_a.count %> pull requests
+    <span id="pr-count" class="text-[11px] md:text-[12px] text-[color:var(--color-text-tertiary)]">
+      <%= @pending_review.to_a.count + @in_review.to_a.count + @reviewed_by_me.to_a.count + @reviewed_by_others.to_a.count + @review_failed.to_a.count %> PRs
     </span>
     <%= render partial: "pull_requests/sync_status" %>
   </div>

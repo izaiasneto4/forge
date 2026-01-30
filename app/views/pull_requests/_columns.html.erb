@@ -11,9 +11,10 @@
     <div class="linear-column-header">
       <span class="status-dot bg-[color:var(--color-status-todo)]"></span>
       <span>Needs Review</span>
-      <span class="count"><%= pending_review.count %></span>
+      <span id="pr_count_pending_review" class="count"><%= pending_review.count %></span>
     </div>
-    <div class="linear-column-content"
+    <div id="pull_request_column_pending_review"
+         class="linear-column-content"
          data-kanban-target="column"
          data-status="pending_review">
       <%= render partial: "pull_requests/pull_request_card", collection: pending_review, as: :pr %>
@@ -33,9 +34,10 @@
     <div class="linear-column-header">
       <span class="status-dot bg-[color:var(--color-status-review)] animate-pulse"></span>
       <span>In Review</span>
-      <span class="count"><%= in_review.count %></span>
+      <span id="pr_count_in_review" class="count"><%= in_review.count %></span>
     </div>
-    <div class="linear-column-content"
+    <div id="pull_request_column_in_review"
+         class="linear-column-content"
          data-kanban-target="column"
          data-status="in_review">
       <%= render partial: "pull_requests/pull_request_card", collection: in_review, as: :pr %>
@@ -56,9 +58,10 @@
     <div class="linear-column-header">
       <span class="status-dot bg-[color:var(--color-status-inprogress)]"></span>
       <span>Reviewed</span>
-      <span class="count"><%= reviewed_by_me.count %></span>
+      <span id="pr_count_reviewed_by_me" class="count"><%= reviewed_by_me.count %></span>
     </div>
-    <div class="linear-column-content"
+    <div id="pull_request_column_reviewed_by_me"
+         class="linear-column-content"
          data-kanban-target="column"
          data-status="reviewed_by_me">
       <%= render partial: "pull_requests/pull_request_card", collection: reviewed_by_me, as: :pr, locals: { show_checkbox: true } %>
@@ -78,9 +81,10 @@
     <div class="linear-column-header">
       <span class="status-dot bg-[color:var(--color-status-done)]"></span>
       <span>Done</span>
-      <span class="count"><%= reviewed_by_others.count %></span>
+      <span id="pr_count_reviewed_by_others" class="count"><%= reviewed_by_others.count %></span>
     </div>
-    <div class="linear-column-content"
+    <div id="pull_request_column_reviewed_by_others"
+         class="linear-column-content"
          data-kanban-target="column"
          data-status="reviewed_by_others">
       <%= render partial: "pull_requests/pull_request_card", collection: reviewed_by_others, as: :pr, locals: { show_checkbox: true } %>
@@ -96,18 +100,25 @@
   </div>
 
   <!-- Failed Review Column -->
-  <% if review_failed.any? %>
   <div class="linear-column">
     <div class="linear-column-header">
       <span class="status-dot bg-red-500"></span>
       <span>Failed</span>
-      <span class="count bg-red-100 text-red-700"><%= review_failed.count %></span>
+      <span id="pr_count_review_failed" class="count bg-red-100 text-red-700"><%= review_failed.count %></span>
     </div>
-    <div class="linear-column-content"
+    <div id="pull_request_column_review_failed"
+         class="linear-column-content"
          data-kanban-target="column"
          data-status="review_failed">
       <%= render partial: "pull_requests/pull_request_card", collection: review_failed, as: :pr %>
+      <% if review_failed.empty? %>
+        <div class="linear-empty">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>No failed reviews</span>
+        </div>
+      <% end %>
     </div>
   </div>
-  <% end %>
 </div>
