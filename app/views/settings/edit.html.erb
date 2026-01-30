@@ -1,24 +1,24 @@
 <% content_for :full_width, true %>
 <% content_for :hide_global_header, true %>
 <div class="min-h-screen flex flex-col">
-  <!-- Header -->
+  <!-- Header - Responsive -->
   <header class="linear-header">
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
       <!-- Logo/Home Link -->
-      <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity" do %>
+      <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0" do %>
         <div class="w-6 h-6 rounded bg-[color:var(--color-accent)] flex items-center justify-center">
           <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
         </div>
-        <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Forge</span>
+        <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)] hidden sm:inline">Forge</span>
       <% end %>
 
-      <!-- Divider -->
-      <span class="text-[color:var(--color-border-default)]">/</span>
+      <!-- Divider (hidden on mobile) -->
+      <span class="text-[color:var(--color-border-default)] hidden sm:inline">/</span>
 
       <div class="linear-header-breadcrumb">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
@@ -26,30 +26,31 @@
       </div>
     </div>
 
-    <%= link_to pull_requests_path, class: "linear-btn linear-btn-secondary" do %>
+    <%= link_to pull_requests_path, class: "linear-btn linear-btn-secondary linear-btn-sm md:linear-btn", "aria-label": "Back to pull requests" do %>
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
       </svg>
-      Back
+      <span class="hidden sm:inline">Back</span>
     <% end %>
   </header>
 
-  <div class="flex-1 p-6">
+  <div class="flex-1 p-4 md:p-6 safe-area-bottom">
     <div class="max-w-xl mx-auto">
-      <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] p-6">
+      <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] p-4 md:p-6">
         <%= form_with url: settings_path, method: :patch, local: true do |f| %>
           <div class="mb-6" data-controller="folder-picker" data-folder-picker-url-value="<%= pick_folder_settings_path %>">
-            <label for="repos_folder" class="block text-[13px] font-medium text-[color:var(--color-text-primary)] mb-2">
+            <label for="repos_folder" class="block text-[13px] md:text-[13px] font-medium text-[color:var(--color-text-primary)] mb-2">
               Repos Folder Path
             </label>
-            <div class="flex gap-2">
+            <!-- Responsive: stack on mobile, row on tablet+ -->
+            <div class="flex flex-col sm:flex-row gap-2">
               <input type="text"
                      name="repos_folder"
                      id="repos_folder"
                      value="<%= @repos_folder %>"
                      placeholder="/Users/yourname/projects"
                      data-folder-picker-target="input"
-                     class="flex-1 px-3 py-2 text-[13px] bg-[color:var(--color-bg-primary)] border border-[color:var(--color-border-default)] rounded-md focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]/20 focus:border-[color:var(--color-accent)]" />
+                     class="flex-1 px-3 py-3 md:py-2 text-[16px] md:text-[13px] bg-[color:var(--color-bg-primary)] border border-[color:var(--color-border-default)] rounded-md focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]/20 focus:border-[color:var(--color-accent)]" />
               <button type="button"
                       data-action="click->folder-picker#pick"
                       class="linear-btn linear-btn-secondary whitespace-nowrap">
@@ -66,12 +67,12 @@
               Default CLI Client
             </label>
             <div class="flex items-center gap-2">
-              <span class="cli-client-icon text-[color:var(--color-text-secondary)]">
+              <span class="cli-client-icon text-[color:var(--color-text-secondary)] flex-shrink-0">
                 <%= cli_client_icon(@default_cli_client, class: "w-5 h-5") %>
               </span>
               <%= select_tag :default_cli_client,
                   options_for_select(Setting::CLI_CLIENTS.map { |c| [c.capitalize, c] }, @default_cli_client),
-                  class: "flex-1 px-3 py-2 text-[13px] bg-[color:var(--color-bg-primary)] border border-[color:var(--color-border-default)] rounded-md focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]/20 focus:border-[color:var(--color-accent)]",
+                  class: "flex-1 px-3 py-3 md:py-2 text-[16px] md:text-[13px] bg-[color:var(--color-bg-primary)] border border-[color:var(--color-border-default)] rounded-md focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]/20 focus:border-[color:var(--color-accent)]",
                   data: { action: "change->cli-client-icon#update" } %>
             </div>
             <p class="mt-2 text-[12px] text-[color:var(--color-text-tertiary)]">
@@ -80,7 +81,7 @@
           </div>
 
           <div class="flex justify-end">
-            <button type="submit" class="linear-btn linear-btn-primary">
+            <button type="submit" class="linear-btn linear-btn-primary w-full sm:w-auto">
               Save Settings
             </button>
           </div>

@@ -1,36 +1,36 @@
-<%# Global unified header - displays on all pages %>
-<header class="linear-header sticky top-0 z-40">
-  <div class="flex items-center gap-3">
+<%# Global unified header - displays on all pages - Responsive %>
+<header class="linear-header sticky top-0 z-40" data-controller="mobile-menu">
+  <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
     <!-- Logo/Home Link -->
-    <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity" do %>
+    <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0" do %>
       <div class="w-6 h-6 rounded bg-[color:var(--color-accent)] flex items-center justify-center">
         <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
         </svg>
       </div>
-      <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Forge</span>
+      <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)] hidden-mobile">Forge</span>
     <% end %>
 
-    <!-- Divider -->
-    <span class="text-[color:var(--color-border-default)]">/</span>
+    <!-- Divider (hidden on mobile) -->
+    <span class="text-[color:var(--color-border-default)] hidden-mobile">/</span>
 
-    <!-- Current Repo Display -->
-    <div class="flex items-center gap-2 text-[13px]">
+    <!-- Current Repo Display (truncated on mobile) -->
+    <div class="flex items-center gap-2 text-[12px] md:text-[13px] min-w-0">
       <% if @header_presenter.current_repo.present? %>
-        <svg class="w-4 h-4 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 text-[color:var(--color-text-tertiary)] flex-shrink-0 hidden-mobile" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
-        <span class="text-[color:var(--color-text-secondary)] font-medium"><%= @header_presenter.repo_name %></span>
+        <span class="text-[color:var(--color-text-secondary)] font-medium truncate max-w-[120px] md:max-w-none"><%= @header_presenter.repo_name %></span>
       <% else %>
-        <span class="text-[color:var(--color-text-tertiary)] italic">No repository selected</span>
+        <span class="text-[color:var(--color-text-tertiary)] italic text-[11px] md:text-[13px]">No repo</span>
       <% end %>
     </div>
   </div>
 
-  <div class="flex items-center gap-2">
-    <!-- Quick Stats -->
+  <div class="flex items-center gap-1 md:gap-2">
+    <!-- Quick Stats (hidden on mobile, shown on tablet+) -->
     <% if @header_presenter.pending_count > 0 || @header_presenter.in_review_count > 0 %>
-      <div class="flex items-center gap-3 mr-2 text-[12px]">
+      <div class="hidden md:flex items-center gap-3 mr-2 text-[12px]">
         <% if @header_presenter.pending_count > 0 %>
           <span class="flex items-center gap-1 text-[color:var(--color-text-tertiary)]">
             <span class="w-2 h-2 rounded-full bg-[color:var(--color-status-todo)]"></span>
@@ -46,9 +46,18 @@
       </div>
     <% end %>
 
+    <!-- Mobile: Compact stats badge (shown only on mobile when there are items) -->
+    <% total_active = @header_presenter.pending_count + @header_presenter.in_review_count %>
+    <% if total_active > 0 %>
+      <span class="md:hidden flex items-center gap-1 px-2 py-1 rounded-full bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent)] text-[11px] font-medium">
+        <span class="w-1.5 h-1.5 rounded-full bg-[color:var(--color-accent)]"></span>
+        <%= total_active %>
+      </span>
+    <% end %>
+
     <!-- Settings Link -->
-    <%= link_to edit_settings_path, class: "linear-btn linear-btn-ghost p-2", title: "Settings" do %>
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <%= link_to edit_settings_path, class: "linear-btn linear-btn-ghost linear-btn-sm", title: "Settings", "aria-label": "Settings" do %>
+      <svg class="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
