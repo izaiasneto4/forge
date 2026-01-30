@@ -13,6 +13,9 @@ default: &default
   reset_stuck_review_tasks:
     command: "ReviewTask.reset_stuck_tasks(timeout_minutes: 10)"
     schedule: every 5 minutes
+  fix_review_state_mismatches:
+    command: "PullRequest.fix_state_mismatches"
+    schedule: every 5 minutes
 
 development:
   <<: *default
