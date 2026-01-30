@@ -102,7 +102,7 @@ class WorktreeService
   end
 
   def create_worktree(worktree_path, branch_name, pull_request)
-    validated_worktree = PathValidator.validate(worktree_path, allowed_base: @repo_path)
+    validated_worktree = PathValidator.validate_new_path(worktree_path, allowed_base: @repo_path)
     raise Error, "Invalid worktree path" unless validated_worktree
 
     branch_ref = "forge-review-pr-#{pull_request.number}"
