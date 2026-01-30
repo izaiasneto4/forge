@@ -1,4 +1,5 @@
 require "open3"
+require "digest"
 
 class GithubCliService
   class Error < StandardError; end
@@ -93,11 +94,21 @@ class GithubCliService
     stale_prs = PullRequest.where(repo_owner: repo_info[:owner], repo_name: repo_info[:name])
                            .where.not(github_id: fetched_ids)
 
-    # Delete review tasks first, then the PRs
-    stale_pr_ids = stale_prs.pluck(:id)
-    if stale_pr_ids.any?
-      ReviewTask.where(pull_request_id: stale_pr_ids).delete_all
-      stale_prs.delete_all
+    # Use destroy_all to trigger callbacks and cascade deletes properly
+    # This ensures ReviewTask's dependent: :destroy associations (review_comments, review_iterations, agent_logs)
+    # are properly cleaned up before deletion, avoiding foreign key constraint violations
+    return unless stale_prs.exists?
+
+    stale_count = stale_prs.count
+    Rails.logger.info "Removing #{stale_count} stale PR(s) from #{repo_info[:owner]}/#{repo_info[:name]}"
+
+    begin
+      # destroy_all triggers ActiveRecord callbacks and handles dependent associations
+      stale_prs.destroy_all
+      Rails.logger.info "Successfully removed #{stale_count} stale PR(s)"
+    rescue ActiveRecord::InvalidForeignKey => e
+      Rails.logger.error "Foreign key constraint violation while removing stale PRs: #{e.message}"
+      raise Error, "Failed to remove stale PRs due to database constraint violation"
     end
   end
 
@@ -149,41 +160,54 @@ class GithubCliService
 
 
   def extract_github_id(url)
-    # Extract a unique ID from the URL (using hash as pseudo-ID)
-    url.hash.abs
+    # Extract PR number and repo from URL for a stable unique ID
+    # URL format: https://github.com/owner/repo/pull/123
+    if url =~ %r{github\.com/([^/]+)/([^/]+)/pull/(\d+)}
+      # Create stable hash from owner/repo/number
+      Digest::SHA256.hexdigest("#{$1}/#{$2}/#{$3}").to_i(16) % (2**62)
+    else
+      # Fallback: use Digest for stable hashing
+      Digest::SHA256.hexdigest(url).to_i(16) % (2**62)
+    end
   end
 
   def sync_prs(prs, _default_review_status)
     prs.each do |pr_data|
       pr = PullRequest.find_or_initialize_by(github_id: pr_data[:github_id])
-      # Preserve existing review_status - user may have manually moved the PR
-      pr_data.delete(:review_status) if pr.persisted?
+      # Only preserve review_status if PR has an active review_task (user action)
+      # Otherwise, update status based on GitHub's current state
+      if pr.persisted? && pr.review_task.present?
+        pr_data.delete(:review_status)
+      end
       pr.assign_attributes(pr_data)
       pr.save!
     end
   end
 
   def mark_reviewed_by_others
-    pending_prs = PullRequest.pending_review
+    # Only check PRs that don't have a review task
+    # If a user explicitly queued a review, respect that
+    pending_prs = PullRequest.pending_review.left_joins(:review_task).where(review_tasks: { id: nil })
     return if pending_prs.empty?
 
-    pr_numbers = pending_prs.pluck(:number)
-    search_query = pr_numbers.map { |n| "number:#{n}" }.join(" ")
-
+    # Get all open PRs with their review request data
     json = run_gh_command(
       "pr", "list",
-      "--search", search_query,
       "--json", "number,state,reviewRequests",
       "--limit", "100"
     )
 
     data = JSON.parse(json)
 
+    # Build map of PR number -> has_my_review_request
+    current_username = @username
     pr_status_map = data.each_with_object({}) do |pr, hash|
-      hash[pr["number"]] = pr["state"] == "OPEN" && pr["reviewRequests"]&.any?
+      my_review_requested = pr["reviewRequests"]&.any? { |req| req["login"] == current_username }
+      hash[pr["number"]] = pr["state"] == "OPEN" && my_review_requested
     end
 
     pending_prs.each do |pr|
+      # Only mark as reviewed_by_others if the PR doesn't have my review request
       pr.update!(review_status: "reviewed_by_others") unless pr_status_map[pr.number]
     end
   end
