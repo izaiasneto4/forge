@@ -571,9 +571,13 @@ export default class extends Controller {
   }
 
   navigateToReview(event) {
-    // Stop propagation to prevent card's click handler
+    event.preventDefault()
     event.stopPropagation()
-    // Let the link navigate normally
+    // Navigate to the review page in Forge
+    const href = event.currentTarget.getAttribute('href')
+    if (href) {
+      window.location.href = href
+    }
   }
 
   openGithub(event) {
