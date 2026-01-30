@@ -1,11 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <title><%= content_for(:title) || "Forge" %></title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%# Responsive viewport with support for notched devices (no user-scalable=no to allow pinch-to-zoom) %>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="application-name" content="Forge">
     <meta name="mobile-web-app-capable" content="yes">
+    <%# Theme color for browser chrome %>
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
@@ -30,15 +35,15 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
+  <body class="safe-area-inset">
     <%# Global unified header %>
     <% unless content_for?(:hide_global_header) %>
       <%= render partial: "shared/header" %>
     <% end %>
 
-    <%# Global flash messages - fixed at top of viewport %>
+    <%# Global flash messages - fixed at top of viewport with safe area support %>
     <% if flash[:notice].present? || flash[:alert].present? %>
-      <div class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-lg px-4">
+      <div class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-lg px-4 safe-area-inset">
         <%= render partial: "shared/flash", locals: { notice: flash[:notice], alert: flash[:alert] } %>
       </div>
     <% end %>
@@ -46,7 +51,8 @@
     <% if content_for?(:full_width) %>
       <%= yield %>
     <% else %>
-      <main class="container mx-auto mt-28 px-5 flex">
+      <%# Responsive main content: smaller padding on mobile, centered container %>
+      <main class="container mx-auto mt-20 md:mt-28 px-4 md:px-5 flex max-content-width">
         <%= yield %>
       </main>
     <% end %>
