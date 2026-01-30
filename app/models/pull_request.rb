@@ -4,6 +4,7 @@ class PullRequest < ApplicationRecord
   has_one :review_task, dependent: :destroy
 
   after_commit :invalidate_header_cache, on: [ :create, :update, :destroy ]
+  after_commit :broadcast_status_change, if: :saved_change_to_review_status?
 
   validates :github_id, presence: true, uniqueness: true
   validates :number, presence: true
@@ -85,10 +86,54 @@ class PullRequest < ApplicationRecord
     fixed_count
   end
 
+  # Fix state mismatches between PR review_status and ReviewTask state
+  def self.fix_state_mismatches
+    fixed_count = 0
+
+    # Fix PRs marked as "in_review" but ReviewTask is not
+    in_review.includes(:review_task).find_each do |pr|
+      next unless pr.review_task.present?
+
+      unless pr.review_task.in_review?
+        Rails.logger.info("Fixing state mismatch: PR ##{pr.number} (in_review) with ReviewTask state: #{pr.review_task.state}")
+        pr.update_column(:review_status, pr.review_task.state == "pending_review" ? "pending_review" : "reviewed_by_me")
+        fixed_count += 1
+      end
+    end
+
+    # Fix PRs marked as "reviewed_by_me" but ReviewTask is in_review or pending
+    reviewed_by_me.includes(:review_task).find_each do |pr|
+      next unless pr.review_task.present?
+
+      if pr.review_task.in_review? || pr.review_task.pending_review?
+        Rails.logger.info("Fixing state mismatch: PR ##{pr.number} (reviewed_by_me) with ReviewTask state: #{pr.review_task.state}")
+        pr.update_column(:review_status, pr.review_task.in_review? ? "in_review" : "pending_review")
+        fixed_count += 1
+      end
+    end
+
+    fixed_count
+  end
+
   private
 
   def invalidate_header_cache
     HeaderPresenter.invalidate_cache
+  end
+
+  def broadcast_status_change
+    previous_status = review_status_before_last_save
+    Rails.logger.info "[PullRequest##{id}] Broadcasting status change: #{previous_status} -> #{review_status}"
+
+    Turbo::StreamsChannel.broadcast_stream_to(
+      "pull_requests_board",
+      content: ApplicationController.render(
+        partial: "pull_requests/status_change_broadcast",
+        locals: { pull_request: self, previous_status: previous_status }
+      )
+    )
+  rescue => e
+    Rails.logger.error "[PullRequest##{id}] Broadcast failed: #{e.message}"
   end
 
   def review_status_consistency
@@ -101,9 +146,13 @@ class PullRequest < ApplicationRecord
       end
     end
 
-    # Ensure in_review status requires an active review_task
-    if review_status == "in_review" && review_task.nil?
-      errors.add(:review_status, "cannot be 'in_review' without a review task")
+    # Ensure in_review status matches ReviewTask state
+    if review_status == "in_review"
+      if review_task.nil?
+        errors.add(:review_status, "cannot be 'in_review' without a review task")
+      elsif !review_task.in_review?
+        errors.add(:review_status, "cannot be 'in_review' when review task is in #{review_task.state} state")
+      end
     end
 
     # Ensure review_failed status requires a failed review_task
