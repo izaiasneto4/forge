@@ -36,3 +36,15 @@
 
 /app/assets/builds/*
 !/app/assets/builds/.keep
+
+# macOS
+.DS_Store
+
+# Node
+/node_modules
+
+# Test results
+/test-results
+
+# IDE/tools
+.automaker/
