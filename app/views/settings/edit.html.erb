@@ -80,6 +80,29 @@
             </p>
           </div>
 
+          <!-- Review Submission Settings -->
+          <div class="mb-6 pt-6 border-t border-[color:var(--color-border-default)]">
+            <h3 class="text-[13px] font-semibold text-[color:var(--color-text-primary)] mb-4">Review Submission</h3>
+
+            <div class="flex items-start gap-3">
+              <input type="checkbox"
+                     name="auto_submit_enabled"
+                     id="auto_submit_enabled"
+                     value="1"
+                     <%= @auto_submit_enabled ? "checked" : "" %>
+                     class="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+              <div class="flex-1">
+                <label for="auto_submit_enabled" class="block text-[13px] font-medium text-[color:var(--color-text-primary)] cursor-pointer">
+                  Show confirmation dialog before submitting reviews
+                </label>
+                <p class="mt-1 text-[12px] text-[color:var(--color-text-tertiary)]">
+                  When enabled, you'll be asked to confirm before submitting each review to GitHub.
+                  This helps prevent accidental public posting of AI-generated comments.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div class="flex justify-end">
             <button type="submit" class="linear-btn linear-btn-primary w-full sm:w-auto">
               Save Settings
