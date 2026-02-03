@@ -53,6 +53,9 @@ class ReviewCommentsController < ApplicationController
       # Mark submitted comments as addressed
       @selected_comments.update_all(status: "addressed")
 
+      # Track submission status
+      @review_task.mark_submitted!
+
       respond_to do |format|
         format.html do
           redirect_to review_task_path(@review_task),
@@ -62,6 +65,9 @@ class ReviewCommentsController < ApplicationController
         format.json { render json: { success: true, result: result } }
       end
     rescue GithubReviewSubmitter::Error => e
+      # Track submission failure
+      @review_task.mark_submission_failed!(e.message)
+
       respond_to do |format|
         format.html do
           redirect_to review_task_path(@review_task),

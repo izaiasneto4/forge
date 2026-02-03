@@ -1,100 +1,215 @@
 <%# Partial for rendering the submit button and selection counter toolbar %>
 <%# Locals: review_task - a ReviewTask instance, comments - collection of ReviewComment instances %>
 
-<!-- Checklist Toolbar - Responsive -->
-<div id="comment-submission-toolbar" class="linear-checklist-toolbar relative z-10 flex-col sm:flex-row gap-3 sm:gap-2">
-  <div class="linear-checklist-toolbar-left w-full sm:w-auto">
-    <button type="button"
-            class="linear-btn linear-btn-ghost text-[12px]"
-            data-comment-checklist-target="selectAllButton"
-            data-action="click->comment-checklist#toggleAll">
-      Select All
-    </button>
-    <span class="linear-checklist-counter text-[11px] md:text-[12px]"
-          data-comment-checklist-target="counter">
-      0 of <%= comments.count { |c| c.pending? } %> selected
-    </span>
-  </div>
-  <div class="linear-checklist-toolbar-right w-full sm:w-auto">
-    <%= form_with url: submit_review_task_review_comments_path(review_task),
-                  method: :post,
-                  data: { turbo_stream: true, comment_checklist_target: "form" },
-                  class: "flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto" do |f| %>
-      <!-- Custom Event Selector with Icons -->
-      <div class="relative w-full sm:w-auto" data-controller="event-selector">
-        <input type="hidden" name="event" value="COMMENT" data-event-selector-target="hiddenInput">
-        <button type="button"
-                class="linear-input flex items-center gap-2 pr-8 cursor-pointer w-full sm:w-auto justify-between"
-                data-event-selector-target="button"
-                data-action="click->event-selector#toggle">
-          <span data-event-selector-target="selectedIcon" class="flex items-center text-[color:var(--color-text-secondary)]">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+<%
+  pending_comments = comments.select(&:pending?)
+  severity_counts = pending_comments.group_by(&:severity).transform_values(&:count)
+  critical_count = severity_counts['critical'] || 0
+  major_count = severity_counts['major'] || 0
+  minor_count = severity_counts['minor'] || 0
+  suggestion_count = severity_counts['suggestion'] || 0
+  nitpick_count = severity_counts['nitpick'] || 0
+%>
+
+<div data-controller="submit-confirmation"
+     data-submit-confirmation-pr-title-value="<%= review_task.pull_request.title %>"
+     data-submit-confirmation-pr-number-value="<%= review_task.pull_request.number %>"
+     data-submit-confirmation-confirmation-enabled-value="<%= Setting.auto_submit_enabled? %>">
+
+  <!-- Submission Status Banner -->
+  <% if review_task.submitted? %>
+    <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 flex items-center gap-2">
+      <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="text-sm text-green-800">
+        Review submitted to GitHub
+        <% if review_task.submitted_at %>
+          <span class="text-green-600">(<%= time_ago_in_words(review_task.submitted_at) %> ago)</span>
+        <% end %>
+      </span>
+    </div>
+  <% elsif review_task.submission_failed? %>
+    <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2">
+      <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <span class="text-sm text-red-800">
+        Submission failed
+        <% if review_task.failure_reason.present? %>
+          <span class="text-red-600">- <%= truncate(review_task.failure_reason, length: 80) %></span>
+        <% end %>
+      </span>
+    </div>
+  <% end %>
+
+  <!-- Checklist Toolbar - Responsive -->
+  <div id="comment-submission-toolbar" class="linear-checklist-toolbar relative z-10 flex-col sm:flex-row gap-3 sm:gap-2">
+    <div class="linear-checklist-toolbar-left w-full sm:w-auto">
+      <button type="button"
+              class="linear-btn linear-btn-ghost text-[12px]"
+              data-comment-checklist-target="selectAllButton"
+              data-action="click->comment-checklist#toggleAll">
+        Select All
+      </button>
+      <span class="linear-checklist-counter text-[11px] md:text-[12px]"
+            data-comment-checklist-target="counter">
+        0 of <%= pending_comments.count %> selected
+      </span>
+    </div>
+    <div class="linear-checklist-toolbar-right w-full sm:w-auto">
+      <%= form_with url: submit_review_task_review_comments_path(review_task),
+                    method: :post,
+                    data: { turbo_stream: true, comment_checklist_target: "form", submit_confirmation_target: "form" },
+                    class: "flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto" do |f| %>
+        <!-- Custom Event Selector with Icons -->
+        <div class="relative w-full sm:w-auto" data-controller="event-selector">
+          <input type="hidden" name="event" value="COMMENT" data-event-selector-target="hiddenInput">
+          <button type="button"
+                  class="linear-input flex items-center gap-2 pr-8 cursor-pointer w-full sm:w-auto justify-between"
+                  data-event-selector-target="button"
+                  data-action="click->event-selector#toggle">
+            <span data-event-selector-target="selectedIcon" class="flex items-center text-[color:var(--color-text-secondary)]">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </span>
+            <span data-event-selector-target="selectedLabel" class="text-[13px]">Comment only</span>
+            <svg class="w-4 h-4 absolute right-2 sm:right-2 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
-          </span>
-          <span data-event-selector-target="selectedLabel" class="text-[13px]">Comment only</span>
-          <svg class="w-4 h-4 absolute right-2 sm:right-2 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </button>
+          <div class="hidden absolute top-full mt-1 right-0 left-0 sm:left-auto w-full sm:w-48 bg-[color:var(--color-bg-secondary)] border border-[color:var(--color-border-default)] rounded-md shadow-lg z-50"
+               data-event-selector-target="dropdown">
+            <ul class="py-1">
+              <li>
+                <button type="button"
+                        class="w-full px-3 py-3 sm:py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)] bg-[color:var(--color-bg-tertiary)]"
+                        data-action="click->event-selector#select"
+                        data-value="COMMENT"
+                        data-label="Comment only">
+                  <span class="event-icon text-[color:var(--color-text-secondary)]">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </span>
+                  Comment only
+                </button>
+              </li>
+              <li>
+                <button type="button"
+                        class="w-full px-3 py-3 sm:py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)]"
+                        data-action="click->event-selector#select"
+                        data-value="APPROVE"
+                        data-label="Approve">
+                  <span class="event-icon text-[color:var(--color-status-done)]">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </span>
+                  Approve
+                </button>
+              </li>
+              <li>
+                <button type="button"
+                        class="w-full px-3 py-3 sm:py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)]"
+                        data-action="click->event-selector#select"
+                        data-value="REQUEST_CHANGES"
+                        data-label="Request changes">
+                  <span class="event-icon text-[color:var(--color-status-todo)]">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </span>
+                  Request changes
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <button type="submit"
+                class="linear-btn linear-btn-primary text-[12px] opacity-50 cursor-not-allowed w-full sm:w-auto justify-center"
+                data-comment-checklist-target="submitButton"
+                data-action="click->submit-confirmation#showConfirmation click->comment-checklist#prepareSubmission"
+                disabled>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
+          Submit to GitHub
         </button>
-        <div class="hidden absolute top-full mt-1 right-0 left-0 sm:left-auto w-full sm:w-48 bg-[color:var(--color-bg-secondary)] border border-[color:var(--color-border-default)] rounded-md shadow-lg z-50"
-             data-event-selector-target="dropdown">
-          <ul class="py-1">
-            <li>
-              <button type="button"
-                      class="w-full px-3 py-3 sm:py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)] bg-[color:var(--color-bg-tertiary)]"
-                      data-action="click->event-selector#select"
-                      data-value="COMMENT"
-                      data-label="Comment only">
-                <span class="event-icon text-[color:var(--color-text-secondary)]">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </span>
-                Comment only
-              </button>
-            </li>
-            <li>
-              <button type="button"
-                      class="w-full px-3 py-3 sm:py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)]"
-                      data-action="click->event-selector#select"
-                      data-value="APPROVE"
-                      data-label="Approve">
-                <span class="event-icon text-[color:var(--color-status-done)]">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </span>
-                Approve
-              </button>
-            </li>
-            <li>
-              <button type="button"
-                      class="w-full px-3 py-3 sm:py-2 text-left text-[13px] flex items-center gap-2 hover:bg-[color:var(--color-bg-tertiary)]"
-                      data-action="click->event-selector#select"
-                      data-value="REQUEST_CHANGES"
-                      data-label="Request changes">
-                <span class="event-icon text-[color:var(--color-status-todo)]">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </span>
-                Request changes
-              </button>
-            </li>
-          </ul>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Confirmation Dialog -->
+  <dialog data-submit-confirmation-target="dialog"
+          data-action="keydown->submit-confirmation#handleKeydown click->submit-confirmation#backdropClick"
+          class="p-0 rounded-lg shadow-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-primary)] max-w-md w-full backdrop:bg-black/50">
+    <div class="p-6">
+      <!-- Warning Icon -->
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+          <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-[color:var(--color-text-primary)]">
+          Submit Review to GitHub?
+        </h3>
+      </div>
+
+      <!-- PR Info -->
+      <div class="mb-4 p-3 rounded-lg bg-[color:var(--color-bg-secondary)] border border-[color:var(--color-border-default)]">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-sm font-medium text-[color:var(--color-accent)]"
+                data-submit-confirmation-target="prNumber">#<%= review_task.pull_request.number %></span>
+          <span class="text-sm text-[color:var(--color-text-secondary)] line-clamp-1"
+                data-submit-confirmation-target="prTitle"><%= review_task.pull_request.title %></span>
+        </div>
+        <div class="text-sm text-[color:var(--color-text-tertiary)]">
+          <span data-submit-confirmation-target="commentCount">0 comments</span>
+          <% if severity_counts.any? %>
+            <span class="ml-2 text-xs" data-submit-confirmation-target="severityBreakdown">
+              (<%= [
+                critical_count > 0 ? "#{critical_count} critical" : nil,
+                major_count > 0 ? "#{major_count} major" : nil,
+                (minor_count + suggestion_count + nitpick_count) > 0 ? "#{minor_count + suggestion_count + nitpick_count} other" : nil
+              ].compact.join(", ") %>)
+            </span>
+          <% end %>
         </div>
       </div>
-      <button type="submit"
-              class="linear-btn linear-btn-primary text-[12px] opacity-50 cursor-not-allowed w-full sm:w-auto justify-center"
-              data-comment-checklist-target="submitButton"
-              data-action="click->comment-checklist#prepareSubmission"
-              disabled>
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        Submit to GitHub
-      </button>
-    <% end %>
-  </div>
+
+      <!-- Warning Message -->
+      <p class="text-sm text-[color:var(--color-text-secondary)] mb-4">
+        This will post a review comment <strong>publicly</strong> on GitHub.
+        The PR author and team will be notified.
+      </p>
+
+      <!-- Don't ask again checkbox -->
+      <label class="flex items-center gap-2 text-sm text-[color:var(--color-text-tertiary)] mb-6 cursor-pointer">
+        <input type="checkbox"
+               data-dont-ask-checkbox
+               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+        <span>Don't ask again for this session</span>
+      </label>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-end gap-3">
+        <button type="button"
+                class="linear-btn linear-btn-ghost"
+                data-action="click->submit-confirmation#cancel">
+          Cancel
+        </button>
+        <button type="button"
+                class="linear-btn linear-btn-primary"
+                data-action="click->submit-confirmation#confirm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Confirm Submit
+        </button>
+      </div>
+    </div>
+  </dialog>
 </div>
