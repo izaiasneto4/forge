@@ -35,7 +35,7 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="safe-area-inset">
+  <body class="safe-area-inset" data-controller="notifications">
     <%# Global unified header %>
     <% unless content_for?(:hide_global_header) %>
       <%= render partial: "shared/header" %>
