@@ -822,4 +822,72 @@ class ReviewTaskTest < ActiveSupport::TestCase
     result = ReviewTask.start_next_queued!
     assert_nil result
   end
+
+  # Submission status
+  test "pending_submission? returns true when submission_status is pending_submission" do
+    @task.submission_status = "pending_submission"
+    assert @task.pending_submission?
+  end
+
+  test "pending_submission? returns false for other statuses" do
+    @task.submission_status = "submitted"
+    refute @task.pending_submission?
+  end
+
+  test "submitted? returns true when submission_status is submitted" do
+    @task.submission_status = "submitted"
+    assert @task.submitted?
+  end
+
+  test "submitted? returns false for other statuses" do
+    @task.submission_status = "pending_submission"
+    refute @task.submitted?
+  end
+
+  test "submission_failed? returns true when submission_status is submission_failed" do
+    @task.submission_status = "submission_failed"
+    assert @task.submission_failed?
+  end
+
+  test "submission_failed? returns false for other statuses" do
+    @task.submission_status = "submitted"
+    refute @task.submission_failed?
+  end
+
+  test "mark_submitted! sets submission_status and submitted_at" do
+    @task.save!
+    @task.mark_submitted!
+    @task.reload
+
+    assert_equal "submitted", @task.submission_status
+    assert @task.submitted_at.present?
+  end
+
+  test "mark_submission_failed! sets submission_status and failure_reason" do
+    @task.save!
+    @task.mark_submission_failed!("GitHub API error")
+    @task.reload
+
+    assert_equal "submission_failed", @task.submission_status
+    assert_equal "GitHub API error", @task.failure_reason
+  end
+
+  test "valid with all allowed submission_statuses" do
+    @task.save!
+    ReviewTask::SUBMISSION_STATUSES.each do |status|
+      @task.submission_status = status
+      assert @task.valid?, "Submission status #{status} should be valid"
+    end
+  end
+
+  test "invalid with invalid submission_status" do
+    @task.submission_status = "invalid_status"
+    refute @task.valid?
+    assert_includes @task.errors[:submission_status], "is not included in the list"
+  end
+
+  test "valid with nil submission_status" do
+    @task.submission_status = nil
+    assert @task.valid?
+  end
 end

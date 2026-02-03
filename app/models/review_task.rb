@@ -1,6 +1,7 @@
 class ReviewTask < ApplicationRecord
   STATES = %w[queued pending_review in_review reviewed waiting_implementation done failed_review].freeze
   REVIEW_TYPES = %w[review swarm].freeze
+  SUBMISSION_STATUSES = %w[pending_submission submitted submission_failed].freeze
   MAX_RETRY_ATTEMPTS = 3
   BACKOFF_BASE_SECONDS = 2
 
@@ -18,6 +19,7 @@ class ReviewTask < ApplicationRecord
   validates :state, inclusion: { in: STATES }
   validates :cli_client, inclusion: { in: Setting::CLI_CLIENTS }
   validates :review_type, inclusion: { in: REVIEW_TYPES }
+  validates :submission_status, inclusion: { in: SUBMISSION_STATUSES }, allow_nil: true
 
   scope :queued, -> { where(state: "queued").order(:queued_at) }
   scope :pending_review, -> { where(state: "pending_review") }
@@ -67,6 +69,26 @@ class ReviewTask < ApplicationRecord
     review_type == "swarm"
   end
 
+  def pending_submission?
+    submission_status == "pending_submission"
+  end
+
+  def submitted?
+    submission_status == "submitted"
+  end
+
+  def submission_failed?
+    submission_status == "submission_failed"
+  end
+
+  def mark_submitted!
+    update!(submission_status: "submitted", submitted_at: Time.current)
+  end
+
+  def mark_submission_failed!(reason = nil)
+    update!(submission_status: "submission_failed", failure_reason: reason)
+  end
+
   def enqueue!
     update!(state: "queued", queued_at: Time.current)
   end
@@ -84,6 +106,26 @@ class ReviewTask < ApplicationRecord
     in_review.exists?
   end
 
+  # Atomically claim the next queued task for processing
+  # Uses database locking to prevent race conditions when multiple jobs run concurrently
+  # Returns the claimed task if successful, nil otherwise
+  def self.claim_and_start_next_queued!
+    transaction do
+      # Skip if any review is already running (check inside transaction)
+      return nil if any_review_running?
+
+      # Lock the next queued task atomically
+      # SKIP LOCKED ensures we don't wait if another job is claiming
+      next_task = queued.lock("FOR UPDATE SKIP LOCKED").first
+      return nil unless next_task
+
+      next_task.dequeue!
+      ReviewTaskJob.perform_later(next_task.id)
+      next_task
+    end
+  end
+
+  # Legacy method - still used for manual starts
   def self.start_next_queued!
     next_task = queued.first
     return unless next_task

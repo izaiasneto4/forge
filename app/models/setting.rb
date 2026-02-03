@@ -8,6 +8,7 @@ class Setting < ApplicationRecord
   AUTO_REVIEW_MODE_KEY = "auto_review_mode".freeze
   AUTO_REVIEW_DELAY_MIN_KEY = "auto_review_delay_min".freeze
   AUTO_REVIEW_DELAY_MAX_KEY = "auto_review_delay_max".freeze
+  AUTO_SUBMIT_ENABLED_KEY = "auto_submit_enabled".freeze
 
   CLI_CLIENTS = %w[claude codex opencode].freeze
   DEFAULT_CLI_CLIENT = "claude".freeze
@@ -103,5 +104,14 @@ class Setting < ApplicationRecord
     min = auto_review_delay_min
     max = auto_review_delay_max
     rand(min..max)
+  end
+
+  def self.auto_submit_enabled?
+    find_by(key: AUTO_SUBMIT_ENABLED_KEY)&.value == "true"
+  end
+
+  def self.auto_submit_enabled=(enabled)
+    setting = find_or_initialize_by(key: AUTO_SUBMIT_ENABLED_KEY)
+    setting.update!(value: enabled.to_s)
   end
 end

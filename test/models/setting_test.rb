@@ -338,4 +338,27 @@ class SettingTest < ActiveSupport::TestCase
       assert delay <= 30
     end
   end
+
+  # Auto-submit settings
+  test "auto_submit_enabled? returns false when not set" do
+    refute Setting.auto_submit_enabled?
+  end
+
+  test "auto_submit_enabled? returns true when set to true" do
+    Setting.create!(key: Setting::AUTO_SUBMIT_ENABLED_KEY, value: "true")
+    assert Setting.auto_submit_enabled?
+  end
+
+  test "auto_submit_enabled? returns false when set to false" do
+    Setting.create!(key: Setting::AUTO_SUBMIT_ENABLED_KEY, value: "false")
+    refute Setting.auto_submit_enabled?
+  end
+
+  test "auto_submit_enabled= sets value as string" do
+    Setting.auto_submit_enabled = true
+    assert Setting.auto_submit_enabled?
+
+    Setting.auto_submit_enabled = false
+    refute Setting.auto_submit_enabled?
+  end
 end
