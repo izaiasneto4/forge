@@ -14,6 +14,7 @@ Rails.application.routes.draw do
     member do
       patch :update_state
       post :retry
+      delete :dequeue
     end
     resources :review_comments, only: [] do
       collection do
