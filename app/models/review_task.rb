@@ -1,11 +1,11 @@
 class ReviewTask < ApplicationRecord
-  STATES = %w[pending_review in_review reviewed waiting_implementation done failed_review].freeze
+  STATES = %w[queued pending_review in_review reviewed waiting_implementation done failed_review].freeze
   REVIEW_TYPES = %w[review swarm].freeze
   MAX_RETRY_ATTEMPTS = 3
   BACKOFF_BASE_SECONDS = 2
 
   # State order for detecting backward movement (lower index = earlier in workflow)
-  STATE_ORDER = %w[pending_review in_review reviewed waiting_implementation done].freeze
+  STATE_ORDER = %w[queued pending_review in_review reviewed waiting_implementation done].freeze
 
   belongs_to :pull_request
   has_many :agent_logs, dependent: :destroy
@@ -19,12 +19,17 @@ class ReviewTask < ApplicationRecord
   validates :cli_client, inclusion: { in: Setting::CLI_CLIENTS }
   validates :review_type, inclusion: { in: REVIEW_TYPES }
 
+  scope :queued, -> { where(state: "queued").order(:queued_at) }
   scope :pending_review, -> { where(state: "pending_review") }
   scope :in_review, -> { where(state: "in_review") }
   scope :reviewed, -> { where(state: "reviewed") }
   scope :waiting_implementation, -> { where(state: "waiting_implementation") }
   scope :done, -> { where(state: "done") }
   scope :failed_review, -> { where(state: "failed_review") }
+
+  def queued?
+    state == "queued"
+  end
 
   def pending_review?
     state == "pending_review"
@@ -50,8 +55,42 @@ class ReviewTask < ApplicationRecord
     state == "failed_review"
   end
 
+  # Check if task is actively being processed or has pending retries
+  def in_progress_or_retrying?
+    return true if in_review?
+    return true if pending_review? && retry_count > 0
+    return true if last_retry_at.present? && last_retry_at > 5.minutes.ago
+    false
+  end
+
   def swarm_review?
     review_type == "swarm"
+  end
+
+  def enqueue!
+    update!(state: "queued", queued_at: Time.current)
+  end
+
+  def dequeue!
+    update!(state: "pending_review", queued_at: nil)
+  end
+
+  def queue_position
+    return nil unless queued?
+    self.class.queued.where("queued_at < ?", queued_at).count + 1
+  end
+
+  def self.any_review_running?
+    in_review.exists?
+  end
+
+  def self.start_next_queued!
+    next_task = queued.first
+    return unless next_task
+
+    next_task.dequeue!
+    ReviewTaskJob.perform_later(next_task.id)
+    next_task
   end
 
   def start_review!
