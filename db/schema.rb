@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_24_200003) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_03_000001) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -86,6 +86,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_24_200003) do
     t.text "failure_reason"
     t.datetime "last_retry_at"
     t.integer "pull_request_id", null: false
+    t.datetime "queued_at"
     t.integer "retry_count", default: 0, null: false
     t.text "retry_history"
     t.text "review_output"
@@ -97,6 +98,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_24_200003) do
     t.index ["ai_model"], name: "index_review_tasks_on_ai_model"
     t.index ["pull_request_id"], name: "index_review_tasks_on_pull_request_id"
     t.index ["retry_count"], name: "index_review_tasks_on_retry_count"
+    t.index ["state", "queued_at"], name: "index_review_tasks_on_state_and_queued_at"
     t.index ["state"], name: "index_review_tasks_on_state"
   end
 
