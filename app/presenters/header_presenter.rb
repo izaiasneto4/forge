@@ -26,6 +26,15 @@ class HeaderPresenter
     end
   end
 
+  def last_synced_at
+    Setting.last_synced_at
+  end
+
+  def last_synced_ago
+    return nil unless last_synced_at
+    ActionController::Base.helpers.time_ago_in_words(last_synced_at)
+  end
+
   def self.invalidate_cache
     Rails.cache.delete(PENDING_CACHE_KEY)
     Rails.cache.delete(IN_REVIEW_CACHE_KEY)
