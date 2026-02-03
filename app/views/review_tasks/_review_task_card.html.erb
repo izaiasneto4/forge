@@ -1,6 +1,7 @@
 <div id="review_task_card_<%= task.id %>"
      class="kanban-card bg-gray-50 border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow"
      data-review-kanban-target="card"
+     data-board-filter-target="card"
      data-task-id="<%= task.id %>"
      data-current-state="<%= task.state %>"
      draggable="true"
@@ -114,6 +115,26 @@
           Remove
         <% end %>
       </div>
+    </div>
+  <% end %>
+
+  <% if task.in_review? %>
+    <div class="mt-2 pt-2 border-t border-yellow-200 bg-yellow-50 -mx-3 -mb-3 px-3 py-2 rounded-b-lg">
+      <div class="flex items-center gap-2">
+        <div class="flex-1">
+          <div class="h-1.5 bg-yellow-100 rounded-full overflow-hidden">
+            <div class="h-full bg-yellow-500 rounded-full animate-progress-indeterminate"></div>
+          </div>
+        </div>
+        <span class="text-[10px] text-yellow-600 flex-shrink-0">
+          <%= task.cli_client.titleize %> reviewing...
+        </span>
+      </div>
+      <% if task.started_at %>
+        <div class="text-[10px] text-yellow-500 mt-1">
+          Started <%= time_ago_in_words(task.started_at) %> ago
+        </div>
+      <% end %>
     </div>
   <% end %>
 
