@@ -80,4 +80,50 @@ class ProcessReviewQueueJobTest < ActiveJob::TestCase
       ProcessReviewQueueJob.perform_now
     end
   end
+
+  test "claim_and_start_next_queued prevents double claiming" do
+    # Create two queued tasks
+    queued_task1 = ReviewTask.create!(
+      pull_request: @pr,
+      state: "queued",
+      queued_at: 1.minute.ago,
+      cli_client: "claude",
+      review_type: "review"
+    )
+
+    pr2 = PullRequest.create!(
+      github_id: 789,
+      number: 99,
+      title: "Second PR",
+      url: "https://github.com/test/repo/pull/99",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+
+    queued_task2 = ReviewTask.create!(
+      pull_request: pr2,
+      state: "queued",
+      queued_at: Time.current,
+      cli_client: "claude",
+      review_type: "review"
+    )
+
+    # First claim should get task1
+    claimed = ReviewTask.claim_and_start_next_queued!
+    assert_equal queued_task1.id, claimed.id
+    assert_equal "pending_review", claimed.reload.state
+
+    # Second claim while first is processing (before it starts in_review)
+    # should not claim task2 because we check any_review_running inside the transaction
+    # but since the first task hasn't started in_review yet, let's simulate it
+    queued_task1.start_review!
+
+    # Now another claim should fail because a review is running
+    second_claim = ReviewTask.claim_and_start_next_queued!
+    assert_nil second_claim
+
+    # Task2 should still be queued
+    assert_equal "queued", queued_task2.reload.state
+  end
 end
