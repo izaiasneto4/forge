@@ -106,8 +106,8 @@ class GithubCliServiceTest < ActiveSupport::TestCase
 
   test "parse_prs extracts stable github_id from URL" do
     prs = @service.send(:parse_prs, @pr_json, "pending_review")
-    url = "https://github.com/#{@repo_owner}/#{@repo_name}/pull/123"
-    expected_id = Digest::SHA256.hexdigest(url).to_i(16) % (2**62)
+    # Service hashes "owner/repo/number" not the full URL
+    expected_id = Digest::SHA256.hexdigest("#{@repo_owner}/#{@repo_name}/123").to_i(16) % (2**62)
     assert_equal expected_id, prs.first[:github_id]
   end
 

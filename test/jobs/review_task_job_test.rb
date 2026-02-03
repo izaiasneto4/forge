@@ -629,7 +629,7 @@ class ReviewTaskJobTest < ActiveJob::TestCase
 
     ReviewTaskJob.perform_now(@review_task.id)
 
-    completed_call = broadcasts.find { |c| c[:data][:type] == "completed" }
+    completed_call = broadcasts.find { |c| c[:data].is_a?(Hash) && c[:data][:type] == "completed" }
     assert completed_call, "Should broadcast completed event"
     assert_equal "reviewed", completed_call[:data][:state]
   end

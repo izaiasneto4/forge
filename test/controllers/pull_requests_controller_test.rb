@@ -218,6 +218,7 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
   test "bulk_destroy with empty ids" do
     delete bulk_destroy_pull_requests_path, params: { pull_request_ids: [] }, as: :html
     assert_redirected_to pull_requests_path
+    # Flash is set on the redirect and accessed from the session
     assert_equal "No pull requests selected", flash[:alert]
   end
 
