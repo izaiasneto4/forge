@@ -74,7 +74,14 @@ class ReviewTaskJob < ApplicationJob
       handle_unknown_error(review_task, e)
     ensure
       worktree_service.cleanup_worktree(review_task.worktree_path) if review_task.worktree_path.present?
+      schedule_next_queued_review
     end
+  end
+
+  def schedule_next_queued_review
+    return unless Setting.auto_review_mode?
+
+    ProcessReviewQueueJob.set(wait: Setting.auto_review_delay.seconds).perform_later
   end
 
   private
