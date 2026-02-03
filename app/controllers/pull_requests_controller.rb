@@ -56,7 +56,7 @@ class PullRequestsController < ApplicationController
   end
 
   def bulk_destroy
-    pr_ids = params[:pull_request_ids] || []
+    pr_ids = Array(params[:pull_request_ids]).reject(&:blank?)
 
     if pr_ids.empty?
       respond_to do |format|
