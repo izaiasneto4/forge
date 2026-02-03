@@ -1,7 +1,9 @@
 <div id="pull_request_card_<%= pr.id %>"
      class="linear-card"
      data-kanban-target="card"
+     data-board-filter-target="card"
      data-pr-id="<%= pr.id %>"
+     data-current-state="<%= pr.review_status %>"
      draggable="true"
      data-action="dragstart->kanban#dragStart dragend->kanban#dragEnd">
 

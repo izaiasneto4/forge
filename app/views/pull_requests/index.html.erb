@@ -5,7 +5,7 @@
   repositories = repos_folder.present? ? RepoScannerService.new(repos_folder).scan : []
 %>
 <%= turbo_stream_from "pull_requests_board" %>
-<div class="min-h-screen flex flex-col" data-controller="kanban repo-selector sync review-modal bulk-actions">
+<div class="min-h-screen flex flex-col" data-controller="kanban repo-selector sync review-modal bulk-actions board-filter" data-board-filter-storage-key-value="pull_requests_filter">
   <!-- Header Bar - Responsive -->
   <header class="linear-header">
     <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
@@ -99,11 +99,63 @@
   </header>
 
   <!-- Filter Bar - Responsive -->
-  <div class="linear-filter-bar flex items-center justify-between">
-    <span id="pr-count" class="text-[11px] md:text-[12px] text-[color:var(--color-text-tertiary)]">
-      <%= @pending_review.to_a.count + @in_review.to_a.count + @reviewed_by_me.to_a.count + @reviewed_by_others.to_a.count + @review_failed.to_a.count %> PRs
-    </span>
-    <%= render partial: "pull_requests/sync_status" %>
+  <div class="linear-filter-bar flex flex-wrap items-center gap-3 justify-between">
+    <div class="flex items-center gap-3">
+      <div class="relative min-w-[180px] max-w-[250px]">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text"
+               placeholder="Search PRs..."
+               class="w-full pl-9 pr-4 py-1.5 text-[12px] bg-[color:var(--color-bg-secondary)] border border-[color:var(--color-border-default)] rounded-md focus:outline-none focus:border-[color:var(--color-accent)] focus:ring-1 focus:ring-[color:var(--color-accent)]"
+               data-board-filter-target="searchInput"
+               data-action="input->board-filter#search">
+      </div>
+
+      <div class="flex items-center gap-1">
+        <button type="button"
+                class="linear-btn linear-btn-sm linear-btn-primary text-[11px]"
+                data-board-filter-target="stateFilter"
+                data-state="all"
+                data-action="click->board-filter#filterState">
+          All
+        </button>
+        <button type="button"
+                class="linear-btn linear-btn-sm linear-btn-ghost text-[11px]"
+                data-board-filter-target="stateFilter"
+                data-state="pending_review"
+                data-action="click->board-filter#filterState">
+          Pending
+        </button>
+        <button type="button"
+                class="linear-btn linear-btn-sm linear-btn-ghost text-[11px]"
+                data-board-filter-target="stateFilter"
+                data-state="in_review"
+                data-action="click->board-filter#filterState">
+          In Review
+        </button>
+        <button type="button"
+                class="linear-btn linear-btn-sm linear-btn-ghost text-[11px]"
+                data-board-filter-target="stateFilter"
+                data-state="reviewed_by_me"
+                data-action="click->board-filter#filterState">
+          Reviewed
+        </button>
+      </div>
+
+      <button type="button"
+              class="linear-btn linear-btn-sm linear-btn-ghost text-[11px] text-[color:var(--color-text-tertiary)]"
+              data-action="click->board-filter#clearFilters">
+        Clear
+      </button>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <span id="pr-count" class="text-[11px] md:text-[12px] text-[color:var(--color-text-tertiary)]">
+        <%= @pending_review.to_a.count + @in_review.to_a.count + @reviewed_by_me.to_a.count + @reviewed_by_others.to_a.count + @review_failed.to_a.count %> PRs
+      </span>
+      <%= render partial: "pull_requests/sync_status" %>
+    </div>
   </div>
 
   <!-- Bulk Action Toolbar -->

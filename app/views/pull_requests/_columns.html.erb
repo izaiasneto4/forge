@@ -16,6 +16,7 @@
     <div id="pull_request_column_pending_review"
          class="linear-column-content"
          data-kanban-target="column"
+         data-board-filter-target="column"
          data-status="pending_review">
       <%= render partial: "pull_requests/pull_request_card", collection: pending_review, as: :pr %>
       <% if pending_review.empty? %>
@@ -39,6 +40,7 @@
     <div id="pull_request_column_in_review"
          class="linear-column-content"
          data-kanban-target="column"
+         data-board-filter-target="column"
          data-status="in_review">
       <%= render partial: "pull_requests/pull_request_card", collection: in_review, as: :pr %>
       <% if in_review.empty? %>
@@ -63,6 +65,7 @@
     <div id="pull_request_column_reviewed_by_me"
          class="linear-column-content"
          data-kanban-target="column"
+         data-board-filter-target="column"
          data-status="reviewed_by_me">
       <%= render partial: "pull_requests/pull_request_card", collection: reviewed_by_me, as: :pr, locals: { show_checkbox: true } %>
       <% if reviewed_by_me.empty? %>
@@ -86,6 +89,7 @@
     <div id="pull_request_column_reviewed_by_others"
          class="linear-column-content"
          data-kanban-target="column"
+         data-board-filter-target="column"
          data-status="reviewed_by_others">
       <%= render partial: "pull_requests/pull_request_card", collection: reviewed_by_others, as: :pr, locals: { show_checkbox: true } %>
       <% if reviewed_by_others.empty? %>
@@ -109,6 +113,7 @@
     <div id="pull_request_column_review_failed"
          class="linear-column-content"
          data-kanban-target="column"
+         data-board-filter-target="column"
          data-status="review_failed">
       <%= render partial: "pull_requests/pull_request_card", collection: review_failed, as: :pr %>
       <% if review_failed.empty? %>
