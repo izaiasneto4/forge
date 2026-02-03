@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_03_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_03_134811) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -93,6 +93,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_03_000001) do
     t.string "review_type", default: "review", null: false
     t.datetime "started_at"
     t.string "state", default: "pending_review", null: false
+    t.string "submission_status", default: "pending_submission"
+    t.datetime "submitted_at"
     t.datetime "updated_at", null: false
     t.string "worktree_path"
     t.index ["ai_model"], name: "index_review_tasks_on_ai_model"
@@ -100,6 +102,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_03_000001) do
     t.index ["retry_count"], name: "index_review_tasks_on_retry_count"
     t.index ["state", "queued_at"], name: "index_review_tasks_on_state_and_queued_at"
     t.index ["state"], name: "index_review_tasks_on_state"
+    t.index ["submission_status"], name: "index_review_tasks_on_submission_status"
   end
 
   create_table "settings", force: :cascade do |t|
