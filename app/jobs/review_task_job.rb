@@ -8,10 +8,9 @@ class ReviewTaskJob < ApplicationJob
 
     return unless repo_path.present?
 
-    # Only clear logs on first attempt, not retries
+    # Clear logs on fresh start (not retries) - retry state is reset on success
     unless is_retry
       review_task.clear_logs!
-      review_task.reset_retry_state!
     end
 
     log_retry_info(review_task, is_retry)
@@ -55,7 +54,8 @@ class ReviewTaskJob < ApplicationJob
       validate_review_output!(full_output, review_task)
 
       review_task.add_log("Review completed!", log_type: "status")
-      review_task.reset_retry_state!
+      # Only reset retry state on fresh successful completion (not on successful retry)
+      review_task.reset_retry_state! unless is_retry
       review_task.complete_review!(full_output)
 
       # Parse output and build review comments
@@ -103,9 +103,9 @@ class ReviewTaskJob < ApplicationJob
     end
 
     # Check for incomplete/truncated output patterns
+    # This indicates a failed review that won't improve with retry
     if output.include?("Error:") && output.lines.size < 5
-      classified = ReviewErrors::ErrorClassifier.classify(output)
-      raise classified
+      raise ReviewErrors::ValidationError, "Review produced truncated error output"
     end
   end
 
@@ -166,12 +166,24 @@ class ReviewTaskJob < ApplicationJob
   end
 
   def broadcast_completion(review_task, failed: false)
+    # Broadcast to the task-specific channel for the detail page
     ActionCable.server.broadcast(
       "review_task_#{review_task.id}_logs",
       {
         type: failed ? "failed" : "completed",
         review_task_id: review_task.id,
         state: review_task.state
+      }
+    )
+
+    # Broadcast to global notifications channel for toast messages
+    ActionCable.server.broadcast(
+      "review_notifications",
+      {
+        type: failed ? "review_failed" : "review_completed",
+        pr_number: review_task.pull_request.number,
+        pr_title: review_task.pull_request.title,
+        reason: failed ? review_task.failure_reason&.truncate(100) : nil
       }
     )
   end

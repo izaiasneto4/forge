@@ -90,18 +90,33 @@ module ReviewErrors
       { pattern: /gh:.*not found/i, error_class: CliConfigurationError }
     ].freeze
 
+    # Exception types that indicate programming errors (won't be fixed by retry)
+    PERMANENT_EXCEPTION_TYPES = [
+      ArgumentError,
+      TypeError,
+      NoMethodError,
+      NameError,
+      LoadError,
+      SyntaxError
+    ].freeze
+
     def self.classify(error_or_message)
       message = error_or_message.is_a?(Exception) ? error_or_message.message : error_or_message.to_s
       original = error_or_message.is_a?(Exception) ? error_or_message : nil
 
-      # Check for transient errors first
+      # Check for permanent exception types first (programming errors)
+      if original && PERMANENT_EXCEPTION_TYPES.any? { |type| original.is_a?(type) }
+        return ValidationError.new(message, original_error: original)
+      end
+
+      # Check for transient errors by message pattern
       TRANSIENT_PATTERNS.each do |entry|
         if message.match?(entry[:pattern])
           return entry[:error_class].new(message, original_error: original)
         end
       end
 
-      # Check for permanent errors
+      # Check for permanent errors by message pattern
       PERMANENT_PATTERNS.each do |entry|
         if message.match?(entry[:pattern])
           return entry[:error_class].new(message, original_error: original)
