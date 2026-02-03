@@ -3,6 +3,8 @@
   <%= render partial: "pull_requests/pull_request_card", locals: { pr: @review_task.pull_request } %>
 <% end %>
 
+<% message = @review_task.queued? ? "Review queued (##{@review_task.queue_position}) for PR ##{@review_task.pull_request.number}" : "Review started for PR ##{@review_task.pull_request.number}" %>
+
 <%= turbo_stream.update "flash-messages" do %>
   <div class="flex items-center gap-2 px-4 py-3 rounded-md border text-[13px] bg-[color:var(--color-status-done-bg)] border-[color:var(--color-status-done)]/20 text-[#059669]"
        data-controller="flash"
@@ -12,7 +14,7 @@
     <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
     </svg>
-    <span class="flex-1">Review started for PR #<%= @review_task.pull_request.number %></span>
+    <span class="flex-1"><%= message %></span>
     <button type="button" class="flex-shrink-0 hover:opacity-70" data-action="click->flash#dismiss" aria-label="Dismiss">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

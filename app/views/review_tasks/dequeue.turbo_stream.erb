@@ -1,4 +1,4 @@
-<%# Move card from failed to pending column %>
+<%# Move card from queued to pending column %>
 <%= turbo_stream.remove "review_task_card_#{@review_task.id}" %>
 
 <%= turbo_stream.prepend "review_task_column_pending_review" do %>
@@ -16,19 +16,19 @@
   failed_review: ReviewTask.failed_review.count
 } %>
 
+<%= turbo_stream.update "review_task_count_queued" do %>
+  <%= grouped_tasks[:queued] %>
+<% end %>
+
 <%= turbo_stream.update "review_task_count_pending_review" do %>
   <%= grouped_tasks[:pending_review] %>
 <% end %>
 
-<%= turbo_stream.update "review_task_count_failed_review" do %>
-  <%= grouped_tasks[:failed_review] %>
+<%# Update empty state visibility %>
+<%= turbo_stream.replace "review_task_empty_queued" do %>
+  <%= render partial: "review_tasks/empty_state", locals: { state: "queued", hidden: grouped_tasks[:queued] > 0 } %>
 <% end %>
 
-<%# Update empty state visibility %>
 <%= turbo_stream.replace "review_task_empty_pending_review" do %>
   <%= render partial: "review_tasks/empty_state", locals: { state: "pending_review", hidden: grouped_tasks[:pending_review] > 0 } %>
-<% end %>
-
-<%= turbo_stream.replace "review_task_empty_failed_review" do %>
-  <%= render partial: "review_tasks/empty_state", locals: { state: "failed_review", hidden: grouped_tasks[:failed_review] > 0 } %>
 <% end %>

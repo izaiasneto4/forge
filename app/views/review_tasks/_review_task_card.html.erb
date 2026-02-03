@@ -72,9 +72,20 @@
           #<%= task.current_iteration_number + 1 %>
         </span>
       <% end %>
+      <% if task.queued? %>
+        <span class="bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Queue position">
+          #<%= task.queue_position %>
+        </span>
+      <% end %>
     </div>
-    <% if task.pending_review? || task.in_review? %>
-      <span class="text-yellow-600 animate-pulse">In Review...</span>
+    <% if task.queued? %>
+      <span class="text-violet-600">Queued</span>
+    <% elsif task.pending_review? || task.in_review? %>
+      <% if task.retry_count > 0 && task.failure_reason.present? && !task.failed_review? %>
+        <span class="text-orange-600 animate-pulse" title="<%= task.failure_reason %>">Waiting for retry <%= task.retry_count %>/<%= ReviewTask::MAX_RETRY_ATTEMPTS %>...</span>
+      <% else %>
+        <span class="text-yellow-600 animate-pulse">In Review...</span>
+      <% end %>
     <% elsif task.failed_review? %>
       <span class="text-red-600" title="<%= task.failure_reason %>">Failed</span>
     <% elsif task.completed_at %>
@@ -83,6 +94,28 @@
       </span>
     <% end %>
   </div>
+
+  <% if task.queued? %>
+    <div class="mt-2 pt-2 border-t border-violet-200 bg-violet-50 -mx-3 -mb-3 px-3 py-2 rounded-b-lg">
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] text-violet-500">
+          Position #<%= task.queue_position %> in queue
+        </span>
+        <%= button_to dequeue_review_task_path(task),
+            method: :delete,
+            class: "flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 font-medium",
+            data: {
+              turbo_confirm: "Remove from queue?",
+              disable_with: "Removing..."
+            } do %>
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Remove
+        <% end %>
+      </div>
+    </div>
+  <% end %>
 
   <% if task.reviewed? || task.waiting_implementation? || task.done? %>
     <div class="mt-2 pt-2 border-t border-gray-200">

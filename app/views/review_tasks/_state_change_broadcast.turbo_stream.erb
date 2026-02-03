@@ -8,6 +8,7 @@
 
 <%# Update column counts %>
 <% grouped_tasks = {
+  queued: ReviewTask.queued.count,
   pending_review: ReviewTask.pending_review.count,
   in_review: ReviewTask.in_review.count,
   reviewed: ReviewTask.reviewed.count,
@@ -15,6 +16,10 @@
   done: ReviewTask.done.count,
   failed_review: ReviewTask.failed_review.count
 } %>
+
+<%= turbo_stream.update "review_task_count_queued" do %>
+  <%= grouped_tasks[:queued] %>
+<% end %>
 
 <%= turbo_stream.update "review_task_count_pending_review" do %>
   <%= grouped_tasks[:pending_review] %>
