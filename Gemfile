@@ -63,4 +63,4 @@ group :development do
   gem "web-console"
 end
 
-gem "mocha", "~> 3.0", groups: [:development, :test]
+gem "mocha", "~> 3.0", groups: [ :development, :test ]
