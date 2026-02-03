@@ -119,13 +119,15 @@ class CodeReviewService
       [
         {
           "severity": "warning",
-          "file": "app/models/user.rb",
+          "file": "src/components/ItemList.tsx",
           "lines": "45-50",
           "comment": "Sequential awaits inside loop. For many items, this is slow.\\n\\n**Suggestion:** Use `Promise.all()` or batch operations.",
           "suggested_fix": "await Promise.all(items.map((item) => processItem(item)));"
         }
       ]
       ```
+
+      IMPORTANT: Replace the example values above with actual data from the PR you are reviewing.
 
       IMPORTANT: Always wrap the JSON in ```json code fences. If no issues found, return an empty array: ```json\\n[]\\n```
     PROMPT
