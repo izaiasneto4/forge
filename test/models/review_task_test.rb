@@ -392,6 +392,36 @@ class ReviewTaskTest < ActiveSupport::TestCase
     assert_equal 8, @task.backoff_seconds
   end
 
+  # in_progress_or_retrying?
+  test "in_progress_or_retrying? returns true when in_review" do
+    @task.save!
+    @task.update!(state: "in_review")
+    assert @task.in_progress_or_retrying?
+  end
+
+  test "in_progress_or_retrying? returns true when pending_review with retry_count > 0" do
+    @task.save!
+    @task.update!(state: "pending_review", retry_count: 1)
+    assert @task.in_progress_or_retrying?
+  end
+
+  test "in_progress_or_retrying? returns true when has recent retry activity" do
+    @task.save!
+    @task.update!(state: "failed_review", last_retry_at: 2.minutes.ago)
+    assert @task.in_progress_or_retrying?
+  end
+
+  test "in_progress_or_retrying? returns false for fresh pending_review" do
+    @task.save!
+    refute @task.in_progress_or_retrying?
+  end
+
+  test "in_progress_or_retrying? returns false for old retry activity" do
+    @task.save!
+    @task.update!(state: "failed_review", last_retry_at: 10.minutes.ago)
+    refute @task.in_progress_or_retrying?
+  end
+
   test "parsed_retry_history returns empty array when retry_history is nil" do
     assert_equal [], @task.parsed_retry_history
   end
@@ -686,5 +716,110 @@ class ReviewTaskTest < ActiveSupport::TestCase
 
   test "after_commit does not broadcast when state unchanged" do
     skip "Turbo::StreamsChannel.stub not available in minitest without additional gems"
+  end
+
+  # Queue functionality
+  test "queued? returns true when state is queued" do
+    @task.state = "queued"
+    assert @task.queued?
+  end
+
+  test "queued? returns false when state is not queued" do
+    @task.state = "pending_review"
+    refute @task.queued?
+  end
+
+  test "queued scope returns only queued tasks ordered by queued_at" do
+    @task.update!(state: "queued", queued_at: 1.minute.ago)
+    @task.save!
+
+    pr2 = PullRequest.create!(
+      github_id: 456,
+      number: 43,
+      title: "Test PR 2",
+      url: "https://github.com/test/repo/pull/43",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+    task2 = ReviewTask.create!(pull_request: pr2, state: "queued", queued_at: 2.minutes.ago, cli_client: "claude", review_type: "review")
+
+    # task2 was queued earlier, so it should come first
+    assert_equal [ task2, @task ], ReviewTask.queued.to_a
+  end
+
+  test "enqueue! sets state to queued and queued_at" do
+    @task.save!
+    @task.enqueue!
+    @task.reload
+
+    assert_equal "queued", @task.state
+    assert @task.queued_at.present?
+  end
+
+  test "dequeue! sets state to pending_review and clears queued_at" do
+    @task.update!(state: "queued", queued_at: Time.current)
+    @task.save!
+    @task.dequeue!
+    @task.reload
+
+    assert_equal "pending_review", @task.state
+    assert_nil @task.queued_at
+  end
+
+  test "queue_position returns position based on queued_at" do
+    @task.update!(state: "queued", queued_at: Time.current)
+    @task.save!
+
+    pr2 = PullRequest.create!(
+      github_id: 456,
+      number: 43,
+      title: "Test PR 2",
+      url: "https://github.com/test/repo/pull/43",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+    task2 = ReviewTask.create!(pull_request: pr2, state: "queued", queued_at: 1.minute.from_now, cli_client: "claude", review_type: "review")
+
+    assert_equal 1, @task.queue_position
+    assert_equal 2, task2.queue_position
+  end
+
+  test "queue_position returns nil when not queued" do
+    @task.save!
+    assert_nil @task.queue_position
+  end
+
+  test "any_review_running? returns true when in_review task exists" do
+    @task.update!(state: "in_review")
+    @task.save!
+
+    assert ReviewTask.any_review_running?
+  end
+
+  test "any_review_running? returns false when no in_review task exists" do
+    @task.save!
+
+    refute ReviewTask.any_review_running?
+  end
+
+  test "start_next_queued! dequeues first task and starts job" do
+    @task.update!(state: "queued", queued_at: Time.current)
+    @task.save!
+
+    result = ReviewTask.start_next_queued!
+    assert_equal @task, result
+
+    @task.reload
+    assert_equal "pending_review", @task.state
+    assert_nil @task.queued_at
+  end
+
+  test "start_next_queued! returns nil when no queued tasks" do
+    @task.save!
+
+    result = ReviewTask.start_next_queued!
+    assert_nil result
   end
 end

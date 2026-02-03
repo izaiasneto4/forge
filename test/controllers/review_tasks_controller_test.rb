@@ -96,6 +96,41 @@ class ReviewTasksControllerTest < ActionDispatch::IntegrationTest
     assert_equal "pending_review", @review_task.state
   end
 
+  test "create blocks when review already in_review" do
+    @review_task.update!(state: "in_review")
+
+    assert_no_enqueued_jobs(only: ReviewTaskJob) do
+      post review_tasks_path, params: { pull_request_id: @pr.id }
+    end
+
+    assert_redirected_to review_tasks_path
+    assert_match(/already in progress/, flash[:alert])
+    @review_task.reload
+    assert_equal "in_review", @review_task.state
+  end
+
+  test "create blocks when pending_review with retry_count > 0" do
+    @review_task.update!(state: "pending_review", retry_count: 1)
+
+    assert_no_enqueued_jobs(only: ReviewTaskJob) do
+      post review_tasks_path, params: { pull_request_id: @pr.id }
+    end
+
+    assert_redirected_to review_tasks_path
+    assert_match(/already in progress/, flash[:alert])
+  end
+
+  test "create blocks when has recent retry activity" do
+    @review_task.update!(state: "failed_review", last_retry_at: 2.minutes.ago)
+
+    assert_no_enqueued_jobs(only: ReviewTaskJob) do
+      post review_tasks_path, params: { pull_request_id: @pr.id }
+    end
+
+    assert_redirected_to review_tasks_path
+    assert_match(/already in progress/, flash[:alert])
+  end
+
   test "update_state with valid state" do
     patch update_state_review_task_path(@review_task), params: { state: "in_review" }, as: :turbo_stream
 
@@ -274,5 +309,101 @@ class ReviewTasksControllerTest < ActionDispatch::IntegrationTest
 
     json = JSON.parse(response.body)
     assert_equal "Maximum retry attempts reached", json["error"]
+  end
+
+  # Queue tests
+  test "create queues task when another review is running" do
+    # Start a review first
+    @review_task.update!(state: "in_review")
+
+    # Create a new PR and try to start review
+    new_pr = PullRequest.create!(
+      github_id: 456,
+      number: 2,
+      title: "Second PR",
+      url: "https://github.com/test/repo/pull/2",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+
+    post review_tasks_path, params: { pull_request_id: new_pr.id }
+
+    new_pr.reload
+    new_task = new_pr.review_task
+    assert_not_nil new_task
+    assert_equal "queued", new_task.state
+    assert new_task.queued_at.present?
+    assert_redirected_to review_tasks_path
+    assert_match /queued/i, flash[:notice]
+  end
+
+  test "create starts task immediately when no review running" do
+    @review_task.update!(state: "done")
+
+    new_pr = PullRequest.create!(
+      github_id: 456,
+      number: 2,
+      title: "Second PR",
+      url: "https://github.com/test/repo/pull/2",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+
+    post review_tasks_path, params: { pull_request_id: new_pr.id }
+
+    new_pr.reload
+    new_task = new_pr.review_task
+    assert_not_nil new_task
+    assert_equal "pending_review", new_task.state
+  end
+
+  test "dequeue removes task from queue" do
+    @review_task.update!(state: "queued", queued_at: Time.current)
+
+    delete dequeue_review_task_path(@review_task)
+
+    @review_task.reload
+    assert_equal "pending_review", @review_task.state
+    assert_nil @review_task.queued_at
+    assert_redirected_to review_tasks_path
+  end
+
+  test "dequeue with turbo_stream" do
+    @review_task.update!(state: "queued", queued_at: Time.current)
+
+    delete dequeue_review_task_path(@review_task), as: :turbo_stream
+
+    @review_task.reload
+    assert_equal "pending_review", @review_task.state
+    assert_response :success
+  end
+
+  test "dequeue refuses when task is not queued" do
+    @review_task.update!(state: "pending_review")
+
+    delete dequeue_review_task_path(@review_task)
+
+    assert_redirected_to review_tasks_path
+    assert_match /only dequeue queued/i, flash[:alert]
+  end
+
+  test "dequeue refuses when task is not queued with turbo_stream" do
+    @review_task.update!(state: "pending_review")
+
+    delete dequeue_review_task_path(@review_task), as: :turbo_stream
+
+    assert_response :unprocessable_entity
+  end
+
+  test "index includes queued column" do
+    @review_task.update!(state: "queued", queued_at: Time.current)
+
+    get review_tasks_path
+
+    assert_response :success
+    assert_select "#review_task_column_queued"
+    assert_select "#review_task_card_#{@review_task.id}"
   end
 end

@@ -276,4 +276,66 @@ class SettingTest < ActiveSupport::TestCase
     assert result.present?
     assert_nil result.value
   end
+
+  # Auto-review settings
+  test "auto_review_mode? returns false when not set" do
+    refute Setting.auto_review_mode?
+  end
+
+  test "auto_review_mode? returns true when set to true" do
+    Setting.create!(key: Setting::AUTO_REVIEW_MODE_KEY, value: "true")
+    assert Setting.auto_review_mode?
+  end
+
+  test "auto_review_mode? returns false when set to false" do
+    Setting.create!(key: Setting::AUTO_REVIEW_MODE_KEY, value: "false")
+    refute Setting.auto_review_mode?
+  end
+
+  test "auto_review_mode= sets value as string" do
+    Setting.auto_review_mode = true
+    assert Setting.auto_review_mode?
+
+    Setting.auto_review_mode = false
+    refute Setting.auto_review_mode?
+  end
+
+  test "auto_review_delay_min returns default when not set" do
+    assert_equal Setting::DEFAULT_AUTO_REVIEW_DELAY_MIN, Setting.auto_review_delay_min
+  end
+
+  test "auto_review_delay_min returns custom value when set" do
+    Setting.create!(key: Setting::AUTO_REVIEW_DELAY_MIN_KEY, value: "10")
+    assert_equal 10, Setting.auto_review_delay_min
+  end
+
+  test "auto_review_delay_min= sets value as string" do
+    Setting.auto_review_delay_min = 15
+    assert_equal 15, Setting.auto_review_delay_min
+  end
+
+  test "auto_review_delay_max returns default when not set" do
+    assert_equal Setting::DEFAULT_AUTO_REVIEW_DELAY_MAX, Setting.auto_review_delay_max
+  end
+
+  test "auto_review_delay_max returns custom value when set" do
+    Setting.create!(key: Setting::AUTO_REVIEW_DELAY_MAX_KEY, value: "60")
+    assert_equal 60, Setting.auto_review_delay_max
+  end
+
+  test "auto_review_delay_max= sets value as string" do
+    Setting.auto_review_delay_max = 45
+    assert_equal 45, Setting.auto_review_delay_max
+  end
+
+  test "auto_review_delay returns value in range" do
+    Setting.auto_review_delay_min = 5
+    Setting.auto_review_delay_max = 30
+
+    100.times do
+      delay = Setting.auto_review_delay
+      assert delay >= 5
+      assert delay <= 30
+    end
+  end
 end
