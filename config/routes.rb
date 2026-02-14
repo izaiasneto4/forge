@@ -7,14 +7,19 @@ Rails.application.routes.draw do
     end
     member do
       patch :update_status
+      patch :archive
+      patch :unarchive
     end
   end
 
   resources :review_tasks, only: [ :index, :show, :create ] do
     member do
       patch :update_state
+      patch :archive
+      patch :unarchive
       post :retry
       delete :dequeue
+      delete :clear
     end
     resources :review_comments, only: [] do
       collection do
