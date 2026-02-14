@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_03_134811) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_14_000001) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -23,6 +23,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_03_134811) do
   end
 
   create_table "pull_requests", force: :cascade do |t|
+    t.boolean "archived", default: false, null: false
     t.string "author"
     t.string "author_avatar"
     t.datetime "created_at", null: false
@@ -80,6 +81,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_03_134811) do
 
   create_table "review_tasks", force: :cascade do |t|
     t.string "ai_model"
+    t.boolean "archived", default: false, null: false
     t.string "cli_client", default: "claude", null: false
     t.datetime "completed_at"
     t.datetime "created_at", null: false
