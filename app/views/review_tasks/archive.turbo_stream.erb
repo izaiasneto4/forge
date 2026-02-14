@@ -1,0 +1,24 @@
+<%# Remove the review task card from the kanban board %>
+<%= turbo_stream.remove "review_task_card_#{@review_task.id}" %>
+
+<%# Update column counts %>
+<% grouped_tasks = {
+  queued: ReviewTask.queued.count,
+  pending_review: ReviewTask.pending_review.count,
+  in_review: ReviewTask.in_review.count,
+  reviewed: ReviewTask.reviewed.count,
+  waiting_implementation: ReviewTask.waiting_implementation.count,
+  done: ReviewTask.done.count,
+  failed_review: ReviewTask.failed_review.count
+} %>
+
+<%= turbo_stream.update "review_task_count_#{@review_task.state}" do %>
+  <%= grouped_tasks[@review_task.state.to_sym] %>
+<% end %>
+
+<%# Update empty state visibility %>
+<% count = grouped_tasks[@review_task.state.to_sym] %>
+<%= turbo_stream.replace "review_task_empty_#{@review_task.state}" do %>
+  <%= render partial: "review_tasks/empty_state", locals: { state: @review_task.state, hidden: count > 0 } %>
+<% end %>
+<%= turbo_stream.replace "archive_confirmation_modal", partial: "shared/archive_confirmation" %>

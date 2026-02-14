@@ -1,0 +1,9 @@
+<%# Remove the PR card from the kanban board %>
+<%= turbo_stream.remove "pull_request_card_#{@pull_request.id}" %>
+
+<%# Update column counts %>
+<% presenter = PullRequestIndexPresenter.new %>
+<% columns = presenter.columns %>
+
+<%= turbo_stream.update "pr-count", "#{presenter.total_count} pull requests" %>
+<%= turbo_stream.replace "archive_confirmation_modal", partial: "shared/archive_confirmation" %>
