@@ -5,7 +5,7 @@
   repositories = repos_folder.present? ? RepoScannerService.new(repos_folder).scan : []
 %>
 <%= turbo_stream_from "pull_requests_board" %>
-<div class="min-h-screen flex flex-col" data-controller="kanban repo-selector sync review-modal bulk-actions board-filter" data-board-filter-storage-key-value="pull_requests_filter">
+<div class="min-h-screen flex flex-col" data-controller="kanban repo-selector sync review-modal bulk-actions board-filter archive-confirmation" data-board-filter-storage-key-value="pull_requests_filter">
   <!-- Header Bar - Responsive -->
   <header class="linear-header">
     <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
@@ -272,4 +272,7 @@
 
   <!-- Bulk Delete Modal -->
   <%= render partial: "pull_requests/bulk_delete_modal" %>
+
+  <!-- Archive Confirmation Modal -->
+  <%= render partial: "shared/archive_confirmation" %>
 </div>

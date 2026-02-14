@@ -1,7 +1,7 @@
 <% content_for :full_width, true %>
 <% content_for :hide_global_header, true %>
 <%= turbo_stream_from "review_tasks_board" %>
-<div class="min-h-screen flex flex-col" data-controller="review-kanban board-filter" data-board-filter-storage-key-value="review_tasks_filter">
+<div class="min-h-screen flex flex-col" data-controller="review-kanban board-filter archive-confirmation" data-board-filter-storage-key-value="review_tasks_filter">
   <!-- Header -->
   <header class="linear-header">
     <div class="flex items-center gap-3">
@@ -265,3 +265,6 @@
     </div>
   </div>
 </div>
+
+<!-- Archive Confirmation Modal -->
+<%= render partial: "shared/archive_confirmation" %>
