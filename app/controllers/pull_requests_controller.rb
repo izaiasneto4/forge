@@ -1,11 +1,12 @@
 class PullRequestsController < ApplicationController
   def index
-    @current_repo = Setting.current_repo
-    @pending_review = PullRequest.pending_review.includes(:review_task).order(updated_at_github: :desc)
-    @in_review = PullRequest.in_review.includes(:review_task).order(updated_at_github: :desc)
-    @reviewed_by_me = PullRequest.reviewed_by_me.includes(:review_task).order(updated_at_github: :desc)
-    @reviewed_by_others = PullRequest.reviewed_by_others.includes(:review_task).order(updated_at_github: :desc)
-    @review_failed = PullRequest.review_failed.includes(:review_task).order(updated_at_github: :desc)
+    @presenter = PullRequestIndexPresenter.new
+    @current_repo = @presenter.current_repo
+    @pending_review = @presenter.columns[:pending_review]
+    @in_review = @presenter.columns[:in_review]
+    @reviewed_by_me = @presenter.columns[:reviewed_by_me]
+    @reviewed_by_others = @presenter.columns[:reviewed_by_others]
+    @review_failed = @presenter.columns[:review_failed]
   end
 
   def sync
@@ -77,25 +78,41 @@ class PullRequestsController < ApplicationController
       return
     end
 
-    deleted_count = 0
     ActiveRecord::Base.transaction do
       pull_requests = PullRequest.where(id: pr_ids)
-      pull_requests.each do |pr|
-        pr.soft_delete!
-        deleted_count += 1
-      end
+      pull_requests.each(&:soft_delete!)
     end
 
     respond_to do |format|
-      format.turbo_stream { render_sync_stream(notice: "#{deleted_count} pull requests deleted") }
-      format.html { redirect_to pull_requests_path, notice: "#{deleted_count} pull requests deleted" }
-      format.json { render json: { deleted_count: deleted_count } }
+      format.turbo_stream { render_sync_stream(notice: "#{pr_ids.size} pull requests deleted") }
+      format.html { redirect_to pull_requests_path, notice: "#{pr_ids.size} pull requests deleted" }
+      format.json { render json: { deleted_count: pr_ids.size } }
     end
   rescue => e
     respond_to do |format|
       format.turbo_stream { render_sync_stream(alert: "Failed to delete: #{e.message}") }
       format.html { redirect_to pull_requests_path, alert: "Failed to delete: #{e.message}" }
       format.json { render json: { error: e.message }, status: :unprocessable_entity }
+    end
+  end
+
+  def archive
+    @pull_request = PullRequest.find(params[:id])
+    @pull_request.archive!
+
+    respond_to do |format|
+      format.turbo_stream
+      format.html { redirect_to pull_requests_path, notice: "Pull request archived" }
+    end
+  end
+
+  def unarchive
+    @pull_request = PullRequest.find(params[:id])
+    @pull_request.unarchive!
+
+    respond_to do |format|
+      format.turbo_stream
+      format.html { redirect_to pull_requests_path, notice: "Pull request restored" }
     end
   end
 
@@ -112,10 +129,7 @@ class PullRequestsController < ApplicationController
   private
 
   def render_sync_skipped_stream
-    seconds = Setting.seconds_until_sync_allowed
-    minutes = (seconds / 60.0).ceil
-    time_msg = minutes > 1 ? "#{minutes} minutes" : "#{seconds} seconds"
-    notice = "Using cached data (next sync available in #{time_msg})"
+    notice = PullRequestIndexPresenter.new.build_sync_skipped_message
 
     render turbo_stream: [
       turbo_stream.replace("flash-messages", partial: "shared/flash", locals: { notice: notice }),
@@ -124,21 +138,12 @@ class PullRequestsController < ApplicationController
   end
 
   def render_sync_stream(notice: nil, alert: nil)
-    pending_review = PullRequest.pending_review.includes(:review_task).order(updated_at_github: :desc)
-    in_review = PullRequest.in_review.includes(:review_task).order(updated_at_github: :desc)
-    reviewed_by_me = PullRequest.reviewed_by_me.includes(:review_task).order(updated_at_github: :desc)
-    reviewed_by_others = PullRequest.reviewed_by_others.includes(:review_task).order(updated_at_github: :desc)
-    review_failed = PullRequest.review_failed.includes(:review_task).order(updated_at_github: :desc)
+    presenter = PullRequestIndexPresenter.new
+    columns = presenter.columns
 
     streams = [
-      turbo_stream.replace("pr-columns", partial: "pull_requests/columns", locals: {
-        pending_review: pending_review,
-        in_review: in_review,
-        reviewed_by_me: reviewed_by_me,
-        reviewed_by_others: reviewed_by_others,
-        review_failed: review_failed
-      }),
-      turbo_stream.update("pr-count", "#{pending_review.count + in_review.count + reviewed_by_me.count + reviewed_by_others.count + review_failed.count} pull requests"),
+      turbo_stream.replace("pr-columns", partial: "pull_requests/columns", locals: columns),
+      turbo_stream.update("pr-count", "#{presenter.total_count} pull requests"),
       turbo_stream.replace("sync-status", partial: "pull_requests/sync_status")
     ]
 

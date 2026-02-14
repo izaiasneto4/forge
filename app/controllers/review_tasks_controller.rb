@@ -1,5 +1,5 @@
 class ReviewTasksController < ApplicationController
-  before_action :set_review_task, only: %i[show update_state retry dequeue]
+  before_action :set_review_task, only: %i[show update_state retry dequeue clear archive unarchive]
 
   def index
     @review_tasks = ReviewTask.includes(:pull_request).order(created_at: :desc)
@@ -131,6 +131,37 @@ class ReviewTasksController < ApplicationController
     respond_to do |format|
       format.html { redirect_to review_tasks_path, notice: "Review removed from queue" }
       format.turbo_stream
+    end
+  end
+
+  def clear
+    pull_request = @review_task.pull_request
+
+    @review_task.destroy!
+
+    pull_request.update!(review_status: "in_review")
+
+    respond_to do |format|
+      format.html { redirect_to pull_requests_path, notice: "Review cleared for PR ##{pull_request.number}" }
+      format.turbo_stream
+    end
+  end
+
+  def archive
+    @review_task.archive!
+
+    respond_to do |format|
+      format.turbo_stream
+      format.html { redirect_to review_tasks_path, notice: "Review task archived" }
+    end
+  end
+
+  def unarchive
+    @review_task.unarchive!
+
+    respond_to do |format|
+      format.turbo_stream
+      format.html { redirect_to review_tasks_path, notice: "Review task restored" }
     end
   end
 
