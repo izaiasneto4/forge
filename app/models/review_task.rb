@@ -21,13 +21,15 @@ class ReviewTask < ApplicationRecord
   validates :review_type, inclusion: { in: REVIEW_TYPES }
   validates :submission_status, inclusion: { in: SUBMISSION_STATUSES }, allow_nil: true
 
-  scope :queued, -> { where(state: "queued").order(:queued_at) }
-  scope :pending_review, -> { where(state: "pending_review") }
-  scope :in_review, -> { where(state: "in_review") }
-  scope :reviewed, -> { where(state: "reviewed") }
-  scope :waiting_implementation, -> { where(state: "waiting_implementation") }
-  scope :done, -> { where(state: "done") }
-  scope :failed_review, -> { where(state: "failed_review") }
+  scope :queued, -> { not_archived.where(state: "queued").order(:queued_at) }
+  scope :pending_review, -> { not_archived.where(state: "pending_review") }
+  scope :in_review, -> { not_archived.where(state: "in_review") }
+  scope :reviewed, -> { not_archived.where(state: "reviewed") }
+  scope :waiting_implementation, -> { not_archived.where(state: "waiting_implementation") }
+  scope :done, -> { not_archived.where(state: "done") }
+  scope :failed_review, -> { not_archived.where(state: "failed_review") }
+  scope :not_archived, -> { where(archived: false) }
+  scope :archived, -> { where(archived: true) }
 
   def queued?
     state == "queued"
@@ -329,6 +331,18 @@ class ReviewTask < ApplicationRecord
     end
 
     reset_count
+  end
+
+  def archived?
+    archived == true
+  end
+
+  def archive!
+    update!(archived: true)
+  end
+
+  def unarchive!
+    update!(archived: false)
   end
 
   private

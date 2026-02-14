@@ -17,13 +17,15 @@ class PullRequest < ApplicationRecord
 
   scope :not_deleted, -> { where(deleted_at: nil) }
   scope :deleted, -> { where.not(deleted_at: nil) }
-  scope :pending_review, -> { not_deleted.where(review_status: "pending_review") }
-  scope :in_review, -> { not_deleted.where(review_status: "in_review") }
-  scope :reviewed_by_me, -> { not_deleted.where(review_status: "reviewed_by_me") }
-  scope :reviewed_by_others, -> { not_deleted.where(review_status: "reviewed_by_others") }
-  scope :review_failed, -> { not_deleted.where(review_status: "review_failed") }
+  scope :not_archived, -> { not_deleted.where(archived: false) }
+  scope :archived, -> { not_deleted.where(archived: true) }
+  scope :pending_review, -> { not_archived.where(review_status: "pending_review") }
+  scope :in_review, -> { not_archived.where(review_status: "in_review") }
+  scope :reviewed_by_me, -> { not_archived.where(review_status: "reviewed_by_me") }
+  scope :reviewed_by_others, -> { not_archived.where(review_status: "reviewed_by_others") }
+  scope :review_failed, -> { not_archived.where(review_status: "review_failed") }
 
-  default_scope { not_deleted }
+  default_scope { not_archived }
 
   def pending_review?
     review_status == "pending_review"
@@ -57,6 +59,18 @@ class PullRequest < ApplicationRecord
     deleted_at.present?
   end
 
+  def archived?
+    archived == true
+  end
+
+  def archive!
+    update!(archived: true)
+  end
+
+  def unarchive!
+    update!(archived: false)
+  end
+
   def soft_delete!
     update!(deleted_at: Time.current)
   end
@@ -67,6 +81,18 @@ class PullRequest < ApplicationRecord
 
   def deleted?
     deleted_at.present?
+  end
+
+  def archived?
+    archived == true
+  end
+
+  def archive!
+    update!(archived: true)
+  end
+
+  def unarchive!
+    update!(archived: false)
   end
 
   # Fix orphaned reviewed PRs that have no review_task
