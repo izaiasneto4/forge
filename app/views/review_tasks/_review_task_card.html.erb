@@ -33,7 +33,20 @@
       <% end %>
       <span class="text-xs text-gray-600"><%= pr.author %></span>
     </div>
-    <span class="text-xs text-gray-400">#<%= pr.number %></span>
+    <div class="flex items-center gap-2">
+      <button type="button"
+              data-action="click->archive-confirmation#open"
+              data-archive-url="<%= archive_review_task_path(task) %>"
+              data-archive-item-type="review task"
+              data-archive-item-type-label="review task"
+              class="p-1 rounded cursor-pointer hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+              title="Archive">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+      </button>
+      <span class="text-xs text-gray-400">#<%= pr.number %></span>
+    </div>
   </div>
 
   <div class="flex items-start justify-between gap-2 mb-1">

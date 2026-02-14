@@ -19,8 +19,20 @@
       <% end %>
       <span class="linear-card-id">#<%= pr.number %></span>
     </div>
-    <% if pr.review_task.present? %>
-      <div class="flex items-center gap-1">
+    <div class="flex items-center gap-1">
+      <button type="button"
+              data-action="click->archive-confirmation#open"
+              data-archive-url="<%= archive_pull_request_path(pr) %>"
+              data-archive-item-type="pull request"
+              data-archive-item-type-label="pull request"
+              class="p-1 rounded cursor-pointer hover:bg-[color:var(--color-bg-tertiary)] text-[color:var(--color-text-secondary)] hover:text-[color:var(--color-text)] transition-colors"
+              title="Archive">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+      </button>
+      <% if pr.review_task.present? %>
+        <div class="flex items-center gap-1">
         <% if pr.review_task.swarm_review? %>
           <span class="linear-badge linear-badge-purple text-[10px]" title="Swarm Review">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,6 +65,7 @@
       </div>
     <% end %>
   </div>
+</div>
 
   <!-- Card Title -->
   <a href="<%= pr.url %>"
