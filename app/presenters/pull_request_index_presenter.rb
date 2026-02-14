@@ -1,0 +1,36 @@
+class PullRequestIndexPresenter
+  attr_reader :current_repo
+
+  def initialize
+    @current_repo = Setting.current_repo
+  end
+
+  def columns
+    {
+      pending_review: PullRequest.pending_review.includes(:review_task).order(updated_at_github: :desc),
+      in_review: PullRequest.in_review.includes(:review_task).order(updated_at_github: :desc),
+      reviewed_by_me: PullRequest.reviewed_by_me.includes(:review_task).order(updated_at_github: :desc),
+      reviewed_by_others: PullRequest.reviewed_by_others.includes(:review_task).order(updated_at_github: :desc),
+      review_failed: PullRequest.review_failed.includes(:review_task).order(updated_at_github: :desc)
+    }
+  end
+
+  def total_count
+    columns.values.sum(&:count)
+  end
+
+  def sync_status
+    {
+      last_synced_at: Setting.last_synced_at,
+      seconds_until_sync_allowed: Setting.seconds_until_sync_allowed,
+      sync_needed: Setting.sync_needed?
+    }
+  end
+
+  def build_sync_skipped_message
+    seconds = Setting.seconds_until_sync_allowed
+    minutes = (seconds / 60.0).ceil
+    time_msg = minutes > 1 ? "#{minutes} minutes" : "#{seconds} seconds"
+    "Using cached data (next sync available in #{time_msg})"
+  end
+end
