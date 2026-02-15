@@ -145,7 +145,7 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
     assert_includes prompt, "Performance Reviewer"
     assert_includes prompt, "Maintainability Reviewer"
     assert_includes prompt, "Regression Reviewer"
-    assert_includes prompt, "DEEP_REVIEW_REPORT.md"
+    assert_includes prompt, "JSON array wrapped in ```json"
   end
 
   test "standard_review_prompt includes PR information" do
@@ -261,14 +261,12 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
 
     prompt = service.send(:swarm_review_prompt)
 
-    assert_includes prompt, "DEEP_REVIEW_REPORT.md"
-    assert_includes prompt, "Executive Summary"
-    assert_includes prompt, "Critical Issues"
-    assert_includes prompt, "High Priority Issues"
-    assert_includes prompt, "Medium Priority Issues"
-    assert_includes prompt, "Low Priority Issues"
-    assert_includes prompt, "Implementation Checklist"
-    assert_includes prompt, "Reviewer Agreement Matrix"
+    assert_includes prompt, "JSON array wrapped in ```json"
+    assert_includes prompt, '"severity": "error" | "warning" | "info"'
+    assert_includes prompt, '"file": "path/to/file.ext"'
+    assert_includes prompt, '"lines": "10-20" or "10" or null'
+    assert_includes prompt, '"comment": "Description of the issue in markdown"'
+    assert_includes prompt, '"suggested_fix": "Code suggestion if applicable, or null"'
   end
 
   test "swarm_review_prompt includes implementation instructions" do
@@ -281,22 +279,33 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
 
     prompt = service.send(:swarm_review_prompt)
 
-    assert_includes prompt, "Implementation Instructions"
-    assert_includes prompt, "Step-by-step instructions"
+    assert_includes prompt, "Consensus Rules"
+    assert_includes prompt, "Merge similar issues across reviewers"
   end
 
-  test "swarm_review_prompt includes notes for implementation agent" do
+  test "codex command args include output-last-message flag" do
     service = CodeReviewService.for(
-      cli_client: "claude",
+      cli_client: "codex",
       worktree_path: @worktree_path,
-      pull_request: @pr,
-      review_type: "swarm"
+      pull_request: @pr
     )
 
-    prompt = service.send(:swarm_review_prompt)
+    cmd_args = service.send(:cmd_args_for_review)
 
-    assert_includes prompt, "Notes for Implementation Agent"
-    assert_includes prompt, "Start with CRITICAL issues"
-    assert_includes prompt, "Group related fixes"
+    assert_includes cmd_args, "--output-last-message"
+    assert_includes cmd_args, service.send(:codex_last_message_path)
+  end
+
+  test "normalize_output uses codex last message when available" do
+    service = CodeReviewService.for(
+      cli_client: "codex",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+
+    File.write(service.send(:codex_last_message_path), "```json\n[]\n```")
+    output = service.send(:normalize_output, "header\nuser\nprompt\n")
+
+    assert_equal "```json\n[]\n```", output
   end
 end
