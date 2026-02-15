@@ -28,6 +28,27 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index shows review action for idle pending review task" do
+    ReviewTask.create!(
+      pull_request: @pr1,
+      state: "pending_review",
+      cli_client: "codex",
+      review_type: "swarm",
+      retry_count: 0,
+      started_at: nil,
+      last_retry_at: nil
+    )
+
+    get pull_requests_path
+    assert_response :success
+
+    assert_select "#pull_request_card_#{@pr1.id}" do
+      assert_select "button[data-action='click->review-modal#open'][data-pr-id='#{@pr1.id}']", 1
+      assert_select "a", text: /View Progress/, count: 0
+      assert_select "span", text: /In Review/, count: 0
+    end
+  end
+
   test "sync with force true executes sync" do
     Setting.stubs(:sync_needed?).returns(true)
     GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
