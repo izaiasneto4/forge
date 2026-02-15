@@ -1,0 +1,185 @@
+{
+  "features": [
+    {
+      "id": 1,
+      "category": "High-Impact Features",
+      "title": "GitHub Webhooks Integration",
+      "description": "Replace polling with real-time PR updates via webhooks",
+      "completed": false
+    },
+    {
+      "id": 2,
+      "category": "High-Impact Features",
+      "title": "Review Analytics Dashboard",
+      "description": "Show stats: reviews per week, issues by severity, average review time, AI model performance comparison",
+      "completed": false
+    },
+    {
+      "id": 3,
+      "category": "High-Impact Features",
+      "title": "PR Filtering & Search",
+      "description": "Filter by author, labels, size, date range; search by title/description",
+      "completed": false
+    },
+    {
+      "id": 4,
+      "category": "High-Impact Features",
+      "title": "Review Templates",
+      "description": "Save custom prompts for different review types (security audit, performance check, API review)",
+      "completed": false
+    },
+    {
+      "id": 5,
+      "category": "High-Impact Features",
+      "title": "Batch/Queue Reviews",
+      "description": "Queue multiple PRs for sequential automated review instead of one-at-a-time",
+      "completed": false
+    },
+    {
+      "id": 6,
+      "category": "Workflow Enhancements",
+      "title": "Auto-Review on Sync",
+      "description": "Option to automatically start reviews when new PRs are synced",
+      "completed": false
+    },
+    {
+      "id": 7,
+      "category": "Workflow Enhancements",
+      "title": "Review Scheduling",
+      "description": "Schedule reviews for off-hours or recurring reviews",
+      "completed": false
+    },
+    {
+      "id": 8,
+      "category": "Workflow Enhancements",
+      "title": "Draft Comment Mode",
+      "description": "Edit/curate AI comments before submitting to GitHub",
+      "completed": false
+    },
+    {
+      "id": 9,
+      "category": "Workflow Enhancements",
+      "title": "Review Iteration Diff",
+      "description": "Compare what changed between review iterations visually",
+      "completed": false
+    },
+    {
+      "id": 10,
+      "category": "Workflow Enhancements",
+      "title": "Multi-Repository Dashboard",
+      "description": "Cross-repo overview with aggregated metrics",
+      "completed": false
+    },
+    {
+      "id": 11,
+      "category": "Integration & Automation",
+      "title": "CI/CD Integration",
+      "description": "Webhook endpoint for CI events; optionally block merges based on review results",
+      "completed": false
+    },
+    {
+      "id": 12,
+      "category": "Integration & Automation",
+      "title": "Slack/Discord Notifications",
+      "description": "Alert when reviews complete or critical issues found",
+      "completed": false
+    },
+    {
+      "id": 13,
+      "category": "Integration & Automation",
+      "title": "Linear/JIRA Integration",
+      "description": "Link PRs to tickets, auto-update ticket status on review completion",
+      "completed": false
+    },
+    {
+      "id": 14,
+      "category": "Integration & Automation",
+      "title": "Code Coverage Overlay",
+      "description": "Display test coverage data alongside review comments",
+      "completed": false
+    },
+    {
+      "id": 15,
+      "category": "Quality of Life",
+      "title": "Keyboard Shortcuts",
+      "description": "Navigate kanban board, trigger actions without mouse",
+      "completed": false
+    },
+    {
+      "id": 16,
+      "category": "Quality of Life",
+      "title": "Dark/Light Theme Toggle",
+      "description": "Currently appears to use CSS variables—make it user-selectable",
+      "completed": false
+    },
+    {
+      "id": 17,
+      "category": "Quality of Life",
+      "title": "PR Size Warnings",
+      "description": "Flag large PRs (>500 lines) as hard to review effectively",
+      "completed": false
+    },
+    {
+      "id": 18,
+      "category": "Quality of Life",
+      "title": "Stale PR Detection",
+      "description": "Highlight PRs sitting >7 days without review",
+      "completed": false
+    },
+    {
+      "id": 19,
+      "category": "Quality of Life",
+      "title": "Export Reviews",
+      "description": "Download review as Markdown/PDF for documentation",
+      "completed": false
+    },
+    {
+      "id": 20,
+      "category": "Advanced Review Features",
+      "title": "Custom Severity Rules",
+      "description": "Configure what constitutes critical/major/minor per project",
+      "completed": false
+    },
+    {
+      "id": 21,
+      "category": "Advanced Review Features",
+      "title": "Review Confidence Scoring",
+      "description": "AI assigns confidence levels to each finding",
+      "completed": false
+    },
+    {
+      "id": 22,
+      "category": "Advanced Review Features",
+      "title": "Dependency Security Scan",
+      "description": "Flag vulnerable dependencies in PR changes",
+      "completed": false
+    },
+    {
+      "id": 23,
+      "category": "Advanced Review Features",
+      "title": "Review Presets",
+      "description": "One-click configurations (e.g., \"Quick Check\" vs \"Deep Dive\")",
+      "completed": false
+    },
+    {
+      "id": 24,
+      "category": "Advanced Review Features",
+      "title": "Comment Threading",
+      "description": "Track GitHub comment conversations in Forge",
+      "completed": false
+    },
+    {
+      "id": 25,
+      "category": "Advanced Review Features",
+      "title": "Suggested Review Conclusion",
+      "description": "AI suggests final review action: request changes if critical issues found, comment for minor suggestions, or approve if clean",
+      "completed": false
+    }
+  ],
+  "metadata": {
+    "generated": "2026-02-03",
+    "total": 25,
+    "completed": 0,
+    "remaining": 25
+  }
+}
