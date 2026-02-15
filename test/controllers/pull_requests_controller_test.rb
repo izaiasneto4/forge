@@ -2,6 +2,10 @@ require "test_helper"
 
 class PullRequestsControllerTest < ActionDispatch::IntegrationTest
   setup do
+    @user = users(:user)
+    @admin = users(:admin)
+    sign_in @user
+
     Setting.delete_all
     @pr1 = PullRequest.create!(
       github_id: 123,
@@ -237,6 +241,8 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "bulk_destroy with empty ids" do
+    sign_out @user
+    sign_in @admin
     delete bulk_destroy_pull_requests_path, params: { pull_request_ids: [] }, as: :html
     assert_redirected_to pull_requests_path
     # Flash is set on the redirect and accessed from the session
@@ -244,6 +250,8 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "bulk_destroy with empty ids JSON response" do
+    sign_out @user
+    sign_in @admin
     delete bulk_destroy_pull_requests_path, params: { pull_request_ids: [] }, as: :json
     assert_response :bad_request
 
@@ -252,12 +260,16 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "bulk_destroy with more than 100 ids" do
+    sign_out @user
+    sign_in @admin
     ids = (1..101).to_a
     delete bulk_destroy_pull_requests_path, params: { pull_request_ids: ids }, as: :turbo_stream
     assert_response :bad_request
   end
 
   test "bulk_destroy with more than 100 ids JSON response" do
+    sign_out @user
+    sign_in @admin
     ids = (1..101).to_a
     delete bulk_destroy_pull_requests_path, params: { pull_request_ids: ids }, as: :json
     assert_response :bad_request
@@ -267,6 +279,8 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "bulk_destroy with valid ids" do
+    sign_out @user
+    sign_in @admin
     assert_difference "PullRequest.count", -2 do
       delete bulk_destroy_pull_requests_path, params: { pull_request_ids: [ @pr1.id, @pr2.id ] }, as: :turbo_stream
     end
@@ -275,6 +289,8 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "bulk_destroy with HTML response on success" do
+    sign_out @user
+    sign_in @admin
     assert_difference "PullRequest.count", -2 do
       delete bulk_destroy_pull_requests_path, params: { pull_request_ids: [ @pr1.id, @pr2.id ] }
     end
@@ -283,6 +299,8 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "bulk_destroy with JSON response on success" do
+    sign_out @user
+    sign_in @admin
     assert_difference "PullRequest.count", -2 do
       delete bulk_destroy_pull_requests_path, params: { pull_request_ids: [ @pr1.id, @pr2.id ] }, as: :json
     end
@@ -293,6 +311,8 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "bulk_destroy soft deletes PRs" do
+    sign_out @user
+    sign_in @admin
     delete bulk_destroy_pull_requests_path, params: { pull_request_ids: [ @pr1.id ] }
 
     @pr1.reload

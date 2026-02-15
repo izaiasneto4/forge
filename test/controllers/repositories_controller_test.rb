@@ -2,6 +2,8 @@ require "test_helper"
 
 class RepositoriesControllerTest < ActionDispatch::IntegrationTest
   setup do
+    @user = users(:user)
+    sign_in @user
     Setting.delete_all
     @repo_path = Dir.mktmpdir
     @repo_name = File.basename(@repo_path)

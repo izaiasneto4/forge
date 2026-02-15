@@ -1,6 +1,11 @@
 require "test_helper"
 
 class ApplicationControllerTest < ActionDispatch::IntegrationTest
+  setup do
+    @user = users(:user)
+    sign_in @user
+  end
+
   test "set_header_presenter runs on pull_requests index" do
     get pull_requests_path
     assert_response :success

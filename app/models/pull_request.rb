@@ -71,30 +71,6 @@ class PullRequest < ApplicationRecord
     update!(archived: false)
   end
 
-  def soft_delete!
-    update!(deleted_at: Time.current)
-  end
-
-  def restore!
-    update!(deleted_at: nil, review_status: "pending_review")
-  end
-
-  def deleted?
-    deleted_at.present?
-  end
-
-  def archived?
-    archived == true
-  end
-
-  def archive!
-    update!(archived: true)
-  end
-
-  def unarchive!
-    update!(archived: false)
-  end
-
   # Fix orphaned reviewed PRs that have no review_task
   def self.fix_orphaned_review_states
     fixed_count = 0

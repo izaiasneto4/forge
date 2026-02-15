@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  devise_for :users
   resources :pull_requests, only: [ :index ] do
     collection do
       post :sync

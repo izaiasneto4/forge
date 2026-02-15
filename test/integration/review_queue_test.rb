@@ -2,6 +2,8 @@ require "test_helper"
 
 class ReviewQueueTest < ActionDispatch::IntegrationTest
   setup do
+    @user = users(:user)
+    sign_in @user
     @prs = []
     @tasks = []
 

@@ -1,4 +1,6 @@
 class SettingsController < ApplicationController
+  before_action :require_admin
+
   def edit
     @repos_folder = Setting.repos_folder
     @default_cli_client = Setting.default_cli_client

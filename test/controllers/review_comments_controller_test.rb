@@ -2,6 +2,8 @@ require "test_helper"
 
 class ReviewCommentsControllerTest < ActionDispatch::IntegrationTest
   setup do
+    @user = users(:user)
+    sign_in @user
     @pr = PullRequest.create!(
       github_id: 123,
       number: 1,

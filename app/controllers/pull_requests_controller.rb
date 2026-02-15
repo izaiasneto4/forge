@@ -1,4 +1,6 @@
 class PullRequestsController < ApplicationController
+  before_action :require_admin, only: [ :bulk_destroy, :archive, :unarchive ]
+
   def index
     ReviewTask.recover_orphaned_in_review_tasks!
     @presenter = PullRequestIndexPresenter.new
