@@ -40,12 +40,14 @@ class CodeReviewService
 
   def run_review
     validate_worktree!
+    clear_codex_last_message!
 
-    cmd_args = [ @command ] + @args + [ review_prompt ]
+    cmd_args = cmd_args_for_review
     stdin, stdout, stderr, wait_thr = Open3.popen3(*cmd_args, chdir: @worktree_path)
     stdin.close
 
-    output = stdout.read
+    raw_output = stdout.read
+    output = normalize_output(raw_output)
     error = stderr.read
     status = wait_thr.value
 
@@ -59,17 +61,22 @@ class CodeReviewService
 
   def run_review_streaming(&block)
     validate_worktree!
+    clear_codex_last_message!
 
-    cmd_args = [ @command ] + @args + [ review_prompt ]
+    cmd_args = cmd_args_for_review
+    raw_output = []
     Open3.popen2e(*cmd_args, chdir: @worktree_path) do |stdin, stdout_err, wait_thr|
       stdin.close
 
       stdout_err.each_line do |line|
+        raw_output << line
         yield line if block_given?
       end
 
       wait_thr.value
     end
+
+    normalize_output(raw_output.join)
   end
 
   private
@@ -80,6 +87,38 @@ class CodeReviewService
 
   def review_prompt
     @review_type == "swarm" ? swarm_review_prompt : standard_review_prompt
+  end
+
+  def cmd_args_for_review
+    base_args = [ @command ] + @args
+    return base_args + [ review_prompt ] unless codex_client?
+
+    base_args + [ "--output-last-message", codex_last_message_path, review_prompt ]
+  end
+
+  def codex_client?
+    @cli_client == "codex"
+  end
+
+  def codex_last_message_path
+    File.join(@worktree_path, ".forge_codex_last_message.md")
+  end
+
+  def clear_codex_last_message!
+    return unless codex_client?
+    File.delete(codex_last_message_path) if File.exist?(codex_last_message_path)
+  end
+
+  def normalize_output(raw_output)
+    return raw_output unless codex_client?
+
+    file_output = if File.exist?(codex_last_message_path)
+      File.read(codex_last_message_path).to_s
+    else
+      ""
+    end
+
+    file_output.present? ? file_output : raw_output
   end
 
   def standard_review_prompt
@@ -141,7 +180,7 @@ class CodeReviewService
       1. Invoke each specialized reviewer
       2. Collect all findings
       3. Consolidate by consensus and priority
-      4. Generate a structured Markdown report
+      4. Return structured findings for automated UI mapping
 
       ## Target for Review
 
@@ -180,84 +219,21 @@ class CodeReviewService
       - Note when multiple reviewers identified the same issue (strengthens priority)
       - Combine recommendations from different perspectives
 
-      ## Step 3: Generate Report
+      ## Step 3: Return Structured Output
 
-      Create a file named `DEEP_REVIEW_REPORT.md` with this structure:
+      After consolidation, you MUST output your findings as a JSON array wrapped in ```json code block.
+      Each item in the array should have this exact structure:
+      {
+        "severity": "error" | "warning" | "info",
+        "file": "path/to/file.ext",
+        "lines": "10-20" or "10" or null,
+        "comment": "Description of the issue in markdown",
+        "suggested_fix": "Code suggestion if applicable, or null"
+      }
 
-      ```markdown
-      # Deep Code Review Report
-
-      > Generated: [DATE]
-      > Target: PR ##{@pull_request.number} - #{@pull_request.title}
-      > Reviewers: 7 specialized agents
-
-      ## Executive Summary
-
-      - **Critical Issues**: X
-      - **High Priority**: X
-      - **Medium Priority**: X
-      - **Low Priority**: X
-      - **Consensus Score**: X issues identified by 2+ reviewers
-
-      ---
-
-      ## Critical Issues (Implement Immediately)
-
-      ### [ID] Issue Title
-      - **Category**: Security | Performance | etc.
-      - **File**: path/to/file.ext:line
-      - **Consensus**: Identified by X/7 reviewers
-      - **Description**: ...
-      - **Risk/Impact**: ...
-      - **Recommendation**: ...
-
-      #### Implementation Instructions
-      Step-by-step instructions for fixing this issue.
-
-      ---
-
-      ## High Priority Issues (Implement Soon)
-
-      [Same format as Critical]
-
-      ---
-
-      ## Medium Priority Issues (Plan for Next Sprint)
-
-      [Same format as Critical]
-
-      ---
-
-      ## Low Priority Issues (Backlog)
-
-      [Same format, more concise]
-
-      ---
-
-      ## Implementation Checklist
-
-      - [ ] [CRITICAL-001] Issue title
-      - [ ] [HIGH-001] Issue title
-      - ...
-
-      ---
-
-      ## Reviewer Agreement Matrix
-
-      | Issue ID | Security | Data Cons. | Smells | Design | Perf | Maint | Regress |
-      |----------|----------|------------|--------|--------|------|-------|---------|
-      | XXX-001  | YES      | -          | -      | YES    | -    | YES   | -       |
-
-      ---
-
-      ## Notes for Implementation Agent
-
-      When implementing fixes from this report:
-      1. Start with CRITICAL issues - these are blockers
-      2. Group related fixes to minimize context switching
-      3. Run tests after each fix
-      4. Some fixes may conflict - resolve in priority order
-      5. Update this checklist as you complete items
+      If no issues are found, return:
+      ```json
+      []
       ```
 
       ## Important Notes

@@ -42,13 +42,14 @@ class ReviewTaskJob < ApplicationJob
       review_task.add_log("Running #{review_task.cli_client} review...", log_type: "status")
 
       output_buffer = []
-      review_service.run_review_streaming do |line|
+      normalized_output = review_service.run_review_streaming do |line|
         output_buffer << line
         trimmed = line.chomp
         review_task.add_log(trimmed, log_type: "output") if trimmed.present?
       end
 
-      full_output = output_buffer.join
+      full_output = normalized_output.is_a?(String) ? normalized_output : nil
+      full_output = output_buffer.join if full_output.blank?
 
       # Validate review output before marking complete
       validate_review_output!(full_output, review_task)
