@@ -39,3 +39,14 @@ Forge is a Rails 8 app with a service-oriented core.
 
 ## Configuration Notes
 This app requires authenticated CLI tools: `gh` (GitHub CLI) and `claude` (Claude CLI). Ensure both are on your `PATH` before running reviews or syncs.
+
+## Review Queue Troubleshooting
+- If a review stays in `pending_review` with no logs, first verify the jobs worker is running.
+- Default dev flow: use `bin/dev` (it starts web + css + jobs via `Procfile.dev`).
+- If running services manually, run `bin/jobs` in a separate terminal.
+- Quick queue check:
+  - `bin/rails runner 'puts({ready: SolidQueue::ReadyExecution.count, claimed: SolidQueue::ClaimedExecution.count, failed: SolidQueue::FailedExecution.count}.to_json)'`
+  - If `ready > 0` and `claimed = 0`, worker is offline or not consuming.
+- Quick task check:
+  - `bin/rails runner 't=ReviewTask.find(<ID>); puts({state:t.state,started_at:t.started_at,worktree_path:t.worktree_path,logs:t.agent_logs.count}.to_json)'`
+  - `pending_review` + `started_at=nil` + `logs=0` usually means job never started.
