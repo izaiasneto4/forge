@@ -76,7 +76,7 @@
           Swarm
         </span>
       <% end %>
-      <% if task.retry_count > 0 && !task.failed_review? %>
+      <% if task.retry_count > 0 && (task.pending_review? || task.in_review?) && !task.failed_review? %>
         <span class="bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Retry <%= task.retry_count %>/<%= ReviewTask::MAX_RETRY_ATTEMPTS %>">
           Retry <%= task.retry_count %>
         </span>

@@ -36,6 +36,31 @@ class ReviewTasksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index does not show retry badge for reviewed task" do
+    reviewed_pr = PullRequest.create!(
+      github_id: 999,
+      number: 99,
+      title: "Reviewed PR",
+      url: "https://github.com/test/repo/pull/99",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+    reviewed_task = ReviewTask.create!(
+      pull_request: reviewed_pr,
+      state: "reviewed",
+      retry_count: 1,
+      completed_at: Time.current
+    )
+
+    get review_tasks_path
+    assert_response :success
+
+    assert_select "#review_task_card_#{reviewed_task.id}" do
+      assert_select "span", text: /Retry/, count: 0
+    end
+  end
+
   test "show with HTML format" do
     get review_task_path(@review_task)
     assert_response :success
