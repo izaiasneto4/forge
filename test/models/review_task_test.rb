@@ -665,6 +665,45 @@ class ReviewTaskTest < ActiveSupport::TestCase
     assert_equal 0, count
   end
 
+  test "recover_orphaned_in_review_tasks! resets stale in_review task when no claimed review jobs exist" do
+    @task.update!(state: "in_review", started_at: 5.minutes.ago)
+    @task.add_log("old output", log_type: "output")
+    @task.agent_logs.last.update_column(:created_at, 5.minutes.ago)
+    @pr.update_column(:review_status, "in_review")
+
+    SolidQueue::ClaimedExecution.stubs(:table_exists?).returns(true)
+    claimed_scope = stub(where: stub(exists?: false))
+    SolidQueue::ClaimedExecution.stubs(:joins).with(:job).returns(claimed_scope)
+
+    count = ReviewTask.recover_orphaned_in_review_tasks!(stale_seconds: 60)
+    @task.reload
+    @pr.reload
+
+    assert_equal 1, count
+    assert_equal "pending_review", @task.state
+    assert_nil @task.started_at
+    assert_nil @task.worktree_path
+    assert_equal "pending_review", @pr.review_status
+    assert_equal 0, @task.agent_logs.count
+    assert_includes @task.failure_reason, "orphaned in_review"
+  end
+
+  test "recover_orphaned_in_review_tasks! does not reset when a review job is claimed" do
+    @task.update!(state: "in_review", started_at: 5.minutes.ago)
+    @task.add_log("recent output", log_type: "output")
+    @task.agent_logs.last.update_column(:created_at, 5.minutes.ago)
+
+    SolidQueue::ClaimedExecution.stubs(:table_exists?).returns(true)
+    claimed_scope = stub(where: stub(exists?: true))
+    SolidQueue::ClaimedExecution.stubs(:joins).with(:job).returns(claimed_scope)
+
+    count = ReviewTask.recover_orphaned_in_review_tasks!(stale_seconds: 60)
+    @task.reload
+
+    assert_equal 0, count
+    assert_equal "in_review", @task.state
+  end
+
   # Callbacks
   test "before_destroy resets PR status when PR is reviewed_by_me" do
     @task.update!(state: "reviewed")

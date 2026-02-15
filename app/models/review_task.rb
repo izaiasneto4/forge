@@ -333,6 +333,57 @@ class ReviewTask < ApplicationRecord
     reset_count
   end
 
+  # Recover tasks orphaned in in_review state after abrupt worker/process restart.
+  # A task is orphaned when:
+  # - it's in "in_review"
+  # - there is no claimed ReviewTaskJob in Solid Queue
+  # - it has no recent activity for `stale_seconds`
+  def self.recover_orphaned_in_review_tasks!(stale_seconds: 60)
+    return 0 unless in_review.exists?
+    return 0 if claimed_review_job_exists?
+
+    stale_threshold = stale_seconds.seconds.ago
+    recovered_count = 0
+
+    in_review.find_each do |task|
+      last_log_at = task.agent_logs.order(created_at: :desc).limit(1).pick(:created_at)
+      last_activity = last_log_at || task.started_at || task.updated_at
+      next if last_activity.present? && last_activity > stale_threshold
+
+      Rails.logger.warn("Recovering orphaned in_review task #{task.id} (last activity: #{last_activity})")
+
+      task.transaction do
+        task.agent_logs.destroy_all
+        task.update!(
+          state: "pending_review",
+          started_at: nil,
+          worktree_path: nil,
+          failure_reason: "Reset: orphaned in_review task (no active ReviewTaskJob claim)"
+        )
+
+        if task.pull_request&.review_status == "in_review"
+          task.pull_request.update_column(:review_status, "pending_review")
+        end
+      end
+
+      recovered_count += 1
+    end
+
+    recovered_count
+  end
+
+  def self.claimed_review_job_exists?
+    return false unless defined?(SolidQueue::ClaimedExecution)
+    return false unless SolidQueue::ClaimedExecution.table_exists?
+
+    SolidQueue::ClaimedExecution
+      .joins(:job)
+      .where("solid_queue_jobs.class_name = ?", "ReviewTaskJob")
+      .exists?
+  rescue ActiveRecord::StatementInvalid
+    false
+  end
+
   def archived?
     archived == true
   end
