@@ -2,8 +2,6 @@ require "test_helper"
 
 class SettingsControllerTest < ActionDispatch::IntegrationTest
   setup do
-    @admin = users(:admin)
-    sign_in @admin
     # Reset settings before each test by deleting all Setting records
     Setting.delete_all
   end

@@ -7,11 +7,11 @@ image: forge
 # Deploy to these servers.
 servers:
   web:
-    - <%= ENV.fetch("WEB_SERVER", "192.168.0.1") %>
-  job:
-    hosts:
-      - <%= ENV.fetch("WEB_SERVER", "192.168.0.1") %>
-    cmd: bin/jobs
+    - 192.168.0.1
+  # job:
+  #   hosts:
+  #     - 192.168.0.1
+  #   cmd: bin/jobs
 
 # Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
 # If used with Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
@@ -20,14 +20,14 @@ servers:
 #
 # Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
 #
-proxy:
-  ssl: true
-  host: <%= ENV.fetch("APP_HOST", "forge.example.com") %>
+# proxy:
+#   ssl: true
+#   host: app.example.com
 
 # Where you keep your container images.
 registry:
   # Alternatives: hub.docker.com / registry.digitalocean.com / ghcr.io / ...
-  server: <%= ENV.fetch("REGISTRY_SERVER", "ghcr.io") %>
+  server: localhost:5555
 
   # Needed for authenticated registries.
   # username: your-user
