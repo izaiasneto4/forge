@@ -3,6 +3,7 @@ class ReviewTasksController < ApplicationController
 
   def index
     ReviewTask.recover_orphaned_in_review_tasks!
+    ReviewTask.process_queue_if_idle!
     @review_tasks = ReviewTask.includes(:pull_request).order(created_at: :desc)
     @grouped_tasks = {
       queued: @review_tasks.queued,
@@ -24,6 +25,7 @@ class ReviewTasksController < ApplicationController
 
   def create
     ReviewTask.recover_orphaned_in_review_tasks!
+    ReviewTask.process_queue_if_idle!
     pull_request = PullRequest.find(params[:pull_request_id])
     cli_client = params[:cli_client].presence || Setting.default_cli_client
     review_type = params[:review_type].presence || "review"

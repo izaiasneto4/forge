@@ -704,6 +704,25 @@ class ReviewTaskTest < ActiveSupport::TestCase
     assert_equal "in_review", @task.state
   end
 
+  test "process_queue_if_idle! does nothing when queue is empty" do
+    result = ReviewTask.process_queue_if_idle!
+    assert_nil result
+  end
+
+  test "process_queue_if_idle! does nothing when review is running" do
+    @task.update!(state: "in_review")
+    queued_task = ReviewTask.create!(
+      pull_request: PullRequest.create!(github_id: 999, number: 99, title: "Queued", url: "http://example.com", repo_owner: "test", repo_name: "repo", review_status: "pending_review"),
+      state: "queued",
+      queued_at: Time.current,
+      cli_client: "claude",
+      review_type: "review"
+    )
+
+    ReviewTask.process_queue_if_idle!
+    assert_equal "queued", queued_task.reload.state
+  end
+
   # Callbacks
   test "before_destroy resets PR status when PR is reviewed_by_me" do
     @task.update!(state: "reviewed")

@@ -384,6 +384,16 @@ class ReviewTask < ApplicationRecord
     false
   end
 
+  # Process queued items if no review is running
+  # Called on page loads to ensure queue doesn't get stuck
+  def self.process_queue_if_idle!
+    return unless queued.exists?
+    return if any_review_running?
+    return if claimed_review_job_exists?
+
+    ProcessReviewQueueJob.perform_later
+  end
+
   def archived?
     archived == true
   end

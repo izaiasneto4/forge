@@ -80,9 +80,7 @@ class ReviewTaskJob < ApplicationJob
   end
 
   def schedule_next_queued_review
-    return unless Setting.auto_review_mode?
-
-    ProcessReviewQueueJob.set(wait: Setting.auto_review_delay.seconds).perform_later
+    ProcessReviewQueueJob.perform_later
   end
 
   private

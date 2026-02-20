@@ -1,6 +1,7 @@
 class PullRequestsController < ApplicationController
   def index
     ReviewTask.recover_orphaned_in_review_tasks!
+    ReviewTask.process_queue_if_idle!
     @presenter = PullRequestIndexPresenter.new
     @current_repo = @presenter.current_repo
     @pending_review = @presenter.columns[:pending_review]
