@@ -1,4 +1,15 @@
 Rails.application.routes.draw do
+  namespace :api do
+    namespace :v1 do
+      post :sync, to: "syncs#create"
+      post :reviews, to: "reviews#create"
+      get :status, to: "status#index"
+      get :pull_requests, to: "pull_requests#index"
+      get "review_tasks/:id/logs", to: "review_task_logs#show"
+      post "repositories/switch", to: "repositories#create"
+    end
+  end
+
   resources :pull_requests, only: [ :index ] do
     collection do
       post :sync
