@@ -44,6 +44,7 @@ class ReviewCommentBuilder
 
   def create_review_comment(item)
     @review_task.review_comments.create!(
+      title: item.title,
       file_path: item.file,
       line_number: parse_line_number(item.lines),
       severity: map_severity(item.severity),
@@ -67,9 +68,40 @@ class ReviewCommentBuilder
     body = item.comment.to_s
 
     if item.suggested_fix.present?
-      body += "\n\n**Suggested fix:**\n```\n#{item.suggested_fix}\n```"
+      language = detect_language_from_file(item.file)
+      body += "\n\n**Suggested fix:**\n```#{language}\n#{item.suggested_fix}\n```"
     end
 
     body
   end
+
+  def detect_language_from_file(filename)
+    return "" if filename.blank? || filename == "N/A"
+
+    ext = File.extname(filename).downcase.delete(".")
+    EXTENSION_LANGUAGE_MAP[ext] || ""
+  end
+
+  EXTENSION_LANGUAGE_MAP = {
+    "rb" => "ruby",
+    "js" => "javascript",
+    "ts" => "typescript",
+    "tsx" => "typescript",
+    "jsx" => "javascript",
+    "py" => "python",
+    "go" => "go",
+    "rs" => "rust",
+    "java" => "java",
+    "kt" => "kotlin",
+    "swift" => "swift",
+    "cs" => "csharp",
+    "cpp" => "cpp",
+    "c" => "c",
+    "php" => "php",
+    "sh" => "bash",
+    "yml" => "yaml",
+    "yaml" => "yaml",
+    "json" => "json",
+    "sql" => "sql"
+  }.freeze
 end

@@ -280,7 +280,7 @@ class ReviewCommentBuilderTest < ActiveSupport::TestCase
     assert_equal "test.rb", result.file_path
     assert_equal 10, result.line_number
     assert_equal "critical", result.severity
-    assert_equal "Fix this\n\n**Suggested fix:**\n```\nfix code\n```", result.body
+    assert_equal "Fix this\n\n**Suggested fix:**\n```ruby\nfix code\n```", result.body
     assert_equal "pending", result.status
 
     ReviewComment.where(review_task_id: @review_task.id).destroy_all
