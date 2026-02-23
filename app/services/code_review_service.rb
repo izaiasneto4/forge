@@ -146,12 +146,18 @@ class CodeReviewService
       After completing the review, you MUST output your findings as a JSON array wrapped in ```json code block.
       Each item in the array should have this exact structure:
       {
+        "title": "Brief, actionable title of the issue (max 10 words)",
         "severity": "error" | "warning" | "info",
         "file": "path/to/file.ext",
         "lines": "10-20" or "10" or null,
-        "comment": "Description of the issue in markdown",
+        "comment": "Detailed description of the issue in markdown",
         "suggested_fix": "Code suggestion if applicable, or null"
       }
+
+      IMPORTANT: The "file" field MUST be the actual file path from the repository (e.g., "app/models/user.rb").
+      - If you cannot determine the exact file path, use "N/A" instead of "unknown" or placeholder text
+      - Never include explanatory text like "unknown (ClassName)" in the file field
+      - The file path should be relative to the repository root
 
       Example output format:
       ```json
@@ -224,12 +230,17 @@ class CodeReviewService
       After consolidation, you MUST output your findings as a JSON array wrapped in ```json code block.
       Each item in the array should have this exact structure:
       {
+        "title": "Brief, actionable title of the issue (max 10 words)",
         "severity": "error" | "warning" | "info",
         "file": "path/to/file.ext",
         "lines": "10-20" or "10" or null,
-        "comment": "Description of the issue in markdown",
+        "comment": "Detailed description of the issue in markdown",
         "suggested_fix": "Code suggestion if applicable, or null"
       }
+
+      IMPORTANT: The "file" field MUST be the actual file path from the repository.
+      - If you cannot determine the exact file path, use "N/A"
+      - Never include explanatory text like "unknown (ClassName)" in the file field
 
       If no issues are found, return:
       ```json
