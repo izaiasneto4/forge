@@ -25,6 +25,8 @@ group :development, :test do
   gem "brakeman", require: false
   gem "rubocop-rails-omakase", require: false
   gem "mocha", "~> 3.0", groups: [ :development, :test ]
+  gem "simplecov", require: false
+  gem "webrick", require: false
 end
 
 group :development do

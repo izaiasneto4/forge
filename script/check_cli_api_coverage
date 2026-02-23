@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running CLI/API unit tests with SimpleCov coverage gate..."
+COVERAGE_GATE=1 bin/rails test \
+  test/controllers/api/v1 \
+  test/services/pull_request_url_parser_test.rb \
+  test/services/repo_slug_resolver_test.rb \
+  test/services/repo_switch_resolver_test.rb \
+  test/lib/forge

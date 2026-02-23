@@ -83,6 +83,11 @@ jobs:
       - name: Prepare database
         run: bin/rails db:prepare
 
-      - name: Run tests
-        run: bin/rails test
+      - name: Run CLI/API unit tests with coverage gate
+        run: script/check_cli_api_coverage
 
+      - name: Run CLI E2E tests
+        run: SKIP_COVERAGE=1 bin/rails test test/integration/forge_cli_e2e_test.rb
+
+      - name: Run remaining tests
+        run: SKIP_COVERAGE=1 bin/rails test
