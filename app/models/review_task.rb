@@ -105,7 +105,19 @@ class ReviewTask < ApplicationRecord
   end
 
   def self.any_review_running?
-    in_review.exists?
+    in_review.exists? || pending_review_with_active_job?
+  end
+
+  def self.pending_review_with_active_job?
+    return false unless defined?(SolidQueue::ClaimedExecution)
+    return false unless SolidQueue::ClaimedExecution.table_exists?
+
+    SolidQueue::ClaimedExecution
+      .joins(:job)
+      .where("solid_queue_jobs.class_name = ?", "ReviewTaskJob")
+      .exists?
+  rescue ActiveRecord::StatementInvalid
+    false
   end
 
   # Atomically claim the next queued task for processing
@@ -117,8 +129,14 @@ class ReviewTask < ApplicationRecord
       return nil if any_review_running?
 
       # Lock the next queued task atomically
-      # SKIP LOCKED ensures we don't wait if another job is claiming
-      next_task = queued.lock("FOR UPDATE SKIP LOCKED").first
+      # Use appropriate locking based on database adapter (SQLite doesn't support SKIP LOCKED)
+      lock_clause = if ActiveRecord::Base.connection.adapter_name == "SQLite"
+        "FOR UPDATE"
+      else
+        "FOR UPDATE SKIP LOCKED"
+      end
+
+      next_task = queued.lock(lock_clause).first
       return nil unless next_task
 
       next_task.dequeue!
@@ -390,8 +408,21 @@ class ReviewTask < ApplicationRecord
     return unless queued.exists?
     return if any_review_running?
     return if claimed_review_job_exists?
+    return if ready_review_job_exists?
 
     ProcessReviewQueueJob.perform_later
+  end
+
+  def self.ready_review_job_exists?
+    return false unless defined?(SolidQueue::ReadyExecution)
+    return false unless SolidQueue::ReadyExecution.table_exists?
+
+    SolidQueue::ReadyExecution
+      .joins(:job)
+      .where("solid_queue_jobs.class_name = ?", "ProcessReviewQueueJob")
+      .exists?
+  rescue ActiveRecord::StatementInvalid
+    false
   end
 
   def archived?
