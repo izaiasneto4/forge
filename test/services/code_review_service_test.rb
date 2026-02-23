@@ -200,7 +200,7 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
     assert_includes prompt, '"severity": "error" | "warning" | "info"'
     assert_includes prompt, '"file": "path/to/file.ext"'
     assert_includes prompt, '"lines": "10-20" or "10" or null'
-    assert_includes prompt, '"comment": "Description of the issue in markdown"'
+    assert_includes prompt, '"comment": "Detailed description of the issue in markdown"'
     assert_includes prompt, '"suggested_fix": "Code suggestion if applicable, or null"'
   end
 
@@ -265,7 +265,7 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
     assert_includes prompt, '"severity": "error" | "warning" | "info"'
     assert_includes prompt, '"file": "path/to/file.ext"'
     assert_includes prompt, '"lines": "10-20" or "10" or null'
-    assert_includes prompt, '"comment": "Description of the issue in markdown"'
+    assert_includes prompt, '"comment": "Detailed description of the issue in markdown"'
     assert_includes prompt, '"suggested_fix": "Code suggestion if applicable, or null"'
   end
 

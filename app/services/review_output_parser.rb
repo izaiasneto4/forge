@@ -1,5 +1,5 @@
 class ReviewOutputParser
-  ReviewItem = Struct.new(:severity, :file, :lines, :comment, :suggested_fix, keyword_init: true)
+  ReviewItem = Struct.new(:title, :severity, :file, :lines, :comment, :suggested_fix, keyword_init: true)
 
   JSON_BLOCK_REGEX = /```json\s*\n(.*?)\n```/m
 
@@ -37,9 +37,11 @@ class ReviewOutputParser
     data.filter_map do |item|
       next unless item.is_a?(Hash)
 
+      file_path = normalize_file_path(item["file"])
       ReviewItem.new(
+        title: item["title"].presence || generate_title_from_comment(item["comment"]),
         severity: normalize_severity(item["severity"]),
-        file: item["file"].to_s,
+        file: file_path,
         lines: item["lines"]&.to_s,
         comment: item["comment"].to_s,
         suggested_fix: item["suggested_fix"].to_s
@@ -56,5 +58,17 @@ class ReviewOutputParser
     else
       :info
     end
+  end
+
+  def normalize_file_path(file)
+    path = file.to_s.strip
+    return "N/A" if path.blank? || path.downcase.start_with?("unknown")
+    path
+  end
+
+  def generate_title_from_comment(comment)
+    return "Review finding" if comment.blank?
+    first_sentence = comment.to_s.split(/[.!?\n]/).first.to_s.strip
+    first_sentence.truncate(60)
   end
 end
