@@ -1,0 +1,65 @@
+require "test_helper"
+
+class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
+  setup do
+    PullRequest.create!(
+      github_id: 1,
+      number: 1,
+      title: "A",
+      url: "https://github.com/acme/api/pull/1",
+      repo_owner: "acme",
+      repo_name: "api",
+      review_status: "pending_review",
+      updated_at_github: Time.current
+    )
+  end
+
+  test "lists pull requests" do
+    get "/api/v1/pull_requests", as: :json
+
+    assert_response :success
+    json = JSON.parse(response.body)
+    assert_equal true, json["ok"]
+    assert_equal 1, json["items"].size
+  end
+
+  test "lists pull requests with nil updated_at_github" do
+    PullRequest.create!(
+      github_id: 2,
+      number: 2,
+      title: "B",
+      url: "https://github.com/acme/api/pull/2",
+      repo_owner: "acme",
+      repo_name: "api",
+      review_status: "pending_review",
+      updated_at_github: nil
+    )
+
+    get "/api/v1/pull_requests", as: :json
+
+    assert_response :success
+    json = JSON.parse(response.body)
+    item = json["items"].find { |v| v["number"] == 2 }
+    assert_nil item["updated_at_github"]
+  end
+
+  test "filters by status" do
+    get "/api/v1/pull_requests", params: { status: "pending_review" }, as: :json
+
+    assert_response :success
+    json = JSON.parse(response.body)
+    assert_equal 1, json["items"].size
+  end
+
+  test "rejects invalid status" do
+    get "/api/v1/pull_requests", params: { status: "wat" }, as: :json
+
+    assert_response :unprocessable_entity
+  end
+
+  test "rejects invalid limit" do
+    get "/api/v1/pull_requests", params: { limit: 0 }, as: :json
+
+    assert_response :unprocessable_entity
+  end
+end
