@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_14_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_21_000001) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -53,6 +53,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_14_000001) do
     t.integer "review_task_id", null: false
     t.string "severity", default: "suggestion", null: false
     t.string "status", default: "pending", null: false
+    t.string "title"
     t.datetime "updated_at", null: false
     t.index ["file_path"], name: "index_review_comments_on_file_path"
     t.index ["review_task_id", "file_path"], name: "index_review_comments_on_review_task_id_and_file_path"
@@ -113,6 +114,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_14_000001) do
     t.datetime "updated_at", null: false
     t.text "value"
     t.index ["key"], name: "index_settings_on_key", unique: true
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "email", default: "", null: false
+    t.string "encrypted_password", default: "", null: false
+    t.datetime "remember_created_at"
+    t.datetime "reset_password_sent_at"
+    t.string "reset_password_token"
+    t.string "role", default: "user", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
   add_foreign_key "agent_logs", "review_tasks"
