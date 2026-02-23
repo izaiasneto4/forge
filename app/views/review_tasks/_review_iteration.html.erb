@@ -66,6 +66,9 @@
                 <div class="flex-1 min-w-0">
                   <div class="linear-checklist-header">
                     <div class="linear-checklist-meta">
+                      <% if item.title.present? %>
+                        <span class="font-medium text-[color:var(--color-text-primary)] text-[13px]"><%= item.title %></span>
+                      <% end %>
                       <code class="linear-checklist-location">
                         <%= item.file %><%= ":#{item.lines}" if item.lines.present? %>
                       </code>

@@ -8,6 +8,9 @@
       <div class="flex-1 min-w-0">
         <div class="flex items-center justify-between gap-2 mb-3">
           <div class="flex items-center gap-2">
+            <% if comment.title.present? %>
+              <span class="font-medium text-[color:var(--color-text-primary)] text-[13px]"><%= comment.title %></span>
+            <% end %>
             <code class="text-[12px] font-mono bg-[color:var(--color-bg-tertiary)] px-2 py-1 rounded text-[color:var(--color-text-primary)]">
               <%= comment.location %>
             </code>

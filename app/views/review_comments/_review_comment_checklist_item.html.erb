@@ -41,6 +41,9 @@
       <!-- Header Row -->
       <div class="linear-checklist-header">
         <div class="linear-checklist-meta">
+          <% if comment.title.present? %>
+            <span class="font-medium text-[color:var(--color-text-primary)] text-[13px]"><%= comment.title %></span>
+          <% end %>
           <code class="linear-checklist-location"><%= comment.location %></code>
           <span class="linear-badge <%= severity_badge_class(comment.severity) %>">
             <%= comment.severity.capitalize %>
