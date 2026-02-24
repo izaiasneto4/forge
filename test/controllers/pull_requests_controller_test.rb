@@ -28,6 +28,26 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index renders waiting on author filter and column" do
+    waiting_pr = PullRequest.create!(
+      github_id: 125,
+      number: 3,
+      title: "Waiting PR",
+      url: "https://github.com/test/repo/pull/3",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+    ReviewTask.create!(pull_request: waiting_pr, state: "waiting_implementation")
+    waiting_pr.update!(review_status: "waiting_implementation")
+
+    get pull_requests_path
+    assert_response :success
+    assert_includes response.body, 'data-state="waiting_implementation"'
+    assert_includes response.body, "Waiting on Author"
+    assert_includes response.body, "Waiting PR"
+  end
+
   test "index shows review action for idle pending review task" do
     ReviewTask.create!(
       pull_request: @pr1,
@@ -199,6 +219,26 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     @pr1.reload
     assert_equal "reviewed_by_me", @pr1.review_status
+  end
+
+  test "update_status turbo stream updates waiting count target" do
+    waiting_pr = PullRequest.create!(
+      github_id: 126,
+      number: 4,
+      title: "Waiting PR",
+      url: "https://github.com/test/repo/pull/4",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+    ReviewTask.create!(pull_request: waiting_pr, state: "waiting_implementation")
+    waiting_pr.update!(review_status: "waiting_implementation")
+
+    task = ReviewTask.create!(pull_request: @pr1, state: "reviewed")
+    patch update_status_pull_request_path(@pr1), params: { review_status: "reviewed_by_me" }, as: :turbo_stream
+
+    assert_response :success
+    assert_includes response.body, 'target="pr_count_waiting_implementation"'
   end
 
   test "update_status with HTML response on success" do

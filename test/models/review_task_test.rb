@@ -757,6 +757,17 @@ class ReviewTaskTest < ActiveSupport::TestCase
     assert_equal "pending_review", @pr.review_status
   end
 
+  test "before_destroy resets PR status when PR is waiting_implementation" do
+    @task.update!(state: "waiting_implementation")
+    @task.save!
+    @pr.update_column(:review_status, "waiting_implementation")
+
+    @task.destroy!
+    @pr.reload
+
+    assert_equal "pending_review", @pr.review_status
+  end
+
   test "before_destroy does not reset PR status when PR is pending_review" do
     @task.update!(state: "reviewed")
     @task.save!

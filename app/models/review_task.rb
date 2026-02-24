@@ -2,6 +2,7 @@ class ReviewTask < ApplicationRecord
   STATES = %w[queued pending_review in_review reviewed waiting_implementation done failed_review].freeze
   REVIEW_TYPES = %w[review swarm].freeze
   SUBMISSION_STATUSES = %w[pending_submission submitted submission_failed].freeze
+  SUBMITTED_EVENTS = %w[COMMENT APPROVE REQUEST_CHANGES].freeze
   MAX_RETRY_ATTEMPTS = 3
   BACKOFF_BASE_SECONDS = 2
 
@@ -20,6 +21,7 @@ class ReviewTask < ApplicationRecord
   validates :cli_client, inclusion: { in: Setting::CLI_CLIENTS }
   validates :review_type, inclusion: { in: REVIEW_TYPES }
   validates :submission_status, inclusion: { in: SUBMISSION_STATUSES }, allow_nil: true
+  validates :submitted_event, inclusion: { in: SUBMITTED_EVENTS }, allow_nil: true
 
   scope :queued, -> { not_archived.where(state: "queued").order(:queued_at) }
   scope :pending_review, -> { not_archived.where(state: "pending_review") }
@@ -83,8 +85,10 @@ class ReviewTask < ApplicationRecord
     submission_status == "submission_failed"
   end
 
-  def mark_submitted!
-    update!(submission_status: "submitted", submitted_at: Time.current)
+  def mark_submitted!(event: nil)
+    attrs = { submission_status: "submitted", submitted_at: Time.current }
+    attrs[:submitted_event] = event if event.present?
+    update!(attrs)
   end
 
   def mark_submission_failed!(reason = nil)
@@ -442,7 +446,7 @@ class ReviewTask < ApplicationRecord
   def reset_pull_request_status
     # When review_task is destroyed, reset PR to pending_review if it was in a reviewed state
     # This prevents orphaned "reviewed" status without actual review data
-    if pull_request&.review_status.in?(%w[reviewed_by_me in_review review_failed])
+    if pull_request&.review_status.in?(%w[reviewed_by_me waiting_implementation in_review review_failed])
       pull_request.update_column(:review_status, "pending_review")
     end
   end

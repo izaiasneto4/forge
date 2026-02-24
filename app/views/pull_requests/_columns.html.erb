@@ -2,6 +2,7 @@
   pending_review = local_assigns[:pending_review] || @pending_review || []
   in_review = local_assigns[:in_review] || @in_review || []
   reviewed_by_me = local_assigns[:reviewed_by_me] || @reviewed_by_me || []
+  waiting_implementation = local_assigns[:waiting_implementation] || @waiting_implementation || []
   reviewed_by_others = local_assigns[:reviewed_by_others] || @reviewed_by_others || []
   review_failed = local_assigns[:review_failed] || @review_failed || []
 %>
@@ -74,6 +75,30 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
           <span>No PRs reviewed yet</span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Waiting on Author Column -->
+  <div class="linear-column">
+    <div class="linear-column-header">
+      <span class="status-dot bg-orange-500"></span>
+      <span>Waiting on Author</span>
+      <span id="pr_count_waiting_implementation" class="count"><%= waiting_implementation.count %></span>
+    </div>
+    <div id="pull_request_column_waiting_implementation"
+         class="linear-column-content"
+         data-kanban-target="column"
+         data-board-filter-target="column"
+         data-status="waiting_implementation">
+      <%= render partial: "pull_requests/pull_request_card", collection: waiting_implementation, as: :pr %>
+      <% if waiting_implementation.empty? %>
+        <div class="linear-empty">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>No PRs waiting on authors</span>
         </div>
       <% end %>
     </div>

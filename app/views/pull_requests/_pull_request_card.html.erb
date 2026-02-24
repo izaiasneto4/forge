@@ -66,6 +66,8 @@
             </svg>
             Failed
           </span>
+        <% elsif task.waiting_implementation? %>
+          <span class="linear-badge bg-orange-100 text-orange-700 text-[10px]">Waiting</span>
         <% else %>
           <span class="linear-badge linear-badge-green text-[10px]">Reviewed</span>
         <% end %>

@@ -73,3 +73,23 @@
   `SKIP_COVERAGE=1 bin/rails test test/controllers/repositories_controller_test.rb`
   `SKIP_COVERAGE=1 bin/rails test test/controllers/pull_requests_controller_test.rb test/controllers/repositories_controller_test.rb`
 - Result: `46 runs, 135 assertions, 0 failures, 0 errors, 0 skips`.
+
+## 2026-02-24 Re-review Lifecycle Plan
+
+- [x] Add `waiting_implementation` PR status + scope/predicate + API allowlist
+- [x] Add PR board `Waiting on Author` column + filter + turbo count updates
+- [x] Update review submission flow to move to waiting state on `REQUEST_CHANGES`
+- [x] Prioritize re-requested reviews over `reviewed_by_me` during sync
+- [x] Reset completed review task to `pending_review` with archived history on re-request
+- [x] Add/adjust regression tests for API, sync, controller lifecycle, and model behaviors
+- [x] Run targeted impacted tests
+
+## 2026-02-24 Re-review Lifecycle Review
+
+- Added waiting-on-author PR status wiring across model/presenter/controllers/views/API.
+- Added submit lifecycle transition: `REQUEST_CHANGES` => `review_task.waiting_implementation` + `pull_request.waiting_implementation`.
+- Updated sync precedence: review requests now override prior reviewed state.
+- Added re-review reset on sync for completed tasks (`reviewed`, `waiting_implementation`, `done`) using `move_backward!("pending_review")` and preserved iteration history.
+- Ran:
+  `SKIP_COVERAGE=1 bin/rails test test/services/github_cli_service_test.rb test/controllers/review_comments_controller_test.rb test/controllers/api/v1/pull_requests_controller_test.rb test/controllers/pull_requests_controller_test.rb test/models/pull_request_test.rb test/models/review_task_test.rb test/controllers/repositories_controller_test.rb`
+- Result: `273 runs, 521 assertions, 0 failures, 0 errors, 37 skips`.

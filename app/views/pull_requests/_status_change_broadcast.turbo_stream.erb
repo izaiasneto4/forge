@@ -19,6 +19,10 @@
   <%= PullRequest.reviewed_by_me.count %>
 <% end %>
 
+<%= turbo_stream.update "pr_count_waiting_implementation" do %>
+  <%= PullRequest.waiting_implementation.count %>
+<% end %>
+
 <%= turbo_stream.update "pr_count_reviewed_by_others" do %>
   <%= PullRequest.reviewed_by_others.count %>
 <% end %>

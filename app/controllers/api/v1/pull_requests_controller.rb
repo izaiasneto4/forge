@@ -1,5 +1,5 @@
 class Api::V1::PullRequestsController < Api::V1::BaseController
-  ALLOWED_STATUSES = %w[pending_review in_review reviewed_by_me reviewed_by_others review_failed all].freeze
+  ALLOWED_STATUSES = %w[pending_review in_review reviewed_by_me waiting_implementation reviewed_by_others review_failed all].freeze
 
   def index
     status = params[:status].presence || "all"

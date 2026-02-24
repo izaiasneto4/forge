@@ -111,7 +111,7 @@ bin/forge status --json
 #### `bin/forge list [--status ...] [--limit N] [--json]`
 List PRs known to Forge.
 
-- `--status`: `pending_review`, `in_review`, `reviewed_by_me`, `reviewed_by_others`, `review_failed`, `all`.
+- `--status`: `pending_review`, `in_review`, `reviewed_by_me`, `waiting_implementation`, `reviewed_by_others`, `review_failed`, `all`.
 - `--limit`: 1-200.
 - `--json`: print raw JSON response.
 

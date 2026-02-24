@@ -48,13 +48,15 @@ class ReviewCommentsController < ApplicationController
     submitter = GithubReviewSubmitter.new(review_task: @review_task)
 
     begin
-      result = submitter.submit_review(event: event, summary: summary, comments: @selected_comments)
+      effective_event = resolve_review_event(event, @selected_comments)
+      result = submitter.submit_review(event: effective_event, summary: summary, comments: @selected_comments)
 
       # Mark submitted comments as addressed
       @selected_comments.update_all(status: "addressed")
 
       # Track submission status
-      @review_task.mark_submitted!
+      @review_task.mark_submitted!(event: effective_event)
+      transition_review_lifecycle!(effective_event)
 
       respond_to do |format|
         format.html do
@@ -103,6 +105,23 @@ class ReviewCommentsController < ApplicationController
     when "addressed" then "dismissed"
     when "dismissed" then "pending"
     else "pending"
+    end
+  end
+
+  def resolve_review_event(explicit_event, comments)
+    return explicit_event if explicit_event.present?
+    return "REQUEST_CHANGES" if comments.any? { |comment| comment.critical? || comment.major? }
+
+    "COMMENT"
+  end
+
+  def transition_review_lifecycle!(effective_event)
+    if effective_event == "REQUEST_CHANGES"
+      @review_task.mark_waiting_implementation!
+      @review_task.pull_request.update!(review_status: "waiting_implementation")
+    elsif @review_task.waiting_implementation?
+      @review_task.update!(state: "reviewed")
+      @review_task.pull_request.update!(review_status: "reviewed_by_me")
     end
   end
 end

@@ -51,6 +51,27 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, json["items"].size
   end
 
+  test "filters by waiting_implementation status" do
+    waiting_pr = PullRequest.create!(
+      github_id: 2,
+      number: 2,
+      title: "Waiting PR",
+      url: "https://github.com/acme/api/pull/2",
+      repo_owner: "acme",
+      repo_name: "api",
+      review_status: "pending_review",
+      updated_at_github: Time.current
+    )
+    ReviewTask.create!(pull_request: waiting_pr, state: "waiting_implementation")
+    waiting_pr.update!(review_status: "waiting_implementation")
+
+    get "/api/v1/pull_requests", params: { status: "waiting_implementation" }, as: :json
+
+    assert_response :success
+    json = JSON.parse(response.body)
+    assert_equal [ 2 ], json["items"].map { |item| item["number"] }
+  end
+
   test "rejects invalid status" do
     get "/api/v1/pull_requests", params: { status: "wat" }, as: :json
 

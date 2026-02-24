@@ -36,8 +36,10 @@
                 data-action="click->repo-selector#toggle"
                 data-repo-selector-target="button"
                 class="linear-btn linear-btn-secondary text-[12px] md:text-[13px] py-1.5 px-2 md:px-3 max-w-[140px] md:max-w-none">
-          <span data-repo-selector-target="currentRepoName" class="truncate <%= @current_repo.blank? ? 'text-[color:var(--color-status-todo)]' : '' %>">
-            <%= @current_repo.present? ? File.basename(@current_repo) : "Select repo" %>
+          <span id="repo-selector-current-repo-name"
+                data-repo-selector-target="currentRepoName"
+                class="truncate <%= @current_repo.blank? ? 'text-[color:var(--color-status-todo)]' : '' %>">
+            <%= render partial: "repositories/current_repo_name", locals: { current_repo: @current_repo } %>
           </span>
           <svg class="w-4 h-4 text-[color:var(--color-text-tertiary)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -47,11 +49,13 @@
         <!-- Dropdown Panel - responsive positioning -->
         <div data-repo-selector-target="dropdown"
              class="hidden absolute left-0 md:left-0 top-full mt-1 w-[calc(100vw-32px)] md:w-72 max-w-sm linear-dropdown z-50">
-          <%= render partial: "repositories/dropdown_list", locals: {
-            repositories: repositories,
-            current_repo: @current_repo,
-            repos_folder: repos_folder
-          } %>
+          <div id="repo-selector-dropdown-list">
+            <%= render partial: "repositories/dropdown_list", locals: {
+              repositories: repositories,
+              current_repo: @current_repo,
+              repos_folder: repos_folder
+            } %>
+          </div>
         </div>
       </div>
     </div>
@@ -141,6 +145,13 @@
                 data-action="click->board-filter#filterState">
           Reviewed
         </button>
+        <button type="button"
+                class="linear-btn linear-btn-sm linear-btn-ghost text-[11px]"
+                data-board-filter-target="stateFilter"
+                data-state="waiting_implementation"
+                data-action="click->board-filter#filterState">
+          Waiting
+        </button>
       </div>
 
       <button type="button"
@@ -152,7 +163,7 @@
 
     <div class="flex items-center gap-3">
       <span id="pr-count" class="text-[11px] md:text-[12px] text-[color:var(--color-text-tertiary)]">
-        <%= @pending_review.to_a.count + @in_review.to_a.count + @reviewed_by_me.to_a.count + @reviewed_by_others.to_a.count + @review_failed.to_a.count %> PRs
+        <%= @pending_review.to_a.count + @in_review.to_a.count + @reviewed_by_me.to_a.count + @waiting_implementation.to_a.count + @reviewed_by_others.to_a.count + @review_failed.to_a.count %> PRs
       </span>
       <%= render partial: "pull_requests/sync_status" %>
     </div>

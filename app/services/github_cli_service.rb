@@ -23,13 +23,13 @@ class GithubCliService
     review_requests = fetch_review_requests
     reviewed = fetch_reviewed_by_me
 
-    # PRs I've already reviewed should not appear in pending
-    reviewed_ids = reviewed.map { |pr| pr[:github_id] }.to_set
-    pending = review_requests.reject { |pr| reviewed_ids.include?(pr[:github_id]) }
+    # Re-requested reviews take precedence over "reviewed_by_me"
+    pending_ids = review_requests.map { |pr| pr[:github_id] }.to_set
+    reviewed_only = reviewed.reject { |pr| pending_ids.include?(pr[:github_id]) }
 
     {
-      pending_review: pending,
-      reviewed_by_me: reviewed
+      pending_review: review_requests,
+      reviewed_by_me: reviewed_only
     }
   end
 
@@ -42,6 +42,27 @@ class GithubCliService
       remove_stale_prs(prs) if @repo_path.present?
       mark_reviewed_by_others
     end
+  end
+
+  def latest_my_review_state(pull_request)
+    json = run_gh_command("api", "/repos/#{pull_request.repo_full_name}/pulls/#{pull_request.number}/reviews")
+    reviews = JSON.parse(json)
+
+    my_reviews = reviews.select do |review|
+      review.dig("user", "login") == @username && review["submitted_at"].present?
+    end
+    return nil if my_reviews.empty?
+
+    latest = my_reviews.max_by { |review| Time.zone.parse(review["submitted_at"]) }
+    latest["state"]
+  end
+
+  def review_requested_for_me?(pull_request)
+    json = run_gh_command("api", "/repos/#{pull_request.repo_full_name}/pulls/#{pull_request.number}")
+    payload = JSON.parse(json)
+    requested_reviewers = payload["requested_reviewers"] || []
+
+    requested_reviewers.any? { |reviewer| reviewer["login"] == @username }
   end
 
   def self.fetch_latest_for_repo(repo_path)
@@ -178,17 +199,40 @@ class GithubCliService
     end
   end
 
-  def sync_prs(prs, _default_review_status)
+  def sync_prs(prs, default_review_status)
     prs.each do |pr_data|
       pr = PullRequest.find_or_initialize_by(github_id: pr_data[:github_id])
-      # Only preserve review_status if PR has an active review_task (user action)
-      # Otherwise, update status based on GitHub's current state
-      if pr.persisted? && pr.review_task.present?
-        pr_data.delete(:review_status)
+
+      synced_status = pr_data[:review_status] || default_review_status
+      attrs = pr_data.dup
+
+      if should_reset_for_rerequest?(pr, synced_status)
+        reset_for_rerequest!(pr)
+        attrs[:review_status] = "pending_review"
+      elsif pr.persisted? && pr.review_task.present?
+        attrs.delete(:review_status)
       end
-      pr.assign_attributes(pr_data)
+
+      pr.assign_attributes(attrs)
       pr.save!
     end
+  end
+
+  def should_reset_for_rerequest?(pull_request, synced_status)
+    return false unless synced_status == "pending_review"
+
+    task = pull_request.review_task
+    return false unless task.present?
+
+    %w[reviewed waiting_implementation done].include?(task.state)
+  end
+
+  def reset_for_rerequest!(pull_request)
+    task = pull_request.review_task
+    return unless task.present?
+
+    task.move_backward!("pending_review")
+    task.update!(submission_status: "pending_submission", submitted_at: nil)
   end
 
   def mark_reviewed_by_others

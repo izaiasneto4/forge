@@ -12,6 +12,7 @@ class PullRequestIndexPresenter
       pending_review: base_scope.pending_review.includes(:review_task).order(updated_at_github: :desc),
       in_review: base_scope.in_review.includes(:review_task).order(updated_at_github: :desc),
       reviewed_by_me: base_scope.reviewed_by_me.includes(:review_task).order(updated_at_github: :desc),
+      waiting_implementation: base_scope.waiting_implementation.includes(:review_task).order(updated_at_github: :desc),
       reviewed_by_others: base_scope.reviewed_by_others.includes(:review_task).order(updated_at_github: :desc),
       review_failed: base_scope.review_failed.includes(:review_task).order(updated_at_github: :desc)
     }

@@ -144,6 +144,12 @@ class PullRequestTest < ActiveSupport::TestCase
     skip "Foreign key constraint issue in test environment"
   end
 
+  test "review_status_consistency rejects waiting_implementation without review_task" do
+    @pr.review_status = "waiting_implementation"
+    refute @pr.valid?
+    assert_includes @pr.errors[:review_status], "cannot be 'waiting_implementation' without a review task"
+  end
+
   # Scopes
   test "default_scope excludes deleted PRs" do
     @pr.save!
@@ -253,6 +259,24 @@ class PullRequestTest < ActiveSupport::TestCase
     assert_equal [ @pr ], PullRequest.reviewed_by_others.to_a
   end
 
+  test "waiting_implementation scope includes only waiting_implementation PRs" do
+    @pr.save!
+    ReviewTask.create!(pull_request: @pr, state: "waiting_implementation", cli_client: "claude", review_type: "review")
+    @pr.update!(review_status: "waiting_implementation")
+
+    pending = PullRequest.create!(
+      github_id: 456,
+      number: 43,
+      title: "Pending PR",
+      url: "https://github.com/test/repo/pull/43",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+
+    assert_equal [ @pr ], PullRequest.waiting_implementation.to_a
+  end
+
   test "review_failed scope includes only review_failed PRs" do
     skip "Foreign key constraint issue in test environment"
   end
@@ -281,6 +305,16 @@ class PullRequestTest < ActiveSupport::TestCase
   test "review_failed? returns true when status is review_failed" do
     @pr.review_status = "review_failed"
     assert @pr.review_failed?
+  end
+
+  test "waiting_implementation? returns true when status is waiting_implementation" do
+    @pr.review_status = "waiting_implementation"
+    assert @pr.waiting_implementation?
+  end
+
+  test "waiting_implementation? returns false when status is not waiting_implementation" do
+    @pr.review_status = "pending_review"
+    refute @pr.waiting_implementation?
   end
 
   test "review_failed? returns false when status is not review_failed" do
@@ -361,6 +395,17 @@ class PullRequestTest < ActiveSupport::TestCase
   test "fix_orphaned_review_states resets review_failed without review_task" do
     @pr.save!
     @pr.update_column(:review_status, "review_failed")
+
+    count = PullRequest.fix_orphaned_review_states
+    @pr.reload
+
+    assert_equal 1, count
+    assert_equal "pending_review", @pr.review_status
+  end
+
+  test "fix_orphaned_review_states resets waiting_implementation without review_task" do
+    @pr.save!
+    @pr.update_column(:review_status, "waiting_implementation")
 
     count = PullRequest.fix_orphaned_review_states
     @pr.reload

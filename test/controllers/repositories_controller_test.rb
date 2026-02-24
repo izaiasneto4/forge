@@ -125,7 +125,9 @@ class RepositoriesControllerTest < ActionDispatch::IntegrationTest
     post switch_repositories_path, params: { repo_path: @repo_path }, as: :turbo_stream
 
     assert_response :success
-    assert_includes response.body, "Sync failed: GitHub API error"
+    assert_includes response.body, "Switched to #{@repo_name} but sync failed: GitHub API error"
+    assert_includes response.body, 'target="pr-columns"'
+    assert_includes response.body, 'target="repo-selector-current-repo-name"'
   end
 
   test "switch with error from GithubCliService HTML response" do
@@ -227,5 +229,27 @@ class RepositoriesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "In Review PR"
+  end
+
+  test "switch turbo stream refreshes repo selector current label and dropdown" do
+    Setting.repos_folder = "/tmp/repos"
+    RepoScannerService.any_instance.stubs(:scan).returns([
+      { name: "old-repo", path: "/tmp/old-repo", remote_url: "git@github.com:acme/old-repo.git", branch: "main" },
+      { name: File.basename(@repo_path), path: @repo_path, remote_url: "git@github.com:acme/new-repo.git", branch: "main" }
+    ])
+    Setting.stubs(:sync_needed?).returns(true)
+    GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
+    github_service = Class.new do
+      def sync_to_database!; end
+    end.new
+    GithubCliService.stubs(:new).returns(github_service)
+    Setting.stubs(:touch_last_synced!)
+
+    post switch_repositories_path, params: { repo_path: @repo_path }, as: :turbo_stream
+
+    assert_response :success
+    assert_includes response.body, 'action="update" target="repo-selector-current-repo-name"'
+    assert_includes response.body, 'target="repo-selector-current-repo-name"'
+    assert_includes response.body, 'target="repo-selector-dropdown-list"'
   end
 end

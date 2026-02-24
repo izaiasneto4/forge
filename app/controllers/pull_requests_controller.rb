@@ -7,6 +7,7 @@ class PullRequestsController < ApplicationController
     @pending_review = @presenter.columns[:pending_review]
     @in_review = @presenter.columns[:in_review]
     @reviewed_by_me = @presenter.columns[:reviewed_by_me]
+    @waiting_implementation = @presenter.columns[:waiting_implementation]
     @reviewed_by_others = @presenter.columns[:reviewed_by_others]
     @review_failed = @presenter.columns[:review_failed]
   end

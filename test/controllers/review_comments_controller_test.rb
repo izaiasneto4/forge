@@ -198,6 +198,71 @@ class ReviewCommentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "submit with REQUEST_CHANGES moves task and PR to waiting_implementation" do
+    @pr.update!(review_status: "reviewed_by_me")
+    submitter = Class.new do
+      def submit_review(*)
+        { result: "success" }
+      end
+    end.new
+    GithubReviewSubmitter.stubs(:new).returns(submitter)
+
+    post submit_review_task_review_comments_path(@review_task),
+         params: { event: "REQUEST_CHANGES" }, as: :turbo_stream
+
+    assert_response :success
+    @review_task.reload
+    @pr.reload
+    assert_equal "waiting_implementation", @review_task.state
+    assert_equal "waiting_implementation", @pr.review_status
+    assert_equal "REQUEST_CHANGES", @review_task.submitted_event
+  end
+
+  test "submit with APPROVE keeps review in reviewed state" do
+    @pr.update!(review_status: "reviewed_by_me")
+    submitter = Class.new do
+      def submit_review(*)
+        { result: "success" }
+      end
+    end.new
+    GithubReviewSubmitter.stubs(:new).returns(submitter)
+
+    post submit_review_task_review_comments_path(@review_task),
+         params: { event: "APPROVE" }, as: :turbo_stream
+
+    assert_response :success
+    @review_task.reload
+    @pr.reload
+    assert_equal "reviewed", @review_task.state
+    assert_equal "reviewed_by_me", @pr.review_status
+    assert_equal "APPROVE", @review_task.submitted_event
+  end
+
+  test "submit infers REQUEST_CHANGES for major comments when event omitted" do
+    @pr.update!(review_status: "reviewed_by_me")
+    @comment.update!(severity: "major")
+    submitter = Class.new do
+      attr_reader :event
+
+      def submit_review(event:, **)
+        @event = event
+        { result: "success" }
+      end
+    end.new
+    GithubReviewSubmitter.stubs(:new).returns(submitter)
+
+    post submit_review_task_review_comments_path(@review_task),
+         params: { event: "" }, as: :turbo_stream
+
+    assert_response :success
+    @review_task.reload
+    @pr.reload
+    assert_equal "REQUEST_CHANGES", submitter.event
+    assert_equal "waiting_implementation", @review_task.state
+    assert_equal "waiting_implementation", @pr.review_status
+    assert_equal "REQUEST_CHANGES", @review_task.submitted_event
+  end
+
   test "submit with error from GithubReviewSubmitter" do
     submitter = Class.new do
       def submit_review(*)

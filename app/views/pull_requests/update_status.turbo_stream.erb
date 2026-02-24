@@ -12,6 +12,7 @@
   pending_review: PullRequest.pending_review.count,
   in_review: PullRequest.in_review.count,
   reviewed_by_me: PullRequest.reviewed_by_me.count,
+  waiting_implementation: PullRequest.waiting_implementation.count,
   reviewed_by_others: PullRequest.reviewed_by_others.count,
   review_failed: PullRequest.review_failed.count
 } %>
@@ -26,6 +27,10 @@
 
 <%= turbo_stream.update "pr_count_reviewed_by_me" do %>
   <%= counts[:reviewed_by_me] %>
+<% end %>
+
+<%= turbo_stream.update "pr_count_waiting_implementation" do %>
+  <%= counts[:waiting_implementation] %>
 <% end %>
 
 <%= turbo_stream.update "pr_count_reviewed_by_others" do %>

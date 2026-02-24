@@ -1,5 +1,5 @@
 class PullRequest < ApplicationRecord
-  REVIEW_STATUSES = %w[pending_review in_review reviewed_by_me reviewed_by_others review_failed].freeze
+  REVIEW_STATUSES = %w[pending_review in_review reviewed_by_me waiting_implementation reviewed_by_others review_failed].freeze
 
   has_one :review_task, dependent: :destroy
 
@@ -22,6 +22,7 @@ class PullRequest < ApplicationRecord
   scope :pending_review, -> { not_archived.where(review_status: "pending_review") }
   scope :in_review, -> { not_archived.where(review_status: "in_review") }
   scope :reviewed_by_me, -> { not_archived.where(review_status: "reviewed_by_me") }
+  scope :waiting_implementation, -> { not_archived.where(review_status: "waiting_implementation") }
   scope :reviewed_by_others, -> { not_archived.where(review_status: "reviewed_by_others") }
   scope :review_failed, -> { not_archived.where(review_status: "review_failed") }
 
@@ -43,6 +44,10 @@ class PullRequest < ApplicationRecord
 
   def in_review?
     review_status == "in_review"
+  end
+
+  def waiting_implementation?
+    review_status == "waiting_implementation"
   end
 
   def review_failed?
@@ -110,7 +115,7 @@ class PullRequest < ApplicationRecord
     fixed_count = 0
 
     # Find PRs in reviewed/in_review/failed states without a review_task
-    orphaned = where(review_status: %w[reviewed_by_me in_review review_failed])
+    orphaned = where(review_status: %w[reviewed_by_me waiting_implementation in_review review_failed])
                  .left_joins(:review_task)
                  .where(review_tasks: { id: nil })
 
@@ -132,12 +137,20 @@ class PullRequest < ApplicationRecord
 
       unless pr.review_task.in_review?
         Rails.logger.info("Fixing state mismatch: PR ##{pr.number} (in_review) with ReviewTask state: #{pr.review_task.state}")
-        pr.update_column(:review_status, pr.review_task.state == "pending_review" ? "pending_review" : "reviewed_by_me")
+        target_status = case pr.review_task.state
+        when "pending_review", "queued"
+          "pending_review"
+        when "waiting_implementation"
+          "waiting_implementation"
+        else
+          "reviewed_by_me"
+        end
+        pr.update_column(:review_status, target_status)
         fixed_count += 1
       end
     end
 
-    # Fix PRs marked as "reviewed_by_me" but ReviewTask is in_review or pending
+    # Fix PRs marked as "reviewed_by_me" but ReviewTask is not in a reviewed state
     reviewed_by_me.includes(:review_task).find_each do |pr|
       next unless pr.review_task.present?
 
@@ -146,6 +159,24 @@ class PullRequest < ApplicationRecord
         pr.update_column(:review_status, pr.review_task.in_review? ? "in_review" : "pending_review")
         fixed_count += 1
       end
+    end
+
+    # Fix PRs marked as "waiting_implementation" but ReviewTask is not waiting
+    waiting_implementation.includes(:review_task).find_each do |pr|
+      next unless pr.review_task.present?
+      next if pr.review_task.waiting_implementation?
+
+      Rails.logger.info("Fixing state mismatch: PR ##{pr.number} (waiting_implementation) with ReviewTask state: #{pr.review_task.state}")
+      target_status = case pr.review_task.state
+      when "in_review"
+        "in_review"
+      when "pending_review", "queued"
+        "pending_review"
+      else
+        "reviewed_by_me"
+      end
+      pr.update_column(:review_status, target_status)
+      fixed_count += 1
     end
 
     fixed_count
@@ -197,6 +228,15 @@ class PullRequest < ApplicationRecord
         errors.add(:review_status, "cannot be 'review_failed' without a review task")
       elsif !review_task.failed_review?
         errors.add(:review_status, "cannot be 'review_failed' when review task has not failed")
+      end
+    end
+
+    # Ensure waiting_implementation status matches ReviewTask state
+    if review_status == "waiting_implementation"
+      if review_task.nil?
+        errors.add(:review_status, "cannot be 'waiting_implementation' without a review task")
+      elsif !review_task.waiting_implementation?
+        errors.add(:review_status, "cannot be 'waiting_implementation' when review task is in #{review_task.state} state")
       end
     end
   end

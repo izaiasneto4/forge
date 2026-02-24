@@ -130,6 +130,29 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert_equal "2024-01-02T00:00:00Z", pr[:updated_at_github]
   end
 
+  test "fetch_all_prs_needing_attention prioritizes review requests over reviewed_by_me" do
+    review_requested_pr = {
+      github_id: 123,
+      number: 123,
+      title: "Requested again",
+      review_status: "pending_review"
+    }
+    reviewed_pr = {
+      github_id: 123,
+      number: 123,
+      title: "Previously reviewed",
+      review_status: "reviewed_by_me"
+    }
+
+    @service.stubs(:fetch_review_requests).returns([ review_requested_pr ])
+    @service.stubs(:fetch_reviewed_by_me).returns([ reviewed_pr ])
+
+    result = @service.fetch_all_prs_needing_attention
+
+    assert_equal [ review_requested_pr ], result[:pending_review]
+    assert_equal [], result[:reviewed_by_me]
+  end
+
   # get_repo_info tests
   test "get_repo_info returns nil for nil repo path" do
     service = GithubCliService.new(username: "test", repo_path: nil)
@@ -174,6 +197,102 @@ class GithubCliServiceTest < ActiveSupport::TestCase
   test "mark_reviewed_by_others returns early when no pending PRs" do
     result = @service.send(:mark_reviewed_by_others)
     assert_nil result
+  end
+
+  test "latest_my_review_state returns newest submitted state for current user" do
+    pr = PullRequest.create!(
+      github_id: 333001,
+      number: 333,
+      title: "Test",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/333",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+
+    payload = [
+      { "user" => { "login" => "other" }, "state" => "APPROVED", "submitted_at" => "2026-02-24T00:00:00Z" },
+      { "user" => { "login" => "testuser" }, "state" => "COMMENTED", "submitted_at" => "2026-02-24T01:00:00Z" },
+      { "user" => { "login" => "testuser" }, "state" => "CHANGES_REQUESTED", "submitted_at" => "2026-02-24T02:00:00Z" }
+    ].to_json
+    @service.stubs(:run_gh_command).returns(payload)
+
+    assert_equal "CHANGES_REQUESTED", @service.latest_my_review_state(pr)
+  end
+
+  test "review_requested_for_me? detects current user in requested reviewers" do
+    pr = PullRequest.create!(
+      github_id: 333002,
+      number: 334,
+      title: "Test",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/334",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+
+    @service.stubs(:run_gh_command).returns(
+      { "requested_reviewers" => [ { "login" => "other" }, { "login" => "testuser" } ] }.to_json
+    )
+
+    assert @service.review_requested_for_me?(pr)
+  end
+
+  test "sync_prs resets completed task to pending_review when review is requested again" do
+    pr = PullRequest.create!(
+      github_id: 222,
+      number: 222,
+      title: "Needs re-review",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/222",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+    task = ReviewTask.create!(
+      pull_request: pr,
+      state: "waiting_implementation",
+      review_output: "Old review output",
+      started_at: 2.hours.ago,
+      completed_at: 1.hour.ago,
+      submission_status: "submitted",
+      submitted_at: 30.minutes.ago
+    )
+    pr.update!(review_status: "waiting_implementation")
+    ReviewComment.create!(
+      review_task: task,
+      body: "Old comment",
+      file_path: "app/models/user.rb",
+      severity: "major"
+    )
+
+    @service.send(:sync_prs, [
+      {
+        github_id: pr.github_id,
+        number: pr.number,
+        title: "Needs re-review (updated)",
+        description: "Updated body",
+        url: pr.url,
+        repo_owner: pr.repo_owner,
+        repo_name: pr.repo_name,
+        author: "author",
+        author_avatar: "https://example.com/a.png",
+        created_at_github: Time.current.iso8601,
+        updated_at_github: Time.current.iso8601,
+        review_status: "pending_review"
+      }
+    ], "pending_review")
+
+    pr.reload
+    task.reload
+
+    assert_equal "pending_review", pr.review_status
+    assert_equal "pending_review", task.state
+    assert_nil task.review_output
+    assert_equal "pending_submission", task.submission_status
+    assert_nil task.submitted_at
+    assert_equal 0, task.review_comments.count
+    assert_equal 1, task.review_iterations.count
+    assert_equal "waiting_implementation", task.review_iterations.first.from_state
   end
 
   # remove_stale_prs tests
