@@ -331,11 +331,14 @@ class ReviewTask < ApplicationRecord
   # - It's in "in_review" state
   # - It's been more than `timeout_minutes` since started_at
   # - No agent_logs in the last `timeout_minutes`
+  # - No active ReviewTaskJob is running for this task
   def self.reset_stuck_tasks(timeout_minutes: 10)
     stuck_threshold = timeout_minutes.minutes.ago
     reset_count = 0
 
     in_review.where("started_at < ?", stuck_threshold).find_each do |task|
+      next if active_job_exists_for?(task.id)
+
       last_log = task.agent_logs.order(created_at: :desc).first
       last_activity = last_log&.created_at || task.started_at
 
@@ -353,6 +356,13 @@ class ReviewTask < ApplicationRecord
     end
 
     reset_count
+  end
+
+  def self.active_job_exists_for?(task_id)
+    SolidQueue::Job.where("arguments LIKE ?", "%#{task_id}%")
+                   .where(class_name: "ReviewTaskJob")
+                   .where(finished_at: nil)
+                   .exists?
   end
 
   # Recover tasks orphaned in in_review state after abrupt worker/process restart.
