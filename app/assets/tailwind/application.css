@@ -352,6 +352,17 @@ html[data-theme="dark"] {
   margin-right: auto;
 }
 
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Linear-style scrollbar */
 @layer base {
   ::-webkit-scrollbar {
@@ -1068,6 +1079,10 @@ html[data-theme="dark"] {
     /* Safe area support */
     padding-left: max(12px, env(safe-area-inset-left));
     padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .linear-filter-bar > * {
+    min-width: 0;
   }
 
   /* Tablet: more padding */
