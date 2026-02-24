@@ -57,3 +57,19 @@
 - Impacted suite pass:
   `SKIP_COVERAGE=1 bin/rails test test/controllers/review_tasks_controller_test.rb test/controllers/repositories_controller_test.rb test/controllers/pull_requests_controller_test.rb test/services/github_review_submitter_test.rb test/services/github_cli_service_test.rb test/services/repo_scanner_service_test.rb test/models/setting_test.rb`
 - Result: `250 runs, 733 assertions, 0 failures, 0 errors, 23 skips`.
+
+## 2026-02-24 Repo Switch Stale Board Plan
+
+- [x] Add regression test for repo switch showing stale PR cards from previous repo
+- [x] Scope PR board columns to selected repo in presenter/controller switch response
+- [x] Run targeted controller/presenter tests and capture results
+
+## 2026-02-24 Repo Switch Stale Board Review
+
+- Added regression test: `RepositoriesControllerTest#test_switch_turbo_stream_only_renders_pull_requests_for_selected_repo`.
+- Scoped PR board queries by selected repo via `PullRequest.for_current_repo` + `PullRequestIndexPresenter`.
+- Updated repo switch turbo-stream to refresh `pr-columns`, `pr-count`, and `sync-status`.
+- Ran:
+  `SKIP_COVERAGE=1 bin/rails test test/controllers/repositories_controller_test.rb`
+  `SKIP_COVERAGE=1 bin/rails test test/controllers/pull_requests_controller_test.rb test/controllers/repositories_controller_test.rb`
+- Result: `46 runs, 135 assertions, 0 failures, 0 errors, 0 skips`.

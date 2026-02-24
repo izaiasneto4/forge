@@ -27,6 +27,16 @@ class PullRequest < ApplicationRecord
 
   default_scope { not_archived }
 
+  def self.for_current_repo(repo_path = Setting.current_repo)
+    return all if repo_path.blank?
+
+    repo_slug = RepoSlugResolver.from_path(repo_path)
+    return none if repo_slug.blank?
+
+    owner, name = repo_slug.split("/", 2)
+    where(repo_owner: owner, repo_name: name)
+  end
+
   def pending_review?
     review_status == "pending_review"
   end

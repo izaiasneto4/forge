@@ -4,6 +4,8 @@ class RepositoriesControllerTest < ActionDispatch::IntegrationTest
   setup do
     Setting.delete_all
     @repo_path = Dir.mktmpdir
+    system("git", "-C", @repo_path, "init", out: File::NULL, err: File::NULL, exception: true)
+    system("git", "-C", @repo_path, "remote", "add", "origin", "git@github.com:test/repo.git", out: File::NULL, err: File::NULL, exception: true)
     @repo_name = File.basename(@repo_path)
   end
 
@@ -157,6 +159,42 @@ class RepositoriesControllerTest < ActionDispatch::IntegrationTest
     post switch_repositories_path, params: { repo_path: @repo_path }
 
     assert_equal @repo_path, Setting.current_repo
+  end
+
+  test "switch turbo stream only renders pull requests for selected repo" do
+    PullRequest.create!(
+      github_id: 910001,
+      number: 1,
+      title: "Other Repo PR",
+      url: "https://github.com/other/backend/pull/1",
+      repo_owner: "other",
+      repo_name: "backend",
+      review_status: "pending_review"
+    )
+    PullRequest.create!(
+      github_id: 910002,
+      number: 2,
+      title: "Selected Repo PR",
+      url: "https://github.com/acme/frontend/pull/2",
+      repo_owner: "acme",
+      repo_name: "frontend",
+      review_status: "pending_review"
+    )
+
+    RepoSlugResolver.stubs(:from_path).with(@repo_path).returns("acme/frontend")
+    Setting.stubs(:sync_needed?).returns(true)
+    GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
+    github_service = Class.new do
+      def sync_to_database!; end
+    end.new
+    GithubCliService.stubs(:new).returns(github_service)
+    Setting.stubs(:touch_last_synced!)
+
+    post switch_repositories_path, params: { repo_path: @repo_path }, as: :turbo_stream
+
+    assert_response :success
+    assert_includes response.body, "Selected Repo PR"
+    refute_includes response.body, "Other Repo PR"
   end
 
   test "switch turbo stream includes in_review pull requests in columns payload" do
