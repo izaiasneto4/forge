@@ -416,18 +416,11 @@ html[data-theme="dark"] {
     }
   }
 
-  /* Desktop: more padding, center when there's space */
+  /* Desktop: more padding */
   @media (min-width: 1024px) {
     .linear-board {
       gap: 16px;
       padding: 24px;
-    }
-  }
-
-  /* Large desktop: center the board when all columns fit */
-  @media (min-width: 1600px) {
-    .linear-board {
-      justify-content: center;
     }
   }
 
@@ -465,8 +458,9 @@ html[data-theme="dark"] {
   /* Large desktop */
   @media (min-width: 1440px) {
     .linear-column {
-      min-width: 300px;
-      max-width: 340px;
+      min-width: 240px;
+      max-width: none;
+      flex: 1 1 0%;
     }
   }
 

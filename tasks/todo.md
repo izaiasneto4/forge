@@ -171,3 +171,41 @@
 - Result:
   - Brakeman: `Security Warnings: 0`
   - Tests: `36 runs, 28 assertions, 0 failures, 0 errors, 18 skips`
+
+## 2026-02-24 Global Responsiveness Plan
+
+- [x] Add shared responsive helpers/utilities in Tailwind CSS for horizontal filter controls and overflow safety
+- [x] Make Pull Requests page header/filter/status and bulk toolbar responsive on small screens
+- [x] Make Review Tasks board header/filter/grid responsive across mobile/tablet/desktop
+- [x] Improve repositories/settings/shared overflow behavior for long text/paths
+- [x] Run targeted tests and record results
+
+## 2026-02-24 Global Responsiveness Review
+
+- Added shared utility support for overflow-safe filter rows (`no-scrollbar`) and safer filter bar child sizing.
+- Updated Pull Requests page controls for mobile:
+  - Filter controls now use horizontal scroll on narrow screens instead of wrapping off-canvas.
+  - Stats/sync row now collapses cleanly; “last synced” text hides on very small screens.
+  - Bulk action toolbar now stacks/actions become full-width on mobile.
+- Updated Review Tasks page for responsive behavior:
+  - Header now collapses better on small widths.
+  - Filter controls now follow the same horizontal-scroll pattern as PR board.
+  - Column grid now scales by breakpoint (`1 -> 2 -> 7`) instead of jumping directly to 7 at `md`.
+- Updated Repositories page for responsiveness:
+  - Header actions stack on small screens.
+  - Long filesystem paths now break instead of overflowing.
+- Ran:
+  `SKIP_COVERAGE=1 bin/rails test test/controllers/pull_requests_controller_test.rb test/controllers/review_tasks_controller_test.rb test/controllers/repositories_controller_test.rb`
+- Result: `91 runs, 309 assertions, 0 failures, 0 errors, 1 skip`.
+
+## 2026-02-24 Global Responsiveness Follow-up Review
+
+- User-reported screenshot showed board still clipped on widescreen.
+- Root cause: `@media (min-width: 1600px) { .linear-board { justify-content: center; } }` centered an overflowing row, clipping both edges.
+- Fix:
+  - Removed wide-screen centering for `.linear-board`.
+  - Updated large-screen `.linear-column` sizing to allow shrink (`min-width: 240px; flex: 1 1 0%; max-width: none`) so columns fit before requiring horizontal scroll.
+- Validation:
+  - `bin/rails tailwindcss:build`
+  - `SKIP_COVERAGE=1 bin/rails test test/controllers/pull_requests_controller_test.rb`
+- Result: build pass, tests pass (`35 runs, 115 assertions, 0 failures`).
