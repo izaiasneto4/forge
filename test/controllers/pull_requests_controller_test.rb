@@ -292,6 +292,14 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, json["deleted_count"]
   end
 
+  test "bulk_destroy JSON deleted_count reflects actual deleted records" do
+    delete bulk_destroy_pull_requests_path, params: { pull_request_ids: [ @pr1.id, 999999 ] }, as: :json
+    assert_response :success
+
+    json = JSON.parse(response.body)
+    assert_equal 1, json["deleted_count"]
+  end
+
   test "bulk_destroy soft deletes PRs" do
     delete bulk_destroy_pull_requests_path, params: { pull_request_ids: [ @pr1.id ] }
 

@@ -158,4 +158,36 @@ class RepositoriesControllerTest < ActionDispatch::IntegrationTest
 
     assert_equal @repo_path, Setting.current_repo
   end
+
+  test "switch turbo stream includes in_review pull requests in columns payload" do
+    in_review_pr = PullRequest.create!(
+      github_id: 987654,
+      number: 654,
+      title: "In Review PR",
+      url: "https://github.com/test/repo/pull/654",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+    ReviewTask.create!(
+      pull_request: in_review_pr,
+      state: "in_review",
+      cli_client: "claude",
+      review_type: "review"
+    )
+    in_review_pr.update_column(:review_status, "in_review")
+
+    Setting.stubs(:sync_needed?).returns(true)
+    GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
+    github_service = Class.new do
+      def sync_to_database!; end
+    end.new
+    GithubCliService.stubs(:new).returns(github_service)
+    Setting.stubs(:touch_last_synced!)
+
+    post switch_repositories_path, params: { repo_path: @repo_path }, as: :turbo_stream
+
+    assert_response :success
+    assert_includes response.body, "In Review PR"
+  end
 end

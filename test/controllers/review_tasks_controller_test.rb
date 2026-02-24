@@ -336,6 +336,33 @@ class ReviewTasksControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Maximum retry attempts reached", json["error"]
   end
 
+  test "retry does not start when another review is already in progress" do
+    @review_task.update!(state: "failed_review", failure_reason: "Test error")
+    running_pr = PullRequest.create!(
+      github_id: 777,
+      number: 777,
+      title: "Running PR",
+      url: "https://github.com/test/repo/pull/777",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+    ReviewTask.create!(
+      pull_request: running_pr,
+      state: "in_review",
+      cli_client: "claude",
+      review_type: "review"
+    )
+    running_pr.update_column(:review_status, "in_review")
+
+    assert_no_enqueued_jobs(only: ReviewTaskJob) do
+      post retry_review_task_path(@review_task)
+    end
+
+    assert_redirected_to review_tasks_path
+    assert_match(/already in progress/i, flash[:alert])
+  end
+
   # Queue tests
   test "create queues task when another review is running" do
     # Start a review first
@@ -420,6 +447,18 @@ class ReviewTasksControllerTest < ActionDispatch::IntegrationTest
     delete dequeue_review_task_path(@review_task), as: :turbo_stream
 
     assert_response :unprocessable_entity
+  end
+
+  test "clear keeps pull request in pending_review after task deletion" do
+    @review_task.update!(state: "reviewed")
+    @pr.update_column(:review_status, "reviewed_by_me")
+
+    assert_difference "ReviewTask.count", -1 do
+      delete clear_review_task_path(@review_task)
+    end
+
+    assert_redirected_to pull_requests_path
+    assert_equal "pending_review", @pr.reload.review_status
   end
 
   test "index includes queued column" do

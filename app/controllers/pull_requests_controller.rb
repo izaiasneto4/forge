@@ -80,15 +80,19 @@ class PullRequestsController < ApplicationController
       return
     end
 
+    deleted_count = 0
     ActiveRecord::Base.transaction do
       pull_requests = PullRequest.where(id: pr_ids)
-      pull_requests.each(&:soft_delete!)
+      pull_requests.each do |pull_request|
+        pull_request.soft_delete!
+        deleted_count += 1
+      end
     end
 
     respond_to do |format|
-      format.turbo_stream { render_sync_stream(notice: "#{pr_ids.size} pull requests deleted") }
-      format.html { redirect_to pull_requests_path, notice: "#{pr_ids.size} pull requests deleted" }
-      format.json { render json: { deleted_count: pr_ids.size } }
+      format.turbo_stream { render_sync_stream(notice: "#{deleted_count} pull requests deleted") }
+      format.html { redirect_to pull_requests_path, notice: "#{deleted_count} pull requests deleted" }
+      format.json { render json: { deleted_count: deleted_count } }
     end
   rescue => e
     respond_to do |format|

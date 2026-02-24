@@ -165,6 +165,20 @@ class GithubReviewSubmitterTest < ActiveSupport::TestCase
     assert_equal "RIGHT", comments[0][:side]
   end
 
+  test "build_review_comments skips comments with N/A file path" do
+    unknown_path_comment = ReviewComment.create!(
+      review_task: @review_task,
+      body: "Cannot map file path",
+      file_path: "N/A",
+      severity: "major",
+      status: "pending"
+    )
+
+    comments = @submitter.send(:build_review_comments, [ unknown_path_comment ])
+
+    assert_equal [], comments
+  end
+
   # build_comment_payload tests
   test "build_comment_payload includes all fields" do
     payload = @submitter.send(:build_comment_payload, @comment1)

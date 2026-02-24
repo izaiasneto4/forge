@@ -112,6 +112,14 @@ class ReviewTasksController < ApplicationController
       end
     end
 
+    if ReviewTask.any_review_running?
+      return respond_to do |format|
+        format.html { redirect_to review_tasks_path, alert: "Review already in progress" }
+        format.turbo_stream { head :unprocessable_entity }
+        format.json { render json: { error: "Review already in progress" }, status: :unprocessable_entity }
+      end
+    end
+
     @review_task.retry_review!
     ReviewTaskJob.perform_later(@review_task.id, is_retry: true)
 
@@ -143,7 +151,7 @@ class ReviewTasksController < ApplicationController
 
     @review_task.destroy!
 
-    pull_request.update!(review_status: "in_review")
+    pull_request.update!(review_status: "pending_review")
 
     respond_to do |format|
       format.html { redirect_to pull_requests_path, notice: "Review cleared for PR ##{pull_request.number}" }

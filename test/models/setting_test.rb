@@ -328,6 +328,16 @@ class SettingTest < ActiveSupport::TestCase
     assert_equal 45, Setting.auto_review_delay_max
   end
 
+  test "auto_review_delay_min falls back to default when stored value is invalid" do
+    Setting.create!(key: Setting::AUTO_REVIEW_DELAY_MIN_KEY, value: "abc")
+    assert_equal Setting::DEFAULT_AUTO_REVIEW_DELAY_MIN, Setting.auto_review_delay_min
+  end
+
+  test "auto_review_delay_max falls back to default when stored value is invalid" do
+    Setting.create!(key: Setting::AUTO_REVIEW_DELAY_MAX_KEY, value: "abc")
+    assert_equal Setting::DEFAULT_AUTO_REVIEW_DELAY_MAX, Setting.auto_review_delay_max
+  end
+
   test "auto_review_delay returns value in range" do
     Setting.auto_review_delay_min = 5
     Setting.auto_review_delay_max = 30
@@ -337,6 +347,16 @@ class SettingTest < ActiveSupport::TestCase
       assert delay >= 5
       assert delay <= 30
     end
+  end
+
+  test "auto_review_delay handles min greater than max" do
+    Setting.auto_review_delay_min = 30
+    Setting.auto_review_delay_max = 5
+
+    delay = Setting.auto_review_delay
+    assert_kind_of Integer, delay
+    assert delay >= 5
+    assert delay <= 30
   end
 
   # Auto-submit settings

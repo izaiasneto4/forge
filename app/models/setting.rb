@@ -83,7 +83,7 @@ class Setting < ApplicationRecord
   end
 
   def self.auto_review_delay_min
-    find_by(key: AUTO_REVIEW_DELAY_MIN_KEY)&.value&.to_i || DEFAULT_AUTO_REVIEW_DELAY_MIN
+    parse_delay_value(find_by(key: AUTO_REVIEW_DELAY_MIN_KEY)&.value, default: DEFAULT_AUTO_REVIEW_DELAY_MIN)
   end
 
   def self.auto_review_delay_min=(seconds)
@@ -92,7 +92,7 @@ class Setting < ApplicationRecord
   end
 
   def self.auto_review_delay_max
-    find_by(key: AUTO_REVIEW_DELAY_MAX_KEY)&.value&.to_i || DEFAULT_AUTO_REVIEW_DELAY_MAX
+    parse_delay_value(find_by(key: AUTO_REVIEW_DELAY_MAX_KEY)&.value, default: DEFAULT_AUTO_REVIEW_DELAY_MAX)
   end
 
   def self.auto_review_delay_max=(seconds)
@@ -101,9 +101,8 @@ class Setting < ApplicationRecord
   end
 
   def self.auto_review_delay
-    min = auto_review_delay_min
-    max = auto_review_delay_max
-    rand(min..max)
+    lower, upper = [ auto_review_delay_min, auto_review_delay_max ].minmax
+    rand(lower..upper)
   end
 
   def self.auto_submit_enabled?
@@ -114,4 +113,11 @@ class Setting < ApplicationRecord
     setting = find_or_initialize_by(key: AUTO_SUBMIT_ENABLED_KEY)
     setting.update!(value: enabled.to_s)
   end
+
+  def self.parse_delay_value(value, default:)
+    parsed = Integer(value, exception: false)
+    return default if parsed.nil? || parsed.negative?
+    parsed
+  end
+  private_class_method :parse_delay_value
 end

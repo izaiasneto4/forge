@@ -59,14 +59,18 @@ class RepositoriesController < ApplicationController
   def render_pr_stream
     current_repo = Setting.current_repo
     pending_review = PullRequest.pending_review.includes(:review_task).order(updated_at_github: :desc)
+    in_review = PullRequest.in_review.includes(:review_task).order(updated_at_github: :desc)
     reviewed_by_me = PullRequest.reviewed_by_me.includes(:review_task).order(updated_at_github: :desc)
     reviewed_by_others = PullRequest.reviewed_by_others.includes(:review_task).order(updated_at_github: :desc)
+    review_failed = PullRequest.review_failed.includes(:review_task).order(updated_at_github: :desc)
 
     render turbo_stream: [
       turbo_stream.replace("pr-columns", partial: "pull_requests/columns", locals: {
         pending_review: pending_review,
+        in_review: in_review,
         reviewed_by_me: reviewed_by_me,
-        reviewed_by_others: reviewed_by_others
+        reviewed_by_others: reviewed_by_others,
+        review_failed: review_failed
       }),
       turbo_stream.replace("flash-messages", partial: "shared/flash", locals: { notice: "Switched to #{File.basename(current_repo)} and synced" })
     ]

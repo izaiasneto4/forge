@@ -17,7 +17,7 @@ class AutoReviewConfiguration
   end
 
   def delay_min
-    Setting.find_by(key: DELAY_MIN_KEY)&.value&.to_i || DEFAULT_DELAY_MIN
+    parse_delay_value(Setting.find_by(key: DELAY_MIN_KEY)&.value, default: DEFAULT_DELAY_MIN)
   end
 
   def delay_min=(seconds)
@@ -26,7 +26,7 @@ class AutoReviewConfiguration
   end
 
   def delay_max
-    Setting.find_by(key: DELAY_MAX_KEY)&.value&.to_i || DEFAULT_DELAY_MAX
+    parse_delay_value(Setting.find_by(key: DELAY_MAX_KEY)&.value, default: DEFAULT_DELAY_MAX)
   end
 
   def delay_max=(seconds)
@@ -35,9 +35,8 @@ class AutoReviewConfiguration
   end
 
   def delay
-    min = delay_min
-    max = delay_max
-    rand(min..max)
+    lower, upper = [ delay_min, delay_max ].minmax
+    rand(lower..upper)
   end
 
   def auto_submit_enabled?
@@ -47,5 +46,13 @@ class AutoReviewConfiguration
   def auto_submit_enabled=(enabled)
     setting = Setting.find_or_initialize_by(key: AUTO_SUBMIT_KEY)
     setting.update!(value: enabled.to_s)
+  end
+
+  private
+
+  def parse_delay_value(value, default:)
+    parsed = Integer(value, exception: false)
+    return default if parsed.nil? || parsed.negative?
+    parsed
   end
 end

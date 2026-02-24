@@ -169,6 +169,7 @@ class GithubReviewSubmitter
   def build_review_comments(comments)
     comments.filter_map do |comment|
       next unless comment.file_path.present?
+      next if comment.file_path.strip.casecmp("N/A").zero?
 
       build_comment_payload(comment)
     end

@@ -47,10 +47,17 @@ class GithubCliService
   def self.fetch_latest_for_repo(repo_path)
     return unless repo_path.present? && Dir.exist?(repo_path)
 
-    # Fetch latest from remote
-    system("git", "-C", repo_path, "fetch", "origin", out: File::NULL, err: File::NULL)
-    # Pull if we're on a branch tracking remote
-    system("git", "-C", repo_path, "pull", "--ff-only", out: File::NULL, err: File::NULL)
+    stdout, stderr, status = Open3.capture3("git", "-C", repo_path, "fetch", "origin")
+    unless status.success?
+      message = stderr.presence || stdout.presence || "unknown error"
+      raise Error, "git fetch failed: #{message.strip}"
+    end
+
+    stdout, stderr, status = Open3.capture3("git", "-C", repo_path, "pull", "--ff-only")
+    unless status.success?
+      message = stderr.presence || stdout.presence || "unknown error"
+      raise Error, "git pull failed: #{message.strip}"
+    end
   end
 
   private

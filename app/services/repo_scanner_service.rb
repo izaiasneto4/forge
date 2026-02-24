@@ -32,7 +32,14 @@ class RepoScannerService
   private
 
   def git_repo?(path)
-    File.directory?(File.join(path, ".git"))
+    git_path = File.join(path, ".git")
+    return true if File.directory?(git_path)
+
+    return false unless File.file?(git_path)
+
+    File.read(git_path, 256).to_s.start_with?("gitdir:")
+  rescue
+    false
   end
 
   def remote_url(path)

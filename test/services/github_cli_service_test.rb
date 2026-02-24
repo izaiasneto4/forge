@@ -152,7 +152,19 @@ class GithubCliServiceTest < ActiveSupport::TestCase
 
   test "fetch_latest_for_repo does not raise errors with valid path" do
     Dir.mktmpdir do |dir|
+      Open3.stubs(:capture3).returns([ "", "", stub(success?: true) ])
+
       assert_nothing_raised do
+        GithubCliService.fetch_latest_for_repo(dir)
+      end
+    end
+  end
+
+  test "fetch_latest_for_repo raises when git fetch or pull fails" do
+    Dir.mktmpdir do |dir|
+      Open3.stubs(:capture3).returns([ "", "fatal: failed", stub(success?: false) ])
+
+      assert_raises(GithubCliService::Error) do
         GithubCliService.fetch_latest_for_repo(dir)
       end
     end

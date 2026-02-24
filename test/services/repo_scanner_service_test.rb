@@ -90,6 +90,18 @@ class RepoScannerServiceTest < ActiveSupport::TestCase
     assert_equal "repo1", repos.first[:name]
   end
 
+  test "scan includes repo when .git is a file pointing to gitdir" do
+    repo_path = File.join(@base_folder, "repo-worktree")
+    FileUtils.mkdir_p(repo_path)
+    File.write(File.join(repo_path, ".git"), "gitdir: /tmp/some-git-dir\n")
+
+    service = RepoScannerService.new(@base_folder)
+    repos = service.scan
+
+    assert_equal 1, repos.length
+    assert_equal "repo-worktree", repos.first[:name]
+  end
+
   # Sorting tests
   test "scan sorts repos case-insensitively by name" do
     FileUtils.mkdir_p(File.join(@base_folder, "ZebraRepo", ".git"))
