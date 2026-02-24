@@ -209,3 +209,51 @@
   - `bin/rails tailwindcss:build`
   - `SKIP_COVERAGE=1 bin/rails test test/controllers/pull_requests_controller_test.rb`
 - Result: build pass, tests pass (`35 runs, 115 assertions, 0 failures`).
+
+## 2026-02-24 PR Board Filter Count Mismatch Plan
+
+- [x] Add JS regression test for filtered board where `pr_count_*` badges mismatch visible cards
+- [x] Update `board_filter_controller` to recalculate per-column visible counts after filter operations
+- [x] Run targeted JS controller tests
+
+## 2026-02-24 PR Board Filter Count Mismatch Review
+
+- Root cause: client-side filters hide cards but do not update `pr_count_*` badges, which remain server totals.
+- Added regression test in `test/javascript/controllers/board_filter_controller.test.js`:
+  `updates column count badges to match visible cards`.
+- Updated `BoardFilterController#applyFilters` to:
+  - initialize per-state counts from rendered columns,
+  - compute visible counts after search/state/author filtering,
+  - update `#pr_count_<state>` badge text per column.
+- Ran:
+  `npm test -- test/javascript/controllers/board_filter_controller.test.js test/javascript/controllers/kanban_controller.test.js`
+- Result: pass (`11 tests`).
+
+## 2026-02-24 Rails API + React/Vite Split Plan
+
+## Plan
+
+- [ ] Freeze API contract for all current UI actions (OpenAPI + JSON examples + error envelope rules)
+- [ ] Add missing API endpoints for full feature parity (review tasks lifecycle, review comments lifecycle, settings read/update, repositories list/switch)
+- [ ] Move controller business logic into shared service layer used by both web and API paths
+- [ ] Add API auth strategy for decoupled frontend (`Authorization` token for web app; keep localhost dev fallback)
+- [ ] Add CORS + CSRF strategy for split origins (API-only mode)
+- [ ] Add websocket/event protocol for React (`review_task_logs`, `review_notifications`, board updates) without Turbo Stream payloads
+- [ ] Build React app (`frontend/`) with Vite, React Router, React Query, and typed API client
+- [ ] Implement React pages for parity:
+- [ ] PR board
+- [ ] review tasks board/detail
+- [ ] review comment checklist + submission
+- [ ] repositories picker/switch
+- [ ] settings
+- [ ] Add transitional dual-run mode (`RAILS_UI_ENABLED=true|false`) so Rails views and React can run in parallel during migration
+- [ ] Add comprehensive tests:
+- [ ] Rails request tests for every endpoint + contract tests
+- [ ] React unit/component tests
+- [ ] E2E flow tests against split stack
+- [ ] Update local/dev orchestration (`bin/dev`) to run Rails API + Vite concurrently
+- [ ] Production rollout in 3 stages: shadow traffic, opt-in React UI, default React UI + Rails view retirement
+
+## Review
+
+- Pending approval for implementation.

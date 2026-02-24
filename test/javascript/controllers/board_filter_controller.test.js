@@ -16,6 +16,8 @@ describe("BoardFilterController", () => {
       <div data-controller="board-filter" data-board-filter-current-user-value="me">
         <input data-board-filter-target="searchInput" value="">
         <input type="checkbox" data-board-filter-target="selfPrToggle" data-action="change->board-filter#toggleOwnPrs" checked>
+        <span id="pr_count_pending_review">1</span>
+        <span id="pr_count_waiting_implementation">1</span>
         <button
           class="linear-btn-primary"
           data-board-filter-target="stateFilter"
@@ -70,5 +72,13 @@ describe("BoardFilterController", () => {
 
     expect(pendingCard.classList.contains("hidden")).toBe(true)
     expect(waitingCard.classList.contains("hidden")).toBe(false)
+  })
+
+  it("updates column count badges to match visible cards", () => {
+    controller.searchInputTarget.value = "waiting"
+    controller.search()
+
+    expect(document.getElementById("pr_count_pending_review").textContent).toBe("0")
+    expect(document.getElementById("pr_count_waiting_implementation").textContent).toBe("1")
   })
 })

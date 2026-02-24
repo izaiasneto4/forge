@@ -71,7 +71,12 @@ export default class extends Controller {
     const includeOwnPrs = !this.hasSelfPrToggleTarget || this.selfPrToggleTarget.checked
     const currentUser = this.currentUserValue.toLowerCase()
 
-    let visibleCounts = {}
+    const visibleCounts = {}
+
+    this.columnTargets.forEach(column => {
+      const state = column.dataset.state
+      visibleCounts[state] = 0
+    })
 
     this.cardTargets.forEach(card => {
       const cardState = card.dataset.currentState
@@ -97,6 +102,11 @@ export default class extends Controller {
       if (emptyState) {
         const count = visibleCounts[state] || 0
         emptyState.classList.toggle("hidden", count > 0)
+      }
+
+      const countBadge = document.getElementById(`pr_count_${state}`)
+      if (countBadge) {
+        countBadge.textContent = String(visibleCounts[state] || 0)
       }
     })
   }
