@@ -37,12 +37,8 @@ export default class extends Controller {
   async selectRepo(event) {
     event.preventDefault()
     const repoPath = event.currentTarget.dataset.repoPath
-    const repoName = event.currentTarget.dataset.repoName
-
-    // Update button text immediately
-    if (this.hasCurrentRepoNameTarget) {
-      this.currentRepoNameTarget.textContent = repoName
-    }
+    if (!repoPath || this.switching) return
+    this.switching = true
 
     // Show loading state
     this.showLoading()
@@ -74,6 +70,7 @@ export default class extends Controller {
       console.error("Error switching repo:", error)
       window.location.reload()
     } finally {
+      this.switching = false
       this.hideLoading()
     }
   }

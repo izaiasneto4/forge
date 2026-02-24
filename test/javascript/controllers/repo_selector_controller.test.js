@@ -68,10 +68,11 @@ describe('RepoSelectorController', () => {
 
     const repoLink = controller.element.querySelector('[data-action*="selectRepo"]')
     const event = { preventDefault: vi.fn(), currentTarget: repoLink }
+    const originalName = controller.currentRepoNameTarget.textContent
 
     await controller.selectRepo(event)
 
-    expect(controller.currentRepoNameTarget.textContent).toBe('owner/repo1')
+    expect(controller.currentRepoNameTarget.textContent).toBe(originalName)
     expect(global.fetch).toHaveBeenCalledWith(
       '/repositories/switch',
       expect.objectContaining({ method: 'POST' })
