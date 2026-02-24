@@ -181,7 +181,7 @@
         <!-- Review Comments Checklist UI -->
         <div data-controller="comment-checklist"
              data-comment-checklist-review-task-id-value="<%= @review_task.id %>"
-             data-action="keydown->comment-checklist#keydown">
+             data-action="keydown->comment-checklist#keydown event-selector:changed->comment-checklist#eventChanged">
 
           <%= render "review_tasks/comment_submission", review_task: @review_task, comments: comments %>
 

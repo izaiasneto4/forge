@@ -101,15 +101,19 @@ export default class extends Controller {
   // Update submit button state based on selection
   updateSubmitButton() {
     if (this.hasSubmitButtonTarget) {
-      const hasSelection = this.selectedCount > 0
-      this.submitButtonTarget.disabled = !hasSelection
+      const canSubmit = this.selectedCount > 0 || this.canSubmitEmptyApproval()
+      this.submitButtonTarget.disabled = !canSubmit
 
-      if (hasSelection) {
+      if (canSubmit) {
         this.submitButtonTarget.classList.remove("opacity-50", "cursor-not-allowed")
       } else {
         this.submitButtonTarget.classList.add("opacity-50", "cursor-not-allowed")
       }
     }
+  }
+
+  eventChanged() {
+    this.updateSubmitButton()
   }
 
   // Update the toggle all button text
@@ -167,5 +171,30 @@ export default class extends Controller {
       input.value = id
       this.formTarget.appendChild(input)
     })
+
+    if (this.canSubmitEmptyApproval()) {
+      this.setHiddenInput("force_empty_submission", "true")
+    } else {
+      this.formTarget.querySelectorAll('input[name="force_empty_submission"]').forEach(input => input.remove())
+    }
+  }
+
+  canSubmitEmptyApproval() {
+    return this.selectedCount === 0 && this.selectedEvent === "APPROVE"
+  }
+
+  get selectedEvent() {
+    return this.formTarget?.querySelector('input[name="event"]')?.value || "COMMENT"
+  }
+
+  setHiddenInput(name, value) {
+    let input = this.formTarget.querySelector(`input[name="${name}"]`)
+    if (!input) {
+      input = document.createElement("input")
+      input.type = "hidden"
+      input.name = name
+      this.formTarget.appendChild(input)
+    }
+    input.value = value
   }
 }

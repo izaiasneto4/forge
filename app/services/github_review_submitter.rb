@@ -71,7 +71,7 @@ class GithubReviewSubmitter
   def submit_review(event: nil, summary: nil, comments: nil)
     validate_event!(event) if event.present?
 
-    comments = comments.presence || @review_task.review_comments.pending
+    comments = comments.nil? ? @review_task.review_comments.pending : comments
     return submit_empty_review(event, summary) if comments.empty?
 
     review_body = build_review_body(comments, summary)
@@ -117,7 +117,11 @@ class GithubReviewSubmitter
 
   def submit_empty_review(event, summary)
     review_event = event || "COMMENT"
-    review_body = summary || "Review completed with no actionable comments."
+    review_body = if review_event == "APPROVE" && summary.blank?
+      nil
+    else
+      summary || "Review completed with no actionable comments."
+    end
 
     submit_to_github(review_body, review_event, [])
   end
@@ -229,9 +233,10 @@ class GithubReviewSubmitter
 
   def submit_to_github(body, event, comments)
     payload = {
-      body: body,
       event: event
     }
+
+    payload[:body] = body if body.present?
 
     # Only include comments if there are any with valid file paths
     payload[:comments] = comments if comments.any?

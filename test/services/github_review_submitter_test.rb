@@ -327,6 +327,31 @@ class GithubReviewSubmitterTest < ActiveSupport::TestCase
     assert_nil file
   end
 
+  test "submit_empty_review omits review body for approve without summary" do
+    @submitter.expects(:run_gh_api).with do |http_method, path, payload|
+      assert_equal "POST", http_method
+      assert_equal "/repos/test/repo/pulls/42/reviews", path
+      assert_equal "APPROVE", payload[:event]
+      assert_not payload.key?(:body)
+      assert_not payload.key?(:comments)
+      true
+    end.returns({})
+
+    @submitter.send(:submit_empty_review, "APPROVE", nil)
+  end
+
+  test "submit_review respects explicitly empty comments without falling back to pending" do
+    @submitter.expects(:run_gh_api).with do |http_method, path, payload|
+      assert_equal "POST", http_method
+      assert_equal "/repos/test/repo/pulls/42/reviews", path
+      assert_equal "APPROVE", payload[:event]
+      assert_not payload.key?(:comments)
+      true
+    end.returns({})
+
+    @submitter.submit_review(event: "APPROVE", comments: @review_task.review_comments.none)
+  end
+
   # Tests requiring Open3 stub - skipped
   test "submit_review with pending comments" do
     skip "Open3.stub not available in minitest without additional gems"

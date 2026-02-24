@@ -26,7 +26,9 @@ describe('CommentChecklistController', () => {
         <span data-comment-checklist-target="counter"></span>
         <button data-comment-checklist-target="submitButton">Submit</button>
         <button data-comment-checklist-target="selectAllButton">Select All</button>
-        <form data-comment-checklist-target="form"></form>
+        <form data-comment-checklist-target="form">
+          <input type="hidden" name="event" value="COMMENT">
+        </form>
       </div>
     `
     const element = document.querySelector('[data-controller="comment-checklist"]')
@@ -120,6 +122,14 @@ describe('CommentChecklistController', () => {
     expect(controller.submitButtonTarget.disabled).toBe(false)
   })
 
+  it('enables submit with zero selection when event is APPROVE', () => {
+    const eventInput = controller.formTarget.querySelector('input[name="event"]')
+    eventInput.value = 'APPROVE'
+
+    controller.updateSubmitButton()
+    expect(controller.submitButtonTarget.disabled).toBe(false)
+  })
+
   it('updates toggle all button text', () => {
     controller.checkboxTargets[0].checked = true
     controller.checkboxTargets[1].checked = true
@@ -182,5 +192,16 @@ describe('CommentChecklistController', () => {
 
     const inputs = controller.formTarget.querySelectorAll('input[name="comment_ids[]"]')
     expect(inputs.length).toBe(2)
+  })
+
+  it('prepares force_empty_submission for approve without selected comments', () => {
+    const eventInput = controller.formTarget.querySelector('input[name="event"]')
+    eventInput.value = 'APPROVE'
+
+    controller.prepareSubmission()
+
+    const forceEmptyInput = controller.formTarget.querySelector('input[name="force_empty_submission"]')
+    expect(forceEmptyInput).toBeTruthy()
+    expect(forceEmptyInput.value).toBe('true')
   })
 })

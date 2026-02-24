@@ -22,15 +22,11 @@ class ReviewCommentsController < ApplicationController
     event = submit_params[:event].presence
     summary = submit_params[:summary].presence
     comment_ids = submit_params[:comment_ids]
+    force_empty_submission = ActiveModel::Type::Boolean.new.cast(submit_params[:force_empty_submission])
 
-    # If comment_ids provided, only submit those; otherwise fall back to all pending
-    @selected_comments = if comment_ids.present?
-      @review_task.review_comments.where(id: comment_ids)
-    else
-      @review_task.review_comments.pending
-    end
+    @selected_comments = selected_comments_for_submission(comment_ids, event, force_empty_submission)
 
-    if @selected_comments.empty?
+    if @selected_comments.empty? && !allow_empty_approval_submission?(event, summary, force_empty_submission)
       respond_to do |format|
         format.html do
           redirect_to review_task_path(@review_task),
@@ -95,7 +91,7 @@ class ReviewCommentsController < ApplicationController
   end
 
   def submit_params
-    params.permit(:event, :summary, comment_ids: [])
+    params.permit(:event, :summary, :force_empty_submission, comment_ids: [])
   end
 
   # Cycles through statuses: pending -> addressed -> dismissed -> pending
@@ -113,6 +109,17 @@ class ReviewCommentsController < ApplicationController
     return "REQUEST_CHANGES" if comments.any? { |comment| comment.critical? || comment.major? }
 
     "COMMENT"
+  end
+
+  def selected_comments_for_submission(comment_ids, event, force_empty_submission)
+    return @review_task.review_comments.none if force_empty_submission && event == "APPROVE"
+    return @review_task.review_comments.where(id: comment_ids) if comment_ids.present?
+
+    @review_task.review_comments.pending
+  end
+
+  def allow_empty_approval_submission?(event, summary, force_empty_submission)
+    force_empty_submission && event == "APPROVE" && summary.blank?
   end
 
   def transition_review_lifecycle!(effective_event)

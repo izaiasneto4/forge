@@ -54,6 +54,11 @@ export default class extends Controller {
     })
     item.classList.add("bg-[color:var(--color-bg-tertiary)]")
 
+    this.element.dispatchEvent(new CustomEvent("event-selector:changed", {
+      bubbles: true,
+      detail: { value }
+    }))
+
     // Close dropdown
     this.openValue = false
     this.updateDropdownVisibility()

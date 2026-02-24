@@ -198,6 +198,30 @@ class ReviewCommentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "submit allows approve without comments when explicitly requested" do
+    submitter = Class.new do
+      attr_reader :event, :comments, :summary
+
+      def submit_review(event:, summary:, comments:)
+        @event = event
+        @summary = summary
+        @comments = comments
+        { result: "success" }
+      end
+    end.new
+    GithubReviewSubmitter.stubs(:new).returns(submitter)
+
+    post submit_review_task_review_comments_path(@review_task),
+         params: { event: "APPROVE", force_empty_submission: "true" }, as: :turbo_stream
+
+    assert_response :success
+    @comment.reload
+    assert_equal "pending", @comment.status
+    assert_equal "APPROVE", submitter.event
+    assert_equal [], submitter.comments.to_a
+    assert_nil submitter.summary
+  end
+
   test "submit with REQUEST_CHANGES moves task and PR to waiting_implementation" do
     @pr.update!(review_status: "reviewed_by_me")
     submitter = Class.new do

@@ -314,3 +314,37 @@
 ## Review
 
 - Pending approval for implementation.
+
+## 2026-02-24 Approve Without Comments Plan
+
+- [x] Add regression tests for approving with zero selected comments (Rails + Stimulus)
+- [x] Allow `ReviewCommentsController#submit` to accept explicit empty approval submissions
+- [x] Update submitter payload building to send approval review with no review body/comments
+- [x] Update checklist/confirmation UI behavior for approve-without-comments flow
+- [x] Run targeted tests and record results
+
+## 2026-02-24 Approve Without Comments Review
+
+- Added regression tests first:
+  - `ReviewCommentsControllerTest#submit allows approve without comments when explicitly requested`
+  - `comment_checklist_controller` tests for `APPROVE` with zero selected comments and `force_empty_submission` flag injection.
+  - `GithubReviewSubmitterTest#submit_empty_review omits review body for approve without summary`.
+- Backend changes:
+  - `ReviewCommentsController#submit` now accepts explicit empty approval submissions via `force_empty_submission=true` and still rejects empty non-approval submissions.
+  - `GithubReviewSubmitter` now omits `body` and `comments` payload keys for empty `APPROVE` reviews (no comment text posted).
+- UI/Stimulus changes:
+  - `comment_checklist_controller` enables submit when event is `APPROVE` with zero selected comments and adds hidden `force_empty_submission=true` on submit.
+  - `event_selector_controller` dispatches `event-selector:changed` so submit button state updates immediately when switching event type.
+  - Confirmation modal warning text is now event-aware and explicitly states when approval will be sent without comments.
+- Validation:
+  - `SKIP_COVERAGE=1 bin/rails test test/controllers/review_comments_controller_test.rb test/services/github_review_submitter_test.rb` -> pass (`84 runs, 0 failures`).
+  - `npm test -- test/javascript/controllers/comment_checklist_controller.test.js -t "enables submit with zero selection when event is APPROVE|prepares force_empty_submission for approve without selected comments"` -> pass (`2 tests`).
+  - Note: full JS controller files still include pre-existing failing tests unrelated to this change.
+- Follow-up fix after live failure report (`Unprocessable Entity`):
+  - Added failing repro test:
+    `GithubReviewSubmitterTest#submit_review respects explicitly empty comments without falling back to pending`.
+  - Fixed `GithubReviewSubmitter#submit_review` to treat explicit empty `comments` as intentional (`comments.nil? ? pending : comments`), preventing unintended fallback to all pending comments.
+  - Re-ran targeted tests:
+    - `SKIP_COVERAGE=1 bin/rails test test/services/github_review_submitter_test.rb:343 test/services/github_review_submitter_test.rb:330`
+    - `SKIP_COVERAGE=1 bin/rails test test/controllers/review_comments_controller_test.rb:201`
+  - Result: all pass.

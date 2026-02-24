@@ -7,7 +7,7 @@ import { Controller } from "@hotwired/stimulus"
  * Shows summary of what will be submitted: PR title, comment counts, severity breakdown.
  */
 export default class extends Controller {
-  static targets = ["dialog", "prTitle", "prNumber", "commentCount", "severityBreakdown", "form"]
+  static targets = ["dialog", "prTitle", "prNumber", "commentCount", "severityBreakdown", "warningMessage", "form"]
   static values = {
     prTitle: String,
     prNumber: Number,
@@ -44,6 +44,7 @@ export default class extends Controller {
   updateDialogContent() {
     const checkboxes = this.element.querySelectorAll('[data-comment-checklist-target="checkbox"]:checked')
     const selectedIds = Array.from(checkboxes).map(cb => cb.value)
+    const selectedEvent = this.formTarget?.querySelector('input[name="event"]')?.value || "COMMENT"
 
     // Count comments by severity
     const severityCounts = {}
@@ -72,6 +73,10 @@ export default class extends Controller {
     if (this.hasSeverityBreakdownTarget) {
       this.updateSeverityBreakdown(severityCounts)
     }
+
+    if (this.hasWarningMessageTarget) {
+      this.warningMessageTarget.textContent = this.warningText(selectedEvent, selectedIds.length)
+    }
   }
 
   updateSeverityBreakdown(counts) {
@@ -92,6 +97,22 @@ export default class extends Controller {
     })
 
     this.severityBreakdownTarget.textContent = parts.length > 0 ? parts.join(', ') : 'No severity data'
+  }
+
+  warningText(selectedEvent, selectedCount) {
+    if (selectedEvent === "APPROVE" && selectedCount === 0) {
+      return "This will approve the PR on GitHub without adding review comments."
+    }
+
+    if (selectedEvent === "APPROVE") {
+      return "This will approve the PR and post selected comments publicly on GitHub."
+    }
+
+    if (selectedEvent === "REQUEST_CHANGES") {
+      return "This will request changes and post selected comments publicly on GitHub."
+    }
+
+    return "This will post a review comment publicly on GitHub."
   }
 
   // Called when user confirms submission
