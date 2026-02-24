@@ -105,9 +105,9 @@
   </header>
 
   <!-- Filter Bar - Responsive -->
-  <div class="linear-filter-bar flex flex-wrap items-center gap-3 justify-between">
-    <div class="flex items-center gap-3">
-      <div class="relative min-w-[180px] max-w-[250px]">
+  <div class="linear-filter-bar flex flex-col lg:flex-row lg:items-center gap-2 md:gap-3 justify-between">
+    <div class="flex items-center gap-2 md:gap-3 min-w-0 w-full lg:w-auto overflow-x-auto no-scrollbar pb-1 lg:pb-0">
+      <div class="relative min-w-[150px] max-w-[220px] sm:min-w-[180px] sm:max-w-[250px] flex-shrink-0">
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[color:var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
@@ -118,7 +118,7 @@
                data-action="input->board-filter#search">
       </div>
 
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-1 flex-shrink-0">
         <button type="button"
                 class="linear-btn linear-btn-sm linear-btn-primary text-[11px]"
                 data-board-filter-target="stateFilter"
@@ -164,7 +164,7 @@
 
       <%= form_with url: review_scope_pull_requests_path,
                     method: :patch,
-                    class: "flex items-center gap-2 ml-1",
+                    class: "flex items-center gap-2 ml-1 flex-shrink-0",
                     data: { turbo_stream: true } do %>
         <%= hidden_field_tag :requested_to_me_only, "0" %>
         <%= check_box_tag :requested_to_me_only,
@@ -175,7 +175,7 @@
         <span class="text-[11px] text-[color:var(--color-text-tertiary)] whitespace-nowrap">Requested to me only</span>
       <% end %>
 
-      <label class="flex items-center gap-2 ml-1 text-[11px] text-[color:var(--color-text-tertiary)] whitespace-nowrap">
+      <label class="flex items-center gap-2 ml-1 text-[11px] text-[color:var(--color-text-tertiary)] whitespace-nowrap flex-shrink-0">
         <input type="checkbox"
                checked
                data-board-filter-target="selfPrToggle"
@@ -185,7 +185,7 @@
       </label>
     </div>
 
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
       <span id="pr-count" class="text-[11px] md:text-[12px] text-[color:var(--color-text-tertiary)]">
         <%= @pending_review.to_a.count + @in_review.to_a.count + @reviewed_by_me.to_a.count + @waiting_implementation.to_a.count + @reviewed_by_others.to_a.count + @review_failed.to_a.count %> PRs
       </span>
