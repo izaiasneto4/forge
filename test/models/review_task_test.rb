@@ -665,6 +665,38 @@ class ReviewTaskTest < ActiveSupport::TestCase
     assert_equal 0, count
   end
 
+  test "reset_stuck_tasks does not reset tasks with active jobs" do
+    @task.update!(
+      state: "in_review",
+      started_at: 15.minutes.ago
+    )
+    @task.save!
+
+    ReviewTask.stubs(:active_job_exists_for?).with(@task.id).returns(true)
+
+    count = ReviewTask.reset_stuck_tasks(timeout_minutes: 10)
+    @task.reload
+
+    assert_equal 0, count
+    assert_equal "in_review", @task.state
+  end
+
+  test "reset_stuck_tasks resets tasks without active jobs" do
+    @task.update!(
+      state: "in_review",
+      started_at: 15.minutes.ago
+    )
+    @task.save!
+
+    ReviewTask.stubs(:active_job_exists_for?).with(@task.id).returns(false)
+
+    count = ReviewTask.reset_stuck_tasks(timeout_minutes: 10)
+    @task.reload
+
+    assert_equal 1, count
+    assert_equal "pending_review", @task.state
+  end
+
   test "recover_orphaned_in_review_tasks! resets stale in_review task when no claimed review jobs exist" do
     @task.update!(state: "in_review", started_at: 5.minutes.ago)
     @task.add_log("old output", log_type: "output")
