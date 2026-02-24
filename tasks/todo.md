@@ -1,3 +1,28 @@
+# 2026-02-24 Review Comment UX + Suggested Fix Guardrails Plan
+
+## Plan
+
+- [x] Add regression tests for `ReviewCommentBuilder` to ensure prose `suggested_fix` is not fenced as code
+- [x] Keep code `suggested_fix` rendered as fenced code with language detection
+- [x] Tighten `CodeReviewService` prompts so `suggested_fix` is only executable code and prose goes in `comment`
+- [x] Improve checklist comment readability styles and metadata wrapping in the review UI
+- [x] Run targeted Ruby tests and record results
+
+## Review
+
+- Added failing regression tests first for prose `suggested_fix` being incorrectly fenced as code in `ReviewCommentBuilder`.
+- Updated `ReviewCommentBuilder` to classify suggested fixes:
+  - code-like text -> keep `**Suggested fix:**` fenced block
+  - prose -> append as normal markdown text (no code fence/language label)
+- Tightened `CodeReviewService` standard + swarm prompt instructions so `suggested_fix` must be code-only and prose must stay in `comment`.
+- Improved checklist comment rendering with better header wrapping, metadata chips, body typography, and code-block container styling.
+- Added helper-level `code_suggestion?` detection and used it in parsed-output fallbacks (`review_tasks/show` and review history iteration) to render prose suggestions as markdown instead of code blocks.
+- Validation:
+  - `SKIP_COVERAGE=1 bin/rails test test/services/review_comment_builder_test.rb test/helpers/review_tasks_helper_test.rb`
+  - `SKIP_COVERAGE=1 bin/rails test test/services/code_review_service_test.rb`
+  - `bin/rails tailwindcss:build`
+- Result: all pass.
+
 # 2026-02-24 Dark Mode Implementation Plan
 
 ## Plan
@@ -209,6 +234,38 @@
   - `bin/rails tailwindcss:build`
   - `SKIP_COVERAGE=1 bin/rails test test/controllers/pull_requests_controller_test.rb`
 - Result: build pass, tests pass (`35 runs, 115 assertions, 0 failures`).
+
+## 2026-02-24 Mobile/Tablet Kanban Mode Plan
+
+- [x] Implement phone-first single-column behavior for kanban boards via board filter + column visibility
+- [x] Implement tablet grid behavior and desktop board behavior in shared kanban CSS
+- [x] Expand mobile-accessible status chips so all important states are reachable on phone
+- [x] Verify with CSS build + JS controller tests + impacted Rails controller tests
+
+## 2026-02-24 Mobile/Tablet Kanban Mode Review
+
+- Updated `BoardFilterController` to support:
+  - Column state detection for both `data-state` and `data-status`
+  - Phone viewport fallback from `all` to a specific state (single-column mode)
+  - Column wrapper visibility toggling (hide non-selected columns on phone)
+  - Count badge updates for both PR and review-task boards
+  - Resize re-application to keep layout/state behavior consistent when changing viewport
+- Updated PR filter chips:
+  - Hide `All` on phone
+  - Add phone chips for `Done` (`reviewed_by_others`) and `Failed` (`review_failed`)
+- Updated Review Tasks filter chips:
+  - Hide `All` on phone
+  - Add phone chips for `Pending`, `Waiting`, and `Done`
+- Updated shared kanban CSS to explicit modes:
+  - Phone: single-column grid
+  - Tablet: 2-column grid
+  - Small desktop: 3-column grid
+  - Wide desktop: horizontal board
+- Ran:
+  - `bin/rails tailwindcss:build`
+  - `npm test -- test/javascript/controllers/board_filter_controller.test.js`
+  - `SKIP_COVERAGE=1 bin/rails test test/controllers/pull_requests_controller_test.rb test/controllers/review_tasks_controller_test.rb`
+- Result: all pass.
 
 ## 2026-02-24 PR Board Filter Count Mismatch Plan
 

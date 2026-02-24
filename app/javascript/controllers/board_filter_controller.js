@@ -11,7 +11,18 @@ export default class extends Controller {
   }
 
   connect() {
+    this.handleResize = this.handleResize.bind(this)
+    window.addEventListener("resize", this.handleResize)
     this.loadSavedFilter()
+    this.applyFilters()
+  }
+
+  disconnect() {
+    window.removeEventListener("resize", this.handleResize)
+  }
+
+  handleResize() {
+    this.applyFilters()
   }
 
   search() {
@@ -27,6 +38,10 @@ export default class extends Controller {
     })
     event.currentTarget.classList.remove("linear-btn-ghost")
     event.currentTarget.classList.add("linear-btn-primary")
+
+    if (!this.isPhoneViewport()) {
+      this.focusColumn(event.currentTarget.dataset.state)
+    }
 
     this.applyFilters()
     this.saveFilter()
@@ -64,18 +79,16 @@ export default class extends Controller {
       ? this.searchInputTarget.value.toLowerCase().trim()
       : ""
 
-    const activeStateBtn = this.stateFilterTargets.find(btn =>
-      btn.classList.contains("linear-btn-primary")
-    )
-    const stateFilter = activeStateBtn?.dataset.state || "all"
+    const stateFilter = this.resolvedStateFilter()
+    const effectiveStateFilter = this.isPhoneViewport() ? stateFilter : "all"
     const includeOwnPrs = !this.hasSelfPrToggleTarget || this.selfPrToggleTarget.checked
     const currentUser = this.currentUserValue.toLowerCase()
 
     const visibleCounts = {}
 
     this.columnTargets.forEach(column => {
-      const state = column.dataset.state
-      visibleCounts[state] = 0
+      const state = this.columnState(column)
+      if (state) visibleCounts[state] = 0
     })
 
     this.cardTargets.forEach(card => {
@@ -84,7 +97,7 @@ export default class extends Controller {
       const cardAuthor = (card.dataset.author || "").toLowerCase()
 
       const matchesSearch = searchTerm === "" || cardText.includes(searchTerm)
-      const matchesState = stateFilter === "all" || cardState === stateFilter
+      const matchesState = effectiveStateFilter === "all" || cardState === effectiveStateFilter
       const matchesAuthor = includeOwnPrs || currentUser === "" || cardAuthor !== currentUser
 
       if (matchesSearch && matchesState && matchesAuthor) {
@@ -97,7 +110,9 @@ export default class extends Controller {
 
     // Update empty states for each column
     this.columnTargets.forEach(column => {
-      const state = column.dataset.state
+      const state = this.columnState(column)
+      if (!state) return
+
       const emptyState = document.getElementById(`review_task_empty_${state}`)
       if (emptyState) {
         const count = visibleCounts[state] || 0
@@ -108,6 +123,15 @@ export default class extends Controller {
       if (countBadge) {
         countBadge.textContent = String(visibleCounts[state] || 0)
       }
+
+      const reviewTaskCountBadge = document.getElementById(`review_task_count_${state}`)
+      if (reviewTaskCountBadge) {
+        reviewTaskCountBadge.textContent = String(visibleCounts[state] || 0)
+      }
+
+      const shouldShowColumn = !this.isPhoneViewport() || stateFilter === "all" || state === stateFilter
+      const columnWrapper = column.parentElement || column
+      columnWrapper.classList.toggle("hidden", !shouldShowColumn)
     })
   }
 
@@ -120,6 +144,60 @@ export default class extends Controller {
       includeOwnPrs: !this.hasSelfPrToggleTarget || this.selfPrToggleTarget.checked
     }
     localStorage.setItem(this.storageKeyValue, JSON.stringify(filter))
+  }
+
+  columnState(column) {
+    return column.dataset.state || column.dataset.status || ""
+  }
+
+  activeStateFilter() {
+    const activeStateBtn = this.stateFilterTargets.find(btn =>
+      btn.classList.contains("linear-btn-primary")
+    )
+    return activeStateBtn?.dataset.state || "all"
+  }
+
+  setActiveStateFilter(state) {
+    this.stateFilterTargets.forEach(btn => {
+      if (btn.dataset.state === state) {
+        btn.classList.remove("linear-btn-ghost")
+        btn.classList.add("linear-btn-primary")
+      } else {
+        btn.classList.remove("linear-btn-primary")
+        btn.classList.add("linear-btn-ghost")
+      }
+    })
+  }
+
+  resolvedStateFilter() {
+    const state = this.activeStateFilter()
+    if (!this.isPhoneViewport() || state !== "all") return state
+
+    const fallbackState =
+      this.stateFilterTargets.find(btn => btn.dataset.state === "pending_review")?.dataset.state ||
+      this.stateFilterTargets.find(btn => btn.dataset.state !== "all")?.dataset.state ||
+      "all"
+
+    this.setActiveStateFilter(fallbackState)
+    return fallbackState
+  }
+
+  isPhoneViewport() {
+    if (typeof window.matchMedia !== "function") return false
+    return window.matchMedia("(max-width: 767px)").matches
+  }
+
+  focusColumn(state) {
+    if (!state || state === "all") return
+    const column = this.columnTargets.find((target) => this.columnState(target) === state)
+    if (!column) return
+
+    const columnWrapper = column.parentElement || column
+    columnWrapper.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "start"
+    })
   }
 
   loadSavedFilter() {

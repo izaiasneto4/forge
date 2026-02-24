@@ -395,32 +395,52 @@ html[data-theme="dark"] {
 
   /* Kanban board container */
   .linear-board {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 12px;
     padding: 12px;
     min-height: calc(100vh - 120px);
-    /* Always horizontal with scroll */
-    flex-direction: row;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
-    /* Ensure all columns are accessible */
+    overflow-x: hidden;
     padding-bottom: 16px;
+    align-items: start;
   }
 
-  /* Tablet: more spacing */
+  /* Tablet: 2-column grid */
   @media (min-width: 768px) {
     .linear-board {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
       padding: 20px;
+      overflow-x: visible;
     }
   }
 
-  /* Desktop: more padding */
+  /* Small desktop/tablet landscape: 3-column grid */
   @media (min-width: 1024px) {
     .linear-board {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 16px;
       padding: 24px;
+    }
+  }
+
+  /* Keep columns visually consistent in 4-column mode */
+  @media (min-width: 1024px) and (max-width: 1535px) {
+    .linear-column-content {
+      min-height: 340px;
+      max-height: 340px;
+    }
+  }
+
+  /* Wide desktop: full horizontal board */
+  @media (min-width: 1536px) {
+    .linear-board {
+      display: flex;
+      flex-direction: row;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+      align-items: stretch;
     }
   }
 
@@ -432,31 +452,25 @@ html[data-theme="dark"] {
     display: flex;
     flex-direction: column;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    /* Mobile: compact columns, all visible */
-    min-width: 200px;
-    max-width: 240px;
-    flex-shrink: 0;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    flex-shrink: 1;
     scroll-snap-align: start;
   }
 
-  /* Tablet: larger columns for better readability */
-  @media (min-width: 768px) {
+  /* Wide desktop: board columns */
+  @media (min-width: 1280px) {
     .linear-column {
-      min-width: 260px;
-      max-width: 300px;
+      width: auto;
+      min-width: 220px;
+      max-width: 280px;
+      flex-shrink: 0;
     }
   }
 
-  /* Desktop: full-size columns */
-  @media (min-width: 1024px) {
-    .linear-column {
-      min-width: 280px;
-      max-width: 320px;
-    }
-  }
-
-  /* Large desktop */
-  @media (min-width: 1440px) {
+  /* Extra-wide desktop: allow flexing to fit viewport */
+  @media (min-width: 1536px) {
     .linear-column {
       min-width: 240px;
       max-width: none;
@@ -1418,7 +1432,7 @@ html[data-theme="dark"] {
   .linear-checklist-item {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border-default);
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     transition: all 0.15s ease;
     -webkit-tap-highlight-color: transparent;
@@ -1426,7 +1440,7 @@ html[data-theme="dark"] {
 
   @media (min-width: 768px) {
     .linear-checklist-item {
-      border-radius: 8px;
+      border-radius: 10px;
     }
   }
 
@@ -1452,16 +1466,15 @@ html[data-theme="dark"] {
   }
 
   .linear-checklist-item-content {
-    /* Mobile: larger padding */
-    padding: 16px;
+    padding: 14px 16px;
     display: flex;
     align-items: flex-start;
-    gap: 14px;
+    gap: 12px;
   }
 
   @media (min-width: 768px) {
     .linear-checklist-item-content {
-      padding: 14px 16px;
+      padding: 12px 14px;
       gap: 12px;
     }
   }
@@ -1578,31 +1591,71 @@ html[data-theme="dark"] {
   /* Checklist item header row */
   .linear-checklist-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
   }
 
   .linear-checklist-meta {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .linear-checklist-meta-primary {
+    flex: 1 1 340px;
+  }
+
+  .linear-checklist-meta-actions {
+    margin-left: auto;
+    flex: 0 0 auto;
+  }
+
+  .linear-checklist-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-text-primary);
+    line-height: 1.35;
+  }
+
+  .linear-checklist-severity-emoji {
+    font-size: 16px;
+    line-height: 1;
+    margin-top: 1px;
+    flex-shrink: 0;
   }
 
   .linear-checklist-location {
+    display: inline-block;
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-    font-size: 12px;
+    font-size: 11px;
     background: var(--color-bg-tertiary);
-    padding: 4px 8px;
+    border: 1px solid var(--color-border-subtle);
+    padding: 3px 7px;
     border-radius: 4px;
     color: var(--color-text-primary);
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .linear-checklist-toggle-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .linear-checklist-body {
     font-size: 13px;
-    line-height: 1.6;
+    line-height: 1.65;
     color: var(--color-text-secondary);
+    word-break: break-word;
   }
 
   .linear-checklist-body p {
@@ -1620,6 +1673,31 @@ html[data-theme="dark"] {
     padding: 2px 5px;
     border-radius: 3px;
     color: var(--color-text-primary);
+  }
+
+  .linear-checklist-body .code-block {
+    border: 1px solid var(--color-border-default);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+
+  .linear-checklist-body .code-block > .flex {
+    background: var(--color-bg-tertiary) !important;
+    border-bottom: 1px solid var(--color-border-default);
+  }
+
+  .linear-checklist-body .code-block .copy-btn {
+    color: var(--color-text-tertiary) !important;
+  }
+
+  .linear-checklist-body .code-block .copy-btn:hover {
+    color: var(--color-text-primary) !important;
+  }
+
+  .linear-checklist-body .code-block pre.highlight {
+    background: var(--color-bg-primary) !important;
+    border-radius: 0 !important;
   }
 
   .linear-checklist-note {
