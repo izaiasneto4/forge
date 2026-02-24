@@ -7,6 +7,10 @@
     {
       "fingerprint": "0fb5d9c419eb1c61778e3f3935a1398b571eb6deeae65b4f504fb956a41034b9",
       "note": "Path validated via PathValidator before use - safe with Open3 array form"
+    },
+    {
+      "fingerprint": "2f83233ff4db655b64a45eb645675dcc382e8aa4dfc06a047c7b4f572b85e5d5",
+      "note": "PR number normalized to positive Integer before ref interpolation; Open3 array args avoid shell injection"
     }
   ]
 }

@@ -199,6 +199,17 @@ class WorktreeServiceTest < ActiveSupport::TestCase
     @service.send(:fetch_pr_ref, @pr)
   end
 
+  test "fetch_pr_ref raises Error for invalid PR number" do
+    @pr.number = "not-a-number"
+
+    Open3.expects(:capture3).never
+
+    error = assert_raises(WorktreeService::Error) do
+      @service.send(:fetch_pr_ref, @pr)
+    end
+    assert_includes error.message, "Invalid PR number"
+  end
+
   test "fetch_pr_ref retries on transient network errors" do
     skip "Open3.stub not available in minitest without additional gems"
   end

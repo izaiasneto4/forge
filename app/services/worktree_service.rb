@@ -70,9 +70,13 @@ class WorktreeService
   end
 
   def fetch_pr_ref(pull_request)
-    with_retry("fetch PR ##{pull_request.number}") do
+    pr_number = normalize_pr_number(pull_request.number)
+    pr_ref = "pull/#{pr_number}/head"
+
+    with_retry("fetch PR ##{pr_number}") do
+      # Brakeman: safe - pr_number is normalized to a positive Integer before interpolation
       stdout, stderr, status = Open3.capture3(
-        "git", "-C", @repo_path, "fetch", "origin", "pull/#{pull_request.number}/head"
+        "git", "-C", @repo_path, "fetch", "origin", pr_ref
       )
       raise Error, "Failed to fetch PR: #{stderr}" unless status.success?
     end
@@ -96,6 +100,13 @@ class WorktreeService
 
   def transient_error?(message)
     TRANSIENT_ERROR_PATTERNS.any? { |pattern| message.match?(pattern) }
+  end
+
+  def normalize_pr_number(value)
+    pr_number = Integer(value, exception: false)
+    raise Error, "Invalid PR number: #{value.inspect}" unless pr_number&.positive?
+
+    pr_number
   end
 
   def create_worktree(worktree_path, branch_name, pull_request)

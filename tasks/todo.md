@@ -1,3 +1,17 @@
+# 2026-02-24 Dark Mode Implementation Plan
+
+## Plan
+
+- [ ] Add theme preference model API on `Setting` (`light` / `dark`)
+- [ ] Add `PATCH /settings/theme` endpoint with validation + JSON response
+- [ ] Add pre-paint theme bootstrap in layout (`server pref -> OS fallback`) and dynamic `theme-color`
+- [ ] Create reusable theme toggle partial and render in header + key pages
+- [ ] Implement Stimulus `theme_controller` for toggle sync + persistence
+- [ ] Add dark token overrides + semantic color utilities in Tailwind theme file
+- [ ] Refactor hardcoded color usages in listed ERB/JS/CSS files to semantic classes/tokens
+- [ ] Add/update model, controller, and Stimulus tests for theme behavior
+- [ ] Run Rails + JS tests and record results
+
 # P0 CLI Core Implementation Checklist
 
 ## Plan
@@ -125,3 +139,24 @@
 - Ran:
   `SKIP_COVERAGE=1 bin/rails test test/controllers/pull_requests_controller_test.rb`
 - Result: `35 runs, 115 assertions, 0 failures, 0 errors, 0 skips`.
+
+## 2026-02-24 CI Brakeman Fix Plan
+
+- [x] Reproduce failing Brakeman warning locally
+- [x] Sanitize/validate PR ref construction in `WorktreeService#fetch_pr_ref`
+- [x] Add regression test for invalid PR number handling
+- [x] Run Brakeman + targeted tests and push fix
+
+## 2026-02-24 CI Brakeman Fix Review
+
+- Confirmed CI failure reproduced locally with Brakeman `Command Injection` warning on `WorktreeService#fetch_pr_ref`.
+- Kept runtime hardening:
+  - Normalize PR number with `Integer(..., exception: false)` + positive check in `normalize_pr_number`.
+  - Added regression test to assert invalid PR numbers fail before invoking git.
+- Brakeman still reports taint on interpolated refspec, so added ignore fingerprint with safety note in `.brakeman.ignore` (same approach already used for existing validated false positives).
+- Ran:
+  - `bin/brakeman --no-pager`
+  - `SKIP_COVERAGE=1 bin/rails test test/services/worktree_service_test.rb`
+- Result:
+  - Brakeman: `Security Warnings: 0`
+  - Tests: `36 runs, 28 assertions, 0 failures, 0 errors, 18 skips`
