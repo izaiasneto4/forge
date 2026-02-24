@@ -213,10 +213,18 @@ class GithubCliService
 
   def sync_prs(prs, default_review_status)
     prs.each do |pr_data|
-      pr = PullRequest.find_or_initialize_by(github_id: pr_data[:github_id])
+      pr = PullRequest.unscoped.find_or_initialize_by(github_id: pr_data[:github_id])
 
       synced_status = pr_data[:review_status] || default_review_status
       attrs = pr_data.dup
+      attrs[:archived] = false
+      attrs[:deleted_at] = nil
+
+      # reviewed_by_me requires a local ReviewTask; keep external reviews visible in pending.
+      if synced_status == "reviewed_by_me" && pr.review_task.blank?
+        attrs[:review_status] = "pending_review"
+        synced_status = "pending_review"
+      end
 
       if should_reset_for_rerequest?(pr, synced_status)
         reset_for_rerequest!(pr)

@@ -174,6 +174,80 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert_equal [ reviewed_pr ], result[:reviewed_by_me]
   end
 
+  test "sync_to_database does not rollback when reviewed_by_me PR has no local review task" do
+    pending_pr = {
+      github_id: 9001,
+      number: 901,
+      title: "Pending PR",
+      description: "Needs review",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/901",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      author: "author",
+      author_avatar: nil,
+      created_at_github: Time.current.iso8601,
+      updated_at_github: Time.current.iso8601,
+      review_status: "pending_review"
+    }
+
+    reviewed_pr = pending_pr.merge(
+      github_id: 9002,
+      number: 902,
+      title: "Reviewed PR",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/902",
+      review_status: "reviewed_by_me"
+    )
+
+    @service.stubs(:fetch_all_prs_needing_attention).returns(
+      pending_review: [ pending_pr ],
+      reviewed_by_me: [ reviewed_pr ]
+    )
+    @service.stubs(:remove_stale_prs)
+    @service.stubs(:mark_reviewed_by_others)
+
+    assert_nothing_raised { @service.sync_to_database! }
+
+    stored_pending = PullRequest.find_by(github_id: 9001)
+    stored_reviewed = PullRequest.find_by(github_id: 9002)
+    assert_equal "pending_review", stored_pending.review_status
+    assert_equal "pending_review", stored_reviewed.review_status
+  end
+
+  test "sync_prs reuses archived PR record instead of creating duplicate github_id" do
+    archived = PullRequest.create!(
+      github_id: 9101,
+      number: 777,
+      title: "Old archived",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/777",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review",
+      archived: true
+    )
+
+    incoming = {
+      github_id: 9101,
+      number: 777,
+      title: "Reopened",
+      description: "Back again",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/777",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      author: "author",
+      author_avatar: nil,
+      created_at_github: Time.current.iso8601,
+      updated_at_github: Time.current.iso8601,
+      review_status: "pending_review"
+    }
+
+    assert_nothing_raised { @service.send(:sync_prs, [ incoming ], "pending_review") }
+
+    archived.reload
+    assert_equal false, archived.archived
+    assert_nil archived.deleted_at
+    assert_equal "Reopened", archived.title
+  end
+
   # get_repo_info tests
   test "get_repo_info returns nil for nil repo path" do
     service = GithubCliService.new(username: "test", repo_path: nil)
