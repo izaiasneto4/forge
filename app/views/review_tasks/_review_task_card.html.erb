@@ -1,5 +1,5 @@
 <div id="review_task_card_<%= task.id %>"
-     class="kanban-card bg-gray-50 border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow"
+     class="kanban-card bg-[color:var(--color-bg-secondary)] border border-[color:var(--color-border-default)] rounded-lg p-3 hover:shadow-md transition-shadow"
      data-review-kanban-target="card"
      data-board-filter-target="card"
      data-task-id="<%= task.id %>"
@@ -27,11 +27,11 @@
       <% if pr.author_avatar.present? %>
         <img src="<%= pr.author_avatar %>" alt="<%= pr.author %>" class="w-5 h-5 rounded-full">
       <% else %>
-        <div class="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
+        <div class="w-5 h-5 rounded-full bg-[color:var(--color-bg-tertiary)] border border-[color:var(--color-border-default)] flex items-center justify-center text-xs text-[color:var(--color-text-secondary)]">
           <%= pr.author&.first&.upcase %>
         </div>
       <% end %>
-      <span class="text-xs text-gray-600"><%= pr.author %></span>
+      <span class="text-xs text-[color:var(--color-text-secondary)]"><%= pr.author %></span>
     </div>
     <div class="flex items-center gap-2">
       <button type="button"
@@ -39,25 +39,25 @@
               data-archive-url="<%= archive_review_task_path(task) %>"
               data-archive-item-type="review task"
               data-archive-item-type-label="review task"
-              class="p-1 rounded cursor-pointer hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+              class="p-1 rounded cursor-pointer hover:bg-[color:var(--color-bg-tertiary)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)] transition-colors"
               title="Archive">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
         </svg>
       </button>
-      <span class="text-xs text-gray-400">#<%= pr.number %></span>
+      <span class="text-xs text-[color:var(--color-text-tertiary)]">#<%= pr.number %></span>
     </div>
   </div>
 
   <div class="flex items-start justify-between gap-2 mb-1">
-    <h3 class="font-medium text-gray-900 text-sm line-clamp-2 flex-1">
+    <h3 class="font-medium text-[color:var(--color-text-primary)] text-sm line-clamp-2 flex-1">
       <%= link_to pr.title, review_task_path(task),
-          class: "hover:text-blue-600 hover:underline",
+          class: "hover:text-[color:var(--color-accent)] hover:underline",
           data: { action: "click->review-kanban#navigateToReview" },
           title: "View review details" %>
     </h3>
     <%= link_to pr.url, target: "_blank", rel: "noopener noreferrer",
-        class: "flex-shrink-0 text-gray-400 hover:text-gray-600",
+        class: "flex-shrink-0 text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]",
         data: { action: "click->review-kanban#openGithub" },
         title: "Open on GitHub" do %>
       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
@@ -66,42 +66,42 @@
     <% end %>
   </div>
 
-  <div class="flex items-center justify-between text-xs text-gray-400 mt-2">
+  <div class="flex items-center justify-between text-xs text-[color:var(--color-text-tertiary)] mt-2">
     <div class="flex items-center gap-1.5">
-      <span class="bg-gray-200 px-1.5 py-0.5 rounded truncate max-w-[80px]" title="<%= pr.repo_full_name %>">
+      <span class="linear-surface-neutral px-1.5 py-0.5 rounded truncate max-w-[80px]" title="<%= pr.repo_full_name %>">
         <%= pr.repo_name %>
       </span>
       <% if task.swarm_review? %>
-        <span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Multi-agent swarm review">
+        <span class="linear-status-chip-review px-1.5 py-0.5 rounded text-[10px] font-medium" title="Multi-agent swarm review">
           Swarm
         </span>
       <% end %>
       <% if task.retry_count > 0 && (task.pending_review? || task.in_review?) && !task.failed_review? %>
-        <span class="bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Retry <%= task.retry_count %>/<%= ReviewTask::MAX_RETRY_ATTEMPTS %>">
+        <span class="linear-status-chip-warning px-1.5 py-0.5 rounded text-[10px] font-medium" title="Retry <%= task.retry_count %>/<%= ReviewTask::MAX_RETRY_ATTEMPTS %>">
           Retry <%= task.retry_count %>
         </span>
       <% end %>
       <% if task.has_review_history? %>
-        <span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="<%= task.review_iterations.count %> previous review(s)">
+        <span class="linear-status-chip-info px-1.5 py-0.5 rounded text-[10px] font-medium" title="<%= task.review_iterations.count %> previous review(s)">
           #<%= task.current_iteration_number + 1 %>
         </span>
       <% end %>
       <% if task.queued? %>
-        <span class="bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Queue position">
+        <span class="linear-status-chip-review px-1.5 py-0.5 rounded text-[10px] font-medium" title="Queue position">
           #<%= task.queue_position %>
         </span>
       <% end %>
     </div>
     <% if task.queued? %>
-      <span class="text-violet-600">Queued</span>
+      <span class="text-[color:var(--color-status-review)]">Queued</span>
     <% elsif task.pending_review? || task.in_review? %>
       <% if task.retry_count > 0 && task.failure_reason.present? && !task.failed_review? %>
-        <span class="text-orange-600 animate-pulse" title="<%= task.failure_reason %>">Waiting for retry <%= task.retry_count %>/<%= ReviewTask::MAX_RETRY_ATTEMPTS %>...</span>
+        <span class="text-[color:var(--color-status-todo)] animate-pulse" title="<%= task.failure_reason %>">Waiting for retry <%= task.retry_count %>/<%= ReviewTask::MAX_RETRY_ATTEMPTS %>...</span>
       <% else %>
-        <span class="text-yellow-600 animate-pulse">In Review...</span>
+        <span class="text-[color:var(--color-status-todo)] animate-pulse">In Review...</span>
       <% end %>
     <% elsif task.failed_review? %>
-      <span class="text-red-600" title="<%= task.failure_reason %>">Failed</span>
+      <span class="text-[color:var(--color-status-blocked)]" title="<%= task.failure_reason %>">Failed</span>
     <% elsif task.completed_at %>
       <span title="<%= task.completed_at.strftime('%Y-%m-%d %H:%M') %>">
         <%= time_ago_in_words(task.completed_at) %> ago
@@ -110,14 +110,14 @@
   </div>
 
   <% if task.queued? %>
-    <div class="mt-2 pt-2 border-t border-violet-200 bg-violet-50 -mx-3 -mb-3 px-3 py-2 rounded-b-lg">
+    <div class="mt-2 pt-2 border-t border-[color:var(--color-status-review)]/40 bg-[color:var(--color-status-review-bg)] -mx-3 -mb-3 px-3 py-2 rounded-b-lg">
       <div class="flex items-center justify-between">
-        <span class="text-[10px] text-violet-500">
+        <span class="text-[10px] text-[color:var(--color-status-review)]">
           Position #<%= task.queue_position %> in queue
         </span>
         <%= button_to dequeue_review_task_path(task),
             method: :delete,
-            class: "flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 font-medium",
+            class: "flex items-center gap-1 text-xs text-[color:var(--color-status-review)] hover:opacity-80 font-medium",
             data: {
               turbo_confirm: "Remove from queue?",
               disable_with: "Removing..."
@@ -132,19 +132,19 @@
   <% end %>
 
   <% if task.in_review? %>
-    <div class="mt-2 pt-2 border-t border-yellow-200 bg-yellow-50 -mx-3 -mb-3 px-3 py-2 rounded-b-lg">
+    <div class="mt-2 pt-2 border-t border-[color:var(--color-status-todo)]/40 bg-[color:var(--color-status-todo-bg)] -mx-3 -mb-3 px-3 py-2 rounded-b-lg">
       <div class="flex items-center gap-2">
         <div class="flex-1">
-          <div class="h-1.5 bg-yellow-100 rounded-full overflow-hidden">
-            <div class="h-full bg-yellow-500 rounded-full animate-progress-indeterminate"></div>
+          <div class="h-1.5 bg-[color:var(--color-bg-secondary)]/50 rounded-full overflow-hidden">
+            <div class="h-full bg-[color:var(--color-status-todo)] rounded-full animate-progress-indeterminate"></div>
           </div>
         </div>
-        <span class="text-[10px] text-yellow-600 flex-shrink-0">
+        <span class="text-[10px] text-[color:var(--color-status-todo)] flex-shrink-0">
           <%= task.cli_client.titleize %> reviewing...
         </span>
       </div>
       <% if task.started_at %>
-        <div class="text-[10px] text-yellow-500 mt-1">
+        <div class="text-[10px] text-[color:var(--color-status-todo)] opacity-90 mt-1">
           Started <%= time_ago_in_words(task.started_at) %> ago
         </div>
       <% end %>
@@ -152,9 +152,9 @@
   <% end %>
 
   <% if task.reviewed? || task.waiting_implementation? || task.done? %>
-    <div class="mt-2 pt-2 border-t border-gray-200">
+    <div class="mt-2 pt-2 border-t border-[color:var(--color-border-default)]">
       <button type="button"
-              class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              class="text-xs text-[color:var(--color-accent)] hover:opacity-80 font-medium"
               data-action="click->review-kanban#showReview"
               data-task-id="<%= task.id %>">
         View Review Output
@@ -163,18 +163,18 @@
   <% end %>
 
   <% if task.failed_review? %>
-    <div class="mt-2 pt-2 border-t border-red-200 bg-red-50 -mx-3 -mb-3 px-3 py-2 rounded-b-lg">
-      <div class="text-xs text-red-700 mb-1 line-clamp-2" title="<%= task.failure_reason %>">
+    <div class="mt-2 pt-2 border-t border-[color:var(--color-status-blocked)]/40 bg-[color:var(--color-status-blocked-bg)] -mx-3 -mb-3 px-3 py-2 rounded-b-lg">
+      <div class="text-xs text-[color:var(--color-status-blocked)] mb-1 line-clamp-2" title="<%= task.failure_reason %>">
         <%= truncate(task.failure_reason, length: 100) %>
       </div>
       <div class="flex items-center justify-between">
-        <span class="text-[10px] text-red-500">
+        <span class="text-[10px] text-[color:var(--color-status-blocked)]">
           <%= task.retry_count %>/<%= ReviewTask::MAX_RETRY_ATTEMPTS %> retries
         </span>
         <% if task.can_retry? %>
           <%= button_to retry_review_task_path(task),
               method: :post,
-              class: "retry-btn flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed",
+              class: "retry-btn flex items-center gap-1 text-xs text-[color:var(--color-status-blocked)] hover:opacity-80 font-medium disabled:opacity-50 disabled:cursor-not-allowed",
               data: {
                 turbo_confirm: "Retry this review?",
                 disable_with: "Retrying..."
@@ -185,7 +185,7 @@
             Retry
           <% end %>
         <% else %>
-          <span class="text-[10px] text-red-400 italic">Max retries reached</span>
+          <span class="text-[10px] text-[color:var(--color-status-blocked)] opacity-70 italic">Max retries reached</span>
         <% end %>
       </div>
     </div>

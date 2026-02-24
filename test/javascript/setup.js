@@ -3,11 +3,36 @@ import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, resolve } from 'path'
 import { Window } from 'happy-dom'
+import { Application } from '@hotwired/stimulus'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const htmlPath = resolve(__dirname, '../fixtures/index.html')
 const html = readFileSync(htmlPath, 'utf8')
+
+if (!Application.__testPatchedStart) {
+  const originalStart = Application.start
+  Application.start = function(element, schema) {
+    const application = new this(element, schema)
+    application.dispatcher.start()
+    application.router.start()
+    return application
+  }
+  Application.__testPatchedStart = originalStart
+}
+
+if (!Application.__testPatchedGetController) {
+  const originalGetController = Application.prototype.getControllerForElementAndIdentifier
+  Application.prototype.getControllerForElementAndIdentifier = function(element, identifier) {
+    let controller = originalGetController.call(this, element, identifier)
+    if (!controller && element) {
+      this.router.proposeToConnectScopeForElementAndIdentifier(element, identifier)
+      controller = originalGetController.call(this, element, identifier)
+    }
+    return controller
+  }
+  Application.__testPatchedGetController = originalGetController
+}
 
 beforeEach(() => {
   const window = new Window({ url: 'http://localhost:3000' })
@@ -31,9 +56,12 @@ beforeEach(() => {
     }))
   }
 
-  window.navigator.clipboard = {
-    writeText: vi.fn().mockResolvedValue(undefined)
-  }
+  Object.defineProperty(window.navigator, 'clipboard', {
+    value: {
+      writeText: vi.fn().mockResolvedValue(undefined)
+    },
+    configurable: true
+  })
 
   global.csrfToken = 'test-csrf-token'
   document.head.innerHTML = `<meta name="csrf-token" content="${global.csrfToken}">`

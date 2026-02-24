@@ -2,15 +2,26 @@
 
 ## Plan
 
-- [ ] Add theme preference model API on `Setting` (`light` / `dark`)
-- [ ] Add `PATCH /settings/theme` endpoint with validation + JSON response
-- [ ] Add pre-paint theme bootstrap in layout (`server pref -> OS fallback`) and dynamic `theme-color`
-- [ ] Create reusable theme toggle partial and render in header + key pages
-- [ ] Implement Stimulus `theme_controller` for toggle sync + persistence
-- [ ] Add dark token overrides + semantic color utilities in Tailwind theme file
-- [ ] Refactor hardcoded color usages in listed ERB/JS/CSS files to semantic classes/tokens
-- [ ] Add/update model, controller, and Stimulus tests for theme behavior
-- [ ] Run Rails + JS tests and record results
+- [x] Add theme preference model API on `Setting` (`light` / `dark`)
+- [x] Add `PATCH /settings/theme` endpoint with validation + JSON response
+- [x] Add pre-paint theme bootstrap in layout (`server pref -> OS fallback`) and dynamic `theme-color`
+- [x] Create reusable theme toggle partial and render in header + key pages
+- [x] Implement Stimulus `theme_controller` for toggle sync + persistence
+- [x] Add dark token overrides + semantic color utilities in Tailwind theme file
+- [x] Refactor hardcoded color usages in listed ERB/JS/CSS files to semantic classes/tokens
+- [x] Add/update model, controller, and Stimulus tests for theme behavior
+- [x] Run Rails + JS tests and record results
+
+## Review
+
+- Implemented binary light/dark theme with server persistence via `Setting.theme_preference`, new `PATCH /settings/theme`, and shared header/settings toggles.
+- Added pre-paint theme bootstrapping in layout with preference resolution order: saved server pref, then OS preference.
+- Added dark-mode token overrides and semantic surface/button/overlay classes; migrated hardcoded colors in requested files plus adjacent flash/status UI.
+- Added tests for `Setting` theme preference, `SettingsController#theme`, and new `theme_controller`.
+- Test results:
+  `SKIP_COVERAGE=1 bin/rails test` => `1102 runs, 2801 assertions, 0 failures, 0 errors`.
+  `npm test -- test/javascript/controllers/theme_controller.test.js test/javascript/controllers/kanban_controller.test.js test/javascript/controllers/review_kanban_controller.test.js` => pass.
+  `npm test` => fails in pre-existing JS controller suites unrelated to dark mode (11 failures across legacy controller tests).
 
 # P0 CLI Core Implementation Checklist
 

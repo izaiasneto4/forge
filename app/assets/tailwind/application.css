@@ -44,6 +44,27 @@
   --color-status-done-bg: #d1fae5;
   --color-status-blocked: #ef4444;
   --color-status-blocked-bg: #fee2e2;
+  --color-status-in-progress: var(--color-status-inprogress);
+  --color-status-in-progress-bg: var(--color-status-inprogress-bg);
+
+  /* Semantic surfaces and overlays */
+  --color-surface-info-bg: #dbeafe;
+  --color-surface-info-border: #93c5fd;
+  --color-surface-info-text: #1e40af;
+  --color-surface-success-bg: #dcfce7;
+  --color-surface-success-border: #86efac;
+  --color-surface-success-text: #166534;
+  --color-surface-warning-bg: #fef3c7;
+  --color-surface-warning-border: #fcd34d;
+  --color-surface-warning-text: #92400e;
+  --color-surface-danger-bg: #fee2e2;
+  --color-surface-danger-border: #fca5a5;
+  --color-surface-danger-text: #991b1b;
+  --color-surface-neutral-bg: #f3f4f6;
+  --color-surface-neutral-border: #d1d5db;
+  --color-surface-neutral-text: #374151;
+  --color-overlay-strong: rgb(15 23 42 / 0.55);
+  --color-overlay-soft: rgb(15 23 42 / 0.3);
 
   /* ============================================
      Responsive Spacing Scale
@@ -68,6 +89,57 @@
      desktop: 1440px
      4k: 2560px
      ============================================ */
+}
+
+:root {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg-primary: #0b1220;
+  --color-bg-secondary: #111827;
+  --color-bg-tertiary: #1f2937;
+  --color-bg-hover: #1f2937;
+  --color-bg-active: #374151;
+  --color-border-default: #374151;
+  --color-border-subtle: #1f2937;
+  --color-border-strong: #4b5563;
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #d1d5db;
+  --color-text-tertiary: #9ca3af;
+  --color-text-quaternary: #6b7280;
+  --color-accent: #818cf8;
+  --color-accent-hover: #6366f1;
+  --color-accent-subtle: #312e81;
+  --color-accent-text: #c7d2fe;
+  --color-status-todo: #fbbf24;
+  --color-status-todo-bg: #422006;
+  --color-status-inprogress: #60a5fa;
+  --color-status-inprogress-bg: #172554;
+  --color-status-review: #a78bfa;
+  --color-status-review-bg: #2e1065;
+  --color-status-done: #34d399;
+  --color-status-done-bg: #052e2b;
+  --color-status-blocked: #f87171;
+  --color-status-blocked-bg: #450a0a;
+  --color-surface-info-bg: #172554;
+  --color-surface-info-border: #1d4ed8;
+  --color-surface-info-text: #bfdbfe;
+  --color-surface-success-bg: #052e2b;
+  --color-surface-success-border: #059669;
+  --color-surface-success-text: #6ee7b7;
+  --color-surface-warning-bg: #422006;
+  --color-surface-warning-border: #d97706;
+  --color-surface-warning-text: #fcd34d;
+  --color-surface-danger-bg: #450a0a;
+  --color-surface-danger-border: #dc2626;
+  --color-surface-danger-text: #fca5a5;
+  --color-surface-neutral-bg: #1f2937;
+  --color-surface-neutral-border: #374151;
+  --color-surface-neutral-text: #d1d5db;
+  --color-overlay-strong: rgb(2 6 23 / 0.72);
+  --color-overlay-soft: rgb(2 6 23 / 0.55);
 }
 
 /* Base styles */
@@ -1090,27 +1162,27 @@
 
   .linear-badge-purple {
     background: var(--color-status-review-bg);
-    color: #7c3aed;
+    color: var(--color-status-review);
   }
 
   .linear-badge-blue {
     background: var(--color-status-inprogress-bg);
-    color: #2563eb;
+    color: var(--color-status-inprogress);
   }
 
   .linear-badge-green {
     background: var(--color-status-done-bg);
-    color: #059669;
+    color: var(--color-status-done);
   }
 
   .linear-badge-yellow {
     background: var(--color-status-todo-bg);
-    color: #d97706;
+    color: var(--color-status-todo);
   }
 
   .linear-badge-red {
     background: var(--color-status-blocked-bg);
-    color: #dc2626;
+    color: var(--color-status-blocked);
   }
 
   /* Empty state */
@@ -1191,7 +1263,7 @@
 
   .linear-modal-accent {
     height: 4px;
-    background: linear-gradient(90deg, #5e6ad2, #8b5cf6);
+    background: linear-gradient(90deg, var(--color-accent), var(--color-status-review));
   }
 
   .linear-modal-header {
@@ -1387,23 +1459,23 @@
 
   /* Severity left border accent */
   .linear-checklist-item-content.severity-critical {
-    border-left: 4px solid #ef4444;
+    border-left: 4px solid var(--color-status-blocked);
   }
 
   .linear-checklist-item-content.severity-major {
-    border-left: 4px solid #f59e0b;
+    border-left: 4px solid var(--color-status-todo);
   }
 
   .linear-checklist-item-content.severity-minor {
-    border-left: 4px solid #3b82f6;
+    border-left: 4px solid var(--color-status-inprogress);
   }
 
   .linear-checklist-item-content.severity-suggestion {
-    border-left: 4px solid #10b981;
+    border-left: 4px solid var(--color-status-done);
   }
 
   .linear-checklist-item-content.severity-nitpick {
-    border-left: 4px solid #9ca3af;
+    border-left: 4px solid var(--color-text-tertiary);
   }
 
   /* ============================================
@@ -2028,13 +2100,13 @@
   .kanban-toast--error {
     border-color: var(--color-status-blocked);
     background: var(--color-status-blocked-bg);
-    color: #dc2626;
+    color: var(--color-status-blocked);
   }
 
   .kanban-toast--success {
     border-color: var(--color-status-done);
     background: var(--color-status-done-bg);
-    color: #059669;
+    color: var(--color-status-done);
   }
 
   @keyframes kanban-toast-in {
@@ -2086,5 +2158,106 @@
     .linear-accordion-icon {
       transition: none;
     }
+  }
+
+  .theme-toggle {
+    gap: 0.35rem;
+  }
+
+  .linear-overlay-soft {
+    background: var(--color-overlay-soft);
+  }
+
+  .linear-overlay-strong {
+    background: var(--color-overlay-strong);
+  }
+
+  .linear-surface-info {
+    background: var(--color-surface-info-bg);
+    border: 1px solid var(--color-surface-info-border);
+    color: var(--color-surface-info-text);
+  }
+
+  .linear-surface-success {
+    background: var(--color-surface-success-bg);
+    border: 1px solid var(--color-surface-success-border);
+    color: var(--color-surface-success-text);
+  }
+
+  .linear-surface-warning {
+    background: var(--color-surface-warning-bg);
+    border: 1px solid var(--color-surface-warning-border);
+    color: var(--color-surface-warning-text);
+  }
+
+  .linear-surface-danger {
+    background: var(--color-surface-danger-bg);
+    border: 1px solid var(--color-surface-danger-border);
+    color: var(--color-surface-danger-text);
+  }
+
+  .linear-surface-neutral {
+    background: var(--color-surface-neutral-bg);
+    border: 1px solid var(--color-surface-neutral-border);
+    color: var(--color-surface-neutral-text);
+  }
+
+  .linear-text-info { color: var(--color-surface-info-text); }
+  .linear-text-success { color: var(--color-surface-success-text); }
+  .linear-text-warning { color: var(--color-surface-warning-text); }
+  .linear-text-danger { color: var(--color-surface-danger-text); }
+  .linear-text-neutral { color: var(--color-surface-neutral-text); }
+
+  .linear-border-info { border-color: var(--color-surface-info-border); }
+  .linear-border-warning { border-color: var(--color-surface-warning-border); }
+  .linear-border-danger { border-color: var(--color-surface-danger-border); }
+  .linear-border-neutral { border-color: var(--color-surface-neutral-border); }
+
+  .linear-accent-neutral { background: var(--color-surface-neutral-border); }
+  .linear-accent-warning { background: var(--color-surface-warning-border); }
+  .linear-accent-danger { background: var(--color-surface-danger-border); }
+
+  .linear-btn-danger {
+    background: var(--color-status-blocked);
+    color: #fff;
+  }
+
+  .linear-btn-danger:hover {
+    background: var(--color-surface-danger-text);
+  }
+
+  html[data-theme="dark"] .linear-btn-danger:hover {
+    background: var(--color-status-blocked);
+  }
+
+  .linear-checkbox-accent {
+    border-color: var(--color-border-strong);
+    accent-color: var(--color-accent);
+  }
+
+  .kanban-column--active {
+    background: var(--color-accent-subtle);
+    box-shadow: inset 0 0 0 2px var(--color-accent);
+    border-radius: 0.5rem;
+  }
+
+  .linear-status-chip-danger {
+    background: var(--color-surface-danger-bg);
+    color: var(--color-surface-danger-text);
+  }
+
+  .linear-status-chip-warning {
+    background: var(--color-surface-warning-bg);
+    color: var(--color-surface-warning-text);
+  }
+
+  .linear-status-chip-review {
+    background: var(--color-status-review-bg);
+    color: var(--color-status-review);
+  }
+
+  .linear-status-chip-info {
+    background: var(--color-surface-info-bg);
+    color: var(--color-surface-info-text);
   }
 }

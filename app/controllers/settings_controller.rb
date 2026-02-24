@@ -3,6 +3,7 @@ class SettingsController < ApplicationController
     @repos_folder = Setting.repos_folder
     @default_cli_client = Setting.default_cli_client
     @auto_submit_enabled = Setting.auto_submit_enabled?
+    @theme_preference = Setting.theme_preference
   end
 
   def update
@@ -25,5 +26,23 @@ class SettingsController < ApplicationController
     path = FolderPickerService.call
 
     render json: { path: path }
+  end
+
+  def theme
+    theme_preference = theme_params[:theme_preference].presence
+
+    unless theme_preference && Setting::VALID_THEME_PREFERENCES.include?(theme_preference)
+      render json: { error: "Invalid theme_preference" }, status: :unprocessable_entity
+      return
+    end
+
+    Setting.theme_preference = theme_preference
+    render json: { theme_preference: Setting.theme_preference }
+  end
+
+  private
+
+  def theme_params
+    params.permit(:theme_preference)
   end
 end

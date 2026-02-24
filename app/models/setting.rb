@@ -11,8 +11,10 @@ class Setting < ApplicationRecord
   AUTO_REVIEW_DELAY_MIN_KEY = "auto_review_delay_min".freeze
   AUTO_REVIEW_DELAY_MAX_KEY = "auto_review_delay_max".freeze
   AUTO_SUBMIT_ENABLED_KEY = "auto_submit_enabled".freeze
+  THEME_PREFERENCE_KEY = "theme_preference".freeze
 
   CLI_CLIENTS = %w[claude codex opencode].freeze
+  VALID_THEME_PREFERENCES = %w[light dark].freeze
   DEFAULT_CLI_CLIENT = "claude".freeze
   SYNC_DEBOUNCE_SECONDS = 300 # 5 minutes
   DEFAULT_AUTO_REVIEW_DELAY_MIN = 5
@@ -170,6 +172,22 @@ class Setting < ApplicationRecord
     invalidate_cache!(AUTO_SUBMIT_ENABLED_KEY)
     setting = find_or_initialize_by(key: AUTO_SUBMIT_ENABLED_KEY)
     setting.update!(value: enabled.to_s)
+  end
+
+  def self.theme_preference
+    value = fetch(THEME_PREFERENCE_KEY) { super }
+    return nil if value.blank?
+    return value if VALID_THEME_PREFERENCES.include?(value)
+
+    nil
+  end
+
+  def self.theme_preference=(value)
+    return if value.present? && !VALID_THEME_PREFERENCES.include?(value)
+
+    invalidate_cache!(THEME_PREFERENCE_KEY)
+    setting = find_or_initialize_by(key: THEME_PREFERENCE_KEY)
+    setting.update!(value: value.presence)
   end
 
   def self.parse_delay_value(value, default:)

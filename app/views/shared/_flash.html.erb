@@ -1,6 +1,6 @@
 <div id="flash-messages" class="space-y-2">
   <% if local_assigns[:notice].present? %>
-    <div class="flex items-center gap-2 px-4 py-3 rounded-md border text-[13px] bg-[color:var(--color-status-done-bg)] border-[color:var(--color-status-done)]/20 text-[#059669]"
+    <div class="flex items-center gap-2 px-4 py-3 rounded-md border text-[13px] bg-[color:var(--color-status-done-bg)] border-[color:var(--color-status-done)]/20 linear-text-success"
          data-controller="flash"
          data-flash-auto-dismiss-value="true"
          data-flash-delay-value="5000"
@@ -18,7 +18,7 @@
   <% end %>
 
   <% if local_assigns[:alert].present? %>
-    <div class="flex items-center gap-2 px-4 py-3 rounded-md border text-[13px] bg-[color:var(--color-status-blocked-bg)] border-[color:var(--color-status-blocked)]/20 text-[#dc2626]"
+    <div class="flex items-center gap-2 px-4 py-3 rounded-md border text-[13px] bg-[color:var(--color-status-blocked-bg)] border-[color:var(--color-status-blocked)]/20 linear-text-danger"
          data-controller="flash"
          data-flash-auto-dismiss-value="true"
          data-flash-delay-value="8000"

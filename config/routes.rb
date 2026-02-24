@@ -55,6 +55,7 @@ Rails.application.routes.draw do
 
   resource :settings, only: [ :edit, :update ] do
     post :pick_folder, on: :collection
+    patch :theme, on: :collection
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

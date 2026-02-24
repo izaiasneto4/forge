@@ -92,6 +92,8 @@
         <span data-sync-target="buttonText" class="hidden sm:inline">Sync</span>
       <% end %>
 
+      <%= render partial: "shared/theme_toggle" %>
+
       <!-- Settings Link -->
       <%= link_to edit_settings_path, class: "linear-btn linear-btn-ghost linear-btn-sm", title: "Settings", "aria-label": "Settings" do %>
         <svg class="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,7 +170,7 @@
         <%= check_box_tag :requested_to_me_only,
                           "1",
                           Setting.only_requested_reviews?,
-                          class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer",
+                          class: "rounded linear-checkbox-accent cursor-pointer",
                           onchange: "this.form.requestSubmit()" %>
         <span class="text-[11px] text-[color:var(--color-text-tertiary)] whitespace-nowrap">Requested to me only</span>
       <% end %>
@@ -178,7 +180,7 @@
                checked
                data-board-filter-target="selfPrToggle"
                data-action="change->board-filter#toggleOwnPrs"
-               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+               class="rounded linear-checkbox-accent cursor-pointer">
         Show my PRs
       </label>
     </div>

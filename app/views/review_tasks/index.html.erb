@@ -27,6 +27,8 @@
     </div>
 
     <div class="flex items-center gap-2">
+      <%= render partial: "shared/theme_toggle" %>
+
       <!-- Settings Link -->
       <%= link_to edit_settings_path, class: "linear-btn linear-btn-ghost p-2", title: "Settings" do %>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,9 +103,9 @@
     <div class="grid grid-cols-1 md:grid-cols-7 gap-4 overflow-x-auto">
       <!-- Queued Column -->
       <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] min-w-[250px]">
-        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-violet-500/10 rounded-t-lg">
+        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-[color:var(--color-status-review)]/10 rounded-t-lg">
           <h2 class="font-medium text-[color:var(--color-text-primary)] flex items-center text-[13px]">
-            <span class="w-2.5 h-2.5 bg-violet-500 rounded-full mr-2"></span>
+            <span class="w-2.5 h-2.5 bg-[color:var(--color-status-review)] rounded-full mr-2"></span>
             Queued
             <span id="review_task_count_queued" class="ml-2 linear-badge linear-badge-default text-[10px]">
               <%= @grouped_tasks[:queued].count %>
@@ -185,9 +187,9 @@
 
       <!-- Waiting Implementation Column -->
       <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] min-w-[250px]">
-        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-orange-500/10 rounded-t-lg">
+        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-[color:var(--color-status-todo)]/10 rounded-t-lg">
           <h2 class="font-medium text-[color:var(--color-text-primary)] flex items-center text-[13px]">
-            <span class="w-2.5 h-2.5 bg-orange-500 rounded-full mr-2"></span>
+            <span class="w-2.5 h-2.5 bg-[color:var(--color-status-todo)] rounded-full mr-2"></span>
             Waiting Impl
             <span id="review_task_count_waiting_implementation" class="ml-2 linear-badge linear-badge-purple text-[10px]">
               <%= @grouped_tasks[:waiting_implementation].count %>
@@ -227,9 +229,9 @@
 
       <!-- Failed Review Column -->
       <div class="bg-[color:var(--color-bg-secondary)] rounded-lg border border-[color:var(--color-border-default)] min-w-[250px]">
-        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-red-500/10 rounded-t-lg">
+        <div class="p-3 border-b border-[color:var(--color-border-default)] bg-[color:var(--color-status-blocked)]/10 rounded-t-lg">
           <h2 class="font-medium text-[color:var(--color-text-primary)] flex items-center text-[13px]">
-            <span class="w-2.5 h-2.5 bg-red-500 rounded-full mr-2"></span>
+            <span class="w-2.5 h-2.5 bg-[color:var(--color-status-blocked)] rounded-full mr-2"></span>
             Failed
             <span id="review_task_count_failed_review" class="ml-2 linear-badge linear-badge-red text-[10px]">
               <%= @grouped_tasks[:failed_review].count %>
@@ -249,18 +251,18 @@
   </div>
 </div>
 
-<div id="review-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+<div id="review-modal" class="hidden fixed inset-0 linear-overlay-strong overflow-y-auto h-full w-full z-50"
      data-review-kanban-target="modal">
-  <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+  <div class="relative top-10 mx-auto p-5 border border-[color:var(--color-border-default)] w-11/12 max-w-4xl shadow-lg rounded-md bg-[color:var(--color-bg-secondary)]">
     <div id="review-modal-content" data-review-kanban-target="modalContent">
     </div>
   </div>
 </div>
 
 <!-- Backward Move Confirmation Modal -->
-<div id="backward-confirm-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+<div id="backward-confirm-modal" class="hidden fixed inset-0 linear-overlay-strong overflow-y-auto h-full w-full z-50"
      data-review-kanban-target="confirmModal">
-  <div class="relative top-20 mx-auto border w-full max-w-md shadow-lg rounded-lg bg-white">
+  <div class="relative top-20 mx-auto border border-[color:var(--color-border-default)] w-full max-w-md shadow-lg rounded-lg bg-[color:var(--color-bg-secondary)]">
     <div id="backward-confirm-modal-content" data-review-kanban-target="confirmModalContent">
     </div>
   </div>

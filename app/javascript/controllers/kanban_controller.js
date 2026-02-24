@@ -23,7 +23,7 @@ export default class extends Controller {
   dragEnd(event) {
     event.target.classList.remove("opacity-50")
     this.columnTargets.forEach(column => {
-      column.classList.remove("bg-blue-50", "ring-2", "ring-blue-300")
+      column.classList.remove("kanban-column--active")
     })
   }
 
@@ -35,20 +35,20 @@ export default class extends Controller {
   dragEnter(event) {
     event.preventDefault()
     const column = event.currentTarget
-    column.classList.add("bg-blue-50", "ring-2", "ring-blue-300")
+    column.classList.add("kanban-column--active")
   }
 
   dragLeave(event) {
     const column = event.currentTarget
     if (!column.contains(event.relatedTarget)) {
-      column.classList.remove("bg-blue-50", "ring-2", "ring-blue-300")
+      column.classList.remove("kanban-column--active")
     }
   }
 
   drop(event) {
     event.preventDefault()
     const column = event.currentTarget
-    column.classList.remove("bg-blue-50", "ring-2", "ring-blue-300")
+    column.classList.remove("kanban-column--active")
 
     const prId = event.dataTransfer.getData("text/plain")
     const newStatus = column.dataset.status
@@ -103,7 +103,7 @@ export default class extends Controller {
   updateColumnCounts() {
     this.columnTargets.forEach(column => {
       const count = column.querySelectorAll("[data-kanban-target='card']").length
-      const columnWrapper = column.closest(".bg-white")
+      const columnWrapper = column.closest(".linear-column") || column.closest(".bg-white")
       const badge = columnWrapper?.querySelector(".text-xs.px-2.py-1.rounded-full")
       if (badge) {
         badge.textContent = count

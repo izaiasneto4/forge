@@ -388,37 +388,37 @@ export default class extends Controller {
       content.innerHTML = `
         <div class="p-6">
           <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-10 h-10 rounded-full linear-surface-warning flex items-center justify-center">
+              <svg class="w-5 h-5 linear-text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-gray-900">Move Back in Workflow?</h3>
-              <p class="text-sm text-gray-500">This will archive the current review</p>
+              <h3 class="text-lg font-semibold text-[color:var(--color-text-primary)]">Move Back in Workflow?</h3>
+              <p class="text-sm text-[color:var(--color-text-tertiary)]">This will archive the current review</p>
             </div>
           </div>
-          <div class="bg-gray-50 rounded-lg p-4 mb-4">
-            <p class="text-sm text-gray-700">
+          <div class="linear-surface-neutral rounded-lg p-4 mb-4">
+            <p class="text-sm text-[color:var(--color-text-secondary)]">
               Moving from <strong>${fromLabel}</strong> back to <strong>${toLabel}</strong> will:
             </p>
-            <ul class="mt-2 text-sm text-gray-600 list-disc list-inside space-y-1">
+            <ul class="mt-2 text-sm text-[color:var(--color-text-secondary)] list-disc list-inside space-y-1">
               <li>Archive the current review as a historical iteration</li>
               <li>Clear the current review comments and output</li>
               <li>Allow a new review to be started</li>
             </ul>
-            <p class="mt-3 text-sm text-gray-500 italic">
+            <p class="mt-3 text-sm text-[color:var(--color-text-tertiary)] italic">
               Previous reviews will be preserved and viewable in the review history.
             </p>
           </div>
           <div class="flex justify-end gap-3">
             <button type="button"
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+                    class="linear-btn linear-btn-secondary text-sm py-2 px-4"
                     data-action="click->review-kanban#cancelBackwardMove">
               Cancel
             </button>
             <button type="button"
-                    class="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+                    class="linear-btn linear-btn-primary text-sm py-2 px-4"
                     data-action="click->review-kanban#confirmBackwardMove"
                     autofocus>
               Move & Archive

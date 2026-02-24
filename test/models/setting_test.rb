@@ -415,4 +415,39 @@ class SettingTest < ActiveSupport::TestCase
     Setting.auto_submit_enabled = false
     refute Setting.auto_submit_enabled?
   end
+
+  # Theme preference settings
+  test "theme_preference returns nil when not set" do
+    assert_nil Setting.theme_preference
+  end
+
+  test "theme_preference returns stored valid value" do
+    Setting.theme_preference = "dark"
+    assert_equal "dark", Setting.theme_preference
+
+    Setting.theme_preference = "light"
+    assert_equal "light", Setting.theme_preference
+  end
+
+  test "theme_preference= ignores invalid value" do
+    Setting.theme_preference = "dark"
+    Setting.theme_preference = "sepia"
+
+    assert_equal "dark", Setting.theme_preference
+  end
+
+  test "theme_preference= accepts nil and unsets preference" do
+    Setting.theme_preference = "dark"
+    Setting.theme_preference = nil
+
+    assert_nil Setting.theme_preference
+  end
+
+  test "THEME_PREFERENCE_KEY is theme_preference" do
+    assert_equal "theme_preference", Setting::THEME_PREFERENCE_KEY
+  end
+
+  test "VALID_THEME_PREFERENCES contains light and dark" do
+    assert_equal %w[light dark], Setting::VALID_THEME_PREFERENCES
+  end
 end

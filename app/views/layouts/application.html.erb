@@ -8,11 +8,28 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="application-name" content="Forge">
     <meta name="mobile-web-app-capable" content="yes">
-    <%# Theme color for browser chrome %>
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+    <% saved_theme_preference = Setting.theme_preference %>
+    <meta name="forge-theme-preference" content="<%= saved_theme_preference.to_s %>">
+    <meta name="theme-color" content="<%= saved_theme_preference == "dark" ? "#111827" : "#ffffff" %>">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+
+    <script>
+      (() => {
+        const preferenceMeta = document.querySelector('meta[name="forge-theme-preference"]')
+        const savedPreference = preferenceMeta?.content
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+        const theme = savedPreference === "dark" || savedPreference === "light" ? savedPreference : (prefersDark ? "dark" : "light")
+
+        document.documentElement.dataset.theme = theme
+        document.documentElement.style.colorScheme = theme
+
+        const themeColorMeta = document.querySelector('meta[name="theme-color"]')
+        if (themeColorMeta) {
+          themeColorMeta.setAttribute("content", theme === "dark" ? "#111827" : "#ffffff")
+        }
+      })()
+    </script>
 
     <%= yield :head %>
 
@@ -35,7 +52,9 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="safe-area-inset" data-controller="notifications">
+  <body class="safe-area-inset"
+        data-controller="theme notifications"
+        data-theme-update-url-value="<%= theme_settings_path %>">
     <%# Global unified header %>
     <% unless content_for?(:hide_global_header) %>
       <%= render partial: "shared/header" %>

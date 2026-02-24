@@ -61,6 +61,8 @@
       </span>
     <% end %>
 
+    <%= render partial: "shared/theme_toggle" %>
+
     <!-- Settings Link -->
     <%= link_to edit_settings_path, class: "linear-btn linear-btn-ghost linear-btn-sm", title: "Settings", "aria-label": "Settings" do %>
       <svg class="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

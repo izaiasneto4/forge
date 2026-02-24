@@ -6,7 +6,7 @@
 <% message = @review_task.queued? ? "Review queued (##{@review_task.queue_position}) for PR ##{@review_task.pull_request.number}" : "Review started for PR ##{@review_task.pull_request.number}" %>
 
 <%= turbo_stream.update "flash-messages" do %>
-  <div class="flex items-center gap-2 px-4 py-3 rounded-md border text-[13px] bg-[color:var(--color-status-done-bg)] border-[color:var(--color-status-done)]/20 text-[#059669]"
+  <div class="flex items-center gap-2 px-4 py-3 rounded-md border text-[13px] bg-[color:var(--color-status-done-bg)] border-[color:var(--color-status-done)]/20 linear-text-success"
        data-controller="flash"
        data-flash-auto-dismiss-value="true"
        data-flash-delay-value="5000"
