@@ -83,9 +83,16 @@
 
                   <% if item.suggested_fix.present? %>
                     <div class="mt-4">
-                      <p class="text-[12px] font-medium text-[color:var(--color-text-tertiary)] mb-2">Suggested fix:</p>
-                      <% language = detect_language_from_file(item.file) %>
-                      <%= render_code_block(item.suggested_fix, language) %>
+                      <% if code_suggestion?(item.suggested_fix) %>
+                        <p class="text-[12px] font-medium text-[color:var(--color-text-tertiary)] mb-2">Suggested fix:</p>
+                        <% language = detect_language_from_file(item.file) %>
+                        <%= render_code_block(item.suggested_fix, language) %>
+                      <% else %>
+                        <p class="text-[12px] font-medium text-[color:var(--color-text-tertiary)] mb-2">Suggestion:</p>
+                        <div class="linear-checklist-body prose prose-sm max-w-none">
+                          <%= render_markdown(item.suggested_fix) %>
+                        </div>
+                      <% end %>
                     </div>
                   <% end %>
                 </div>

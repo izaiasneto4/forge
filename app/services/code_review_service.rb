@@ -154,6 +154,11 @@ class CodeReviewService
         "suggested_fix": "Code suggestion if applicable, or null"
       }
 
+      IMPORTANT suggested_fix rules:
+      - Use `suggested_fix` ONLY for concrete replacement code/snippets that can be copied into source
+      - If you only have advice/explanation (no code), put it in `comment` and set `suggested_fix` to null
+      - Do NOT put prose, rationale, or instructions in `suggested_fix`
+
       IMPORTANT: The "file" field MUST be the actual file path from the repository (e.g., "app/models/user.rb").
       - If you cannot determine the exact file path, use "N/A" instead of "unknown" or placeholder text
       - Never include explanatory text like "unknown (ClassName)" in the file field
@@ -237,6 +242,11 @@ class CodeReviewService
         "comment": "Detailed description of the issue in markdown",
         "suggested_fix": "Code suggestion if applicable, or null"
       }
+
+      IMPORTANT suggested_fix rules:
+      - Use `suggested_fix` ONLY for concrete replacement code/snippets that can be copied into source
+      - If you only have advice/explanation (no code), put it in `comment` and set `suggested_fix` to null
+      - Do NOT put prose, rationale, or instructions in `suggested_fix`
 
       IMPORTANT: The "file" field MUST be the actual file path from the repository.
       - If you cannot determine the exact file path, use "N/A"

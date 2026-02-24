@@ -265,6 +265,19 @@ class ReviewTasksHelperTest < ActionView::TestCase
     assert result.html_safe?
   end
 
+  # code_suggestion? tests
+  test "code_suggestion? returns true for code snippet" do
+    assert code_suggestion?("const items = await fetchItems();")
+  end
+
+  test "code_suggestion? returns true for fenced code" do
+    assert code_suggestion?("```ruby\ndef fix\nend\n```")
+  end
+
+  test "code_suggestion? returns false for prose suggestion" do
+    refute code_suggestion?("Normalize pathname before matching and add '/embed/' handling.")
+  end
+
   # detect_language_from_file tests
   test "detect_language_from_file returns nil for blank filename" do
     assert_nil detect_language_from_file("")

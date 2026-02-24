@@ -7,6 +7,13 @@ class ReviewCommentBuilder
     warning: "major",
     info: "suggestion"
   }.freeze
+  CODE_SUGGESTION_REGEX = /
+    ^\s*(def|class|module|function|const|let|var|if|for|while|switch|return|import|export|async|await|try|catch|raise|rescue|begin|end)\b|
+    =>|==|!=|<=|>=|\+\+|--|\|\||&&|::|
+    ^\s*[@$]?[a-zA-Z_]\w*\s*[:=]\s*.+|
+    [{};]|
+    ^\s*<\/?[a-zA-Z][^>]*>\s*$
+  /x.freeze
 
   def self.persist_for_review_task(review_task)
     new(review_task).persist_all
@@ -68,11 +75,32 @@ class ReviewCommentBuilder
     body = item.comment.to_s
 
     if item.suggested_fix.present?
-      language = detect_language_from_file(item.file)
-      body += "\n\n**Suggested fix:**\n```#{language}\n#{item.suggested_fix}\n```"
+      suggestion = item.suggested_fix.to_s.strip
+      return body if suggestion.blank?
+
+      if code_suggestion?(suggestion)
+        language = detect_language_from_file(item.file)
+        code_block = "**Suggested fix:**\n```#{language}\n#{suggestion}\n```"
+        body = body.present? ? "#{body}\n\n#{code_block}" : code_block
+      else
+        body = [ body, suggestion ].reject(&:blank?).join("\n\n")
+      end
     end
 
     body
+  end
+
+  def code_suggestion?(suggestion)
+    return false if suggestion.blank?
+    return true if suggestion.include?("```")
+
+    lines = suggestion.lines.map(&:strip).reject(&:blank?)
+    return false if lines.empty?
+
+    return true if lines.any? { |line| line.match?(CODE_SUGGESTION_REGEX) }
+    return true if lines.one? && lines.first.match?(/^[\w.$]+\([^)]*\)$/)
+
+    false
   end
 
   def detect_language_from_file(filename)

@@ -34,15 +34,15 @@
     </div>
 
     <!-- Severity Emoji -->
-    <span class="text-lg flex-shrink-0 leading-none mt-0.5"><%= severity_emoji(comment.severity) %></span>
+    <span class="linear-checklist-severity-emoji"><%= severity_emoji(comment.severity) %></span>
 
     <!-- Main Content -->
     <div class="flex-1 min-w-0">
       <!-- Header Row -->
       <div class="linear-checklist-header">
-        <div class="linear-checklist-meta">
+        <div class="linear-checklist-meta linear-checklist-meta-primary">
           <% if comment.title.present? %>
-            <span class="font-medium text-[color:var(--color-text-primary)] text-[13px]"><%= comment.title %></span>
+            <span class="linear-checklist-title"><%= comment.title %></span>
           <% end %>
           <code class="linear-checklist-location"><%= comment.location %></code>
           <span class="linear-badge <%= severity_badge_class(comment.severity) %>">
@@ -50,13 +50,13 @@
           </span>
         </div>
 
-        <div class="linear-checklist-meta">
+        <div class="linear-checklist-meta linear-checklist-meta-actions">
           <span class="linear-badge <%= status_badge_class(comment.status) %>">
             <%= comment.status.capitalize %>
           </span>
           <%= button_to toggle_review_comment_path(comment),
                         method: :patch,
-                        class: "linear-btn linear-btn-ghost text-[11px] py-1 px-2",
+                        class: "linear-btn linear-btn-ghost linear-checklist-toggle-btn",
                         data: { turbo_stream: true } do %>
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -68,7 +68,7 @@
 
       <!-- Comment Body -->
       <% if comment.body.present? %>
-        <div class="linear-checklist-body">
+        <div class="linear-checklist-body prose prose-sm max-w-none">
           <%= render_markdown(comment.body) %>
         </div>
       <% end %>

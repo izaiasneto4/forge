@@ -183,7 +183,7 @@ class ReviewCommentBuilderTest < ActiveSupport::TestCase
       file: "test.rb",
       lines: "10",
       comment: "This is a comment",
-      suggested_fix: "fixed code"
+      suggested_fix: "const fixed = true;"
     )
 
     result = @builder.send(:build_comment_body, item)
@@ -191,7 +191,7 @@ class ReviewCommentBuilderTest < ActiveSupport::TestCase
     assert_includes result, "This is a comment"
     assert_includes result, "**Suggested fix:**"
     assert_includes result, "```"
-    assert_includes result, "fixed code"
+    assert_includes result, "const fixed = true;"
   end
 
   test "build_comment_body handles multi-line suggested_fix" do
@@ -206,6 +206,24 @@ class ReviewCommentBuilderTest < ActiveSupport::TestCase
     result = @builder.send(:build_comment_body, item)
 
     assert_includes result, "line 1\nline 2\nline 3"
+  end
+
+  test "build_comment_body does not fence prose suggested_fix as code" do
+    item = ReviewOutputParser::ReviewItem.new(
+      severity: :warning,
+      file: "src/utils/normalize-youtube-url.ts",
+      lines: "47",
+      comment: "Normalizer misses variants.",
+      suggested_fix: "Normalize pathname before matching and add '/embed/' handling."
+    )
+
+    result = @builder.send(:build_comment_body, item)
+
+    assert_includes result, "Normalizer misses variants."
+    assert_includes result, "Normalize pathname before matching and add '/embed/' handling."
+    refute_includes result, "**Suggested fix:**"
+    refute_includes result, "```"
+    refute_includes result, "```typescript"
   end
 
   test "build_comment_body handles empty comment" do
@@ -272,7 +290,7 @@ class ReviewCommentBuilderTest < ActiveSupport::TestCase
       file: "test.rb",
       lines: "10",
       comment: "Fix this",
-      suggested_fix: "fix code"
+      suggested_fix: "const fixCode = true;"
     )
 
     result = @builder.send(:create_review_comment, item)
@@ -280,8 +298,26 @@ class ReviewCommentBuilderTest < ActiveSupport::TestCase
     assert_equal "test.rb", result.file_path
     assert_equal 10, result.line_number
     assert_equal "critical", result.severity
-    assert_equal "Fix this\n\n**Suggested fix:**\n```ruby\nfix code\n```", result.body
+    assert_equal "Fix this\n\n**Suggested fix:**\n```ruby\nconst fixCode = true;\n```", result.body
     assert_equal "pending", result.status
+
+    ReviewComment.where(review_task_id: @review_task.id).destroy_all
+  end
+
+  test "create_review_comment keeps prose suggested_fix as plain markdown text" do
+    item = ReviewOutputParser::ReviewItem.new(
+      severity: :warning,
+      file: "src/utils/normalize-youtube-url.ts",
+      lines: "56",
+      comment: "Hash timestamp is dropped.",
+      suggested_fix: "Preserve fragment when rebuilding URLs."
+    )
+
+    result = @builder.send(:create_review_comment, item)
+
+    assert_equal "Hash timestamp is dropped.\n\nPreserve fragment when rebuilding URLs.", result.body
+    refute_includes result.body, "```"
+    refute_includes result.body, "**Suggested fix:**"
 
     ReviewComment.where(review_task_id: @review_task.id).destroy_all
   end

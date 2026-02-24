@@ -48,6 +48,13 @@ module ReviewTasksHelper
     "ex" => "elixir",
     "exs" => "elixir"
   }.freeze
+  CODE_SUGGESTION_REGEX = /
+    ^\s*(def|class|module|function|const|let|var|if|for|while|switch|return|import|export|async|await|try|catch|raise|rescue|begin|end)\b|
+    =>|==|!=|<=|>=|\+\+|--|\|\||&&|::|
+    ^\s*[@$]?[a-zA-Z_]\w*\s*[:=]\s*.+|
+    [{};]|
+    ^\s*<\/?[a-zA-Z][^>]*>\s*$
+  /x.freeze
 
   def severity_emoji(severity)
     case severity.to_s
@@ -168,6 +175,19 @@ module ReviewTasksHelper
 
     ext = File.extname(filename).downcase.delete(".")
     EXTENSION_LANGUAGE_MAP[ext] || ext
+  end
+
+  def code_suggestion?(suggestion)
+    return false if suggestion.blank?
+    return true if suggestion.include?("```")
+
+    lines = suggestion.lines.map(&:strip).reject(&:blank?)
+    return false if lines.empty?
+
+    return true if lines.any? { |line| line.match?(CODE_SUGGESTION_REGEX) }
+    return true if lines.one? && lines.first.match?(/^[\w.$]+\([^)]*\)$/)
+
+    false
   end
 
   private

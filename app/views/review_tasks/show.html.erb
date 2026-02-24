@@ -6,11 +6,7 @@
     <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1 flex-wrap md:flex-nowrap">
       <!-- Logo/Home Link -->
       <%= link_to root_path, class: "flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0" do %>
-        <div class="w-6 h-6 rounded bg-[color:var(--color-accent)] flex items-center justify-center">
-          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
-        </div>
+        <%= image_tag "/icon.svg", alt: "Forge", class: "w-6 h-6 flex-shrink-0" %>
         <span class="text-[14px] font-semibold text-[color:var(--color-text-primary)] hidden sm:inline">Forge</span>
       <% end %>
 
@@ -236,9 +232,16 @@
 
                   <% if item.suggested_fix.present? %>
                     <div class="mt-4">
-                      <p class="text-[12px] font-medium text-[color:var(--color-text-tertiary)] mb-2">Suggested fix:</p>
-                      <% language = detect_language_from_file(item.file) %>
-                      <%= render_code_block(item.suggested_fix, language) %>
+                      <% if code_suggestion?(item.suggested_fix) %>
+                        <p class="text-[12px] font-medium text-[color:var(--color-text-tertiary)] mb-2">Suggested fix:</p>
+                        <% language = detect_language_from_file(item.file) %>
+                        <%= render_code_block(item.suggested_fix, language) %>
+                      <% else %>
+                        <p class="text-[12px] font-medium text-[color:var(--color-text-tertiary)] mb-2">Suggestion:</p>
+                        <div class="linear-checklist-body prose prose-sm max-w-none">
+                          <%= render_markdown(item.suggested_fix) %>
+                        </div>
+                      <% end %>
                     </div>
                   <% end %>
                 </div>
