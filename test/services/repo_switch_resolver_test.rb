@@ -10,7 +10,7 @@ class RepoSwitchResolverTest < ActiveSupport::TestCase
 
   test "returns not_found when scan returns no match" do
     resolver = RepoSwitchResolver.new(repos_folder: "/tmp")
-    RepoScannerService.any_instance.stubs(:scan).returns([{ path: "/tmp/r1", remote_url: "git@github.com:foo/bar.git" }])
+    RepoScannerService.any_instance.stubs(:scan).returns([ { path: "/tmp/r1", remote_url: "git@github.com:foo/bar.git" } ])
 
     result = resolver.resolve("acme/api")
 

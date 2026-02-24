@@ -18,14 +18,14 @@ class RepoSlugResolverTest < ActiveSupport::TestCase
 
   test "from_path returns slug when git remote command succeeds" do
     Dir.mktmpdir do |dir|
-      Open3.stubs(:capture2).returns(["git@github.com:acme/api.git\n", stub(success?: true)])
+      Open3.stubs(:capture2).returns([ "git@github.com:acme/api.git\n", stub(success?: true) ])
       assert_equal "acme/api", RepoSlugResolver.from_path(dir)
     end
   end
 
   test "from_path returns nil when git command fails" do
     Dir.mktmpdir do |dir|
-      Open3.stubs(:capture2).returns(["", stub(success?: false)])
+      Open3.stubs(:capture2).returns([ "", stub(success?: false) ])
       assert_nil RepoSlugResolver.from_path(dir)
     end
   end

@@ -33,7 +33,9 @@ class Api::V1::SyncsControllerTest < ActionDispatch::IntegrationTest
     Setting.stubs(:touch_last_synced!)
     Setting.stubs(:last_synced_at).returns(Time.current)
     GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
-    GithubCliService.any_instance.stubs(:sync_to_database!).returns(nil)
+    service = mock
+    service.stubs(:sync_to_database!).returns(nil)
+    GithubCliService.stubs(:new).returns(service)
 
     post "/api/v1/sync", params: { force: true }, as: :json
 
@@ -49,7 +51,9 @@ class Api::V1::SyncsControllerTest < ActionDispatch::IntegrationTest
     Setting.stubs(:touch_last_synced!)
     Setting.stubs(:last_synced_at).returns(nil)
     GithubCliService.expects(:fetch_latest_for_repo).with("/tmp/repo")
-    GithubCliService.any_instance.stubs(:sync_to_database!).returns(nil)
+    service = mock
+    service.stubs(:sync_to_database!).returns(nil)
+    GithubCliService.stubs(:new).returns(service)
 
     post "/api/v1/sync", params: { force: false }, as: :json
 
@@ -70,7 +74,9 @@ class Api::V1::SyncsControllerTest < ActionDispatch::IntegrationTest
   test "returns sync_failed on gh error" do
     Setting.stubs(:sync_needed?).returns(true)
     Setting.stubs(:current_repo).returns(nil)
-    GithubCliService.any_instance.stubs(:sync_to_database!).raises(GithubCliService::Error, "boom")
+    service = mock
+    service.stubs(:sync_to_database!).raises(GithubCliService::Error, "boom")
+    GithubCliService.stubs(:new).returns(service)
 
     post "/api/v1/sync", params: { force: false }, as: :json
 

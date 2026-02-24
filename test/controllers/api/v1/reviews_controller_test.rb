@@ -55,7 +55,9 @@ class Api::V1::ReviewsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "returns not_found when missing after sync" do
-    GithubCliService.any_instance.stubs(:sync_to_database!).returns(nil)
+    service = mock
+    service.stubs(:sync_to_database!).returns(nil)
+    GithubCliService.stubs(:new).returns(service)
     GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
 
     post "/api/v1/reviews", params: { pr_url: "https://github.com/acme/api/pull/99999" }, as: :json
@@ -101,7 +103,9 @@ class Api::V1::ReviewsControllerTest < ActionDispatch::IntegrationTest
     Setting.stubs(:current_repo).returns("/tmp/repo")
     RepoSlugResolver.stubs(:from_path).returns(nil)
     GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
-    GithubCliService.any_instance.stubs(:sync_to_database!).raises(GithubCliService::Error, "sync failed")
+    service = mock
+    service.stubs(:sync_to_database!).raises(GithubCliService::Error, "sync failed")
+    GithubCliService.stubs(:new).returns(service)
 
     post "/api/v1/reviews", params: { pr_url: "https://github.com/acme/api/pull/9" }, as: :json
 
@@ -115,7 +119,9 @@ class Api::V1::ReviewsControllerTest < ActionDispatch::IntegrationTest
     Setting.stubs(:current_repo).returns("/tmp/repo")
     RepoSlugResolver.stubs(:from_path).returns(nil)
     GithubCliService.expects(:fetch_latest_for_repo).with("/tmp/repo")
-    GithubCliService.any_instance.stubs(:sync_to_database!).returns(nil)
+    service = mock
+    service.stubs(:sync_to_database!).returns(nil)
+    GithubCliService.stubs(:new).returns(service)
 
     post "/api/v1/reviews", params: { pr_url: "https://github.com/acme/api/pull/9" }, as: :json
 

@@ -30,7 +30,7 @@ class Api::V1::ReviewTaskLogsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     json = JSON.parse(response.body)
-    assert_equal [@log2.id], json["logs"].map { |v| v["id"] }
+    assert_equal [ @log2.id ], json["logs"].map { |v| v["id"] }
   end
 
   test "invalid tail rejected" do

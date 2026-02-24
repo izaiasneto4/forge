@@ -21,13 +21,13 @@ class ForgeFormatterTest < ActiveSupport::TestCase
 
   test "list_result covers empty and non-empty" do
     assert_equal "No pull requests", Forge::Formatter.list_result({ "items" => [] })
-    text = Forge::Formatter.list_result({ "items" => [{ "number" => 2, "review_status" => "pending_review", "repo" => "acme/api", "title" => "Fix" }] })
+    text = Forge::Formatter.list_result({ "items" => [ { "number" => 2, "review_status" => "pending_review", "repo" => "acme/api", "title" => "Fix" } ] })
     assert_match(/#2/, text)
   end
 
   test "logs_result covers empty and non-empty" do
     assert_equal "No logs", Forge::Formatter.logs_result({ "logs" => [] })
-    text = Forge::Formatter.logs_result({ "logs" => [{ "id" => 1, "log_type" => "output", "message" => "ok" }] })
+    text = Forge::Formatter.logs_result({ "logs" => [ { "id" => 1, "log_type" => "output", "message" => "ok" } ] })
     assert_match(/\[1\]/, text)
   end
 
