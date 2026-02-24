@@ -173,7 +173,30 @@ class WorktreeServiceTest < ActiveSupport::TestCase
   end
 
   test "fetch_pr_ref fetches PR successfully" do
-    skip "Open3.stub not available in minitest without additional gems"
+    success = stub(success?: true)
+
+    Open3.expects(:capture3).with(
+      "git", "-C", @repo_path, "fetch", "origin", "pull/42/head"
+    ).returns([ "", "", success ])
+
+    @service.send(:fetch_pr_ref, @pr)
+  end
+
+  test "fetch_pr_ref does not checkout or switch branches" do
+    success = stub(success?: true)
+
+    Open3.expects(:capture3).with(
+      "git", "-C", @repo_path, "fetch", "origin", "pull/42/head"
+    ).returns([ "", "", success ])
+    Open3.expects(:capture3).with(
+      "gh", "pr", "checkout", anything, anything,
+      chdir: @repo_path
+    ).never
+    Open3.expects(:capture3).with(
+      "git", "-C", @repo_path, "checkout", "-"
+    ).never
+
+    @service.send(:fetch_pr_ref, @pr)
   end
 
   test "fetch_pr_ref retries on transient network errors" do

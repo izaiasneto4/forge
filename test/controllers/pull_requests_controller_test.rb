@@ -211,6 +211,22 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Failed to update review scope: GitHub API error"
   end
 
+  test "review_scope still syncs when local git refresh fails" do
+    Setting.current_repo = "/tmp/repo"
+    GithubCliService.stubs(:fetch_latest_for_repo).raises(
+      GithubCliService::Error, "git pull failed: no tracking branch"
+    )
+    github_service = mock("github_service")
+    github_service.expects(:sync_to_database!).once
+    GithubCliService.stubs(:new).returns(github_service)
+    Setting.stubs(:touch_last_synced!)
+
+    patch review_scope_pull_requests_path, params: { requested_to_me_only: "0" }, as: :turbo_stream
+
+    assert_response :success
+    assert_includes response.body, "Review scope updated: all open PRs"
+  end
+
   test "sync with HTML response on error" do
     Setting.stubs(:sync_needed?).returns(true)
     GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)

@@ -26,13 +26,15 @@ class PullRequestsController < ApplicationController
     end
 
     repo_path = Setting.current_repo
-    GithubCliService.fetch_latest_for_repo(repo_path) if repo_path.present?
+    refresh_error = refresh_local_repo(repo_path)
     GithubCliService.new(repo_path: repo_path).sync_to_database!
     Setting.touch_last_synced!
+    notice_message = "Synced with GitHub"
+    notice_message += " (local repo refresh skipped)" if refresh_error.present?
 
     respond_to do |format|
-      format.turbo_stream { render_sync_stream(notice: "Synced with GitHub") }
-      format.html { redirect_to pull_requests_path, notice: "Synced with GitHub" }
+      format.turbo_stream { render_sync_stream(notice: notice_message) }
+      format.html { redirect_to pull_requests_path, notice: notice_message }
       format.json { render json: { skipped: false, last_synced_at: Setting.last_synced_at&.iso8601 } }
     end
   rescue GithubCliService::Error => e
@@ -48,15 +50,17 @@ class PullRequestsController < ApplicationController
     Setting.only_requested_reviews = only_requested
 
     repo_path = Setting.current_repo
-    GithubCliService.fetch_latest_for_repo(repo_path) if repo_path.present?
+    refresh_error = refresh_local_repo(repo_path)
     GithubCliService.new(repo_path: repo_path).sync_to_database!
     Setting.touch_last_synced!
 
     mode_label = only_requested ? "requested to me only" : "all open PRs"
+    notice_message = "Review scope updated: #{mode_label}"
+    notice_message += " (local repo refresh skipped)" if refresh_error.present?
 
     respond_to do |format|
-      format.turbo_stream { render_sync_stream(notice: "Review scope updated: #{mode_label}") }
-      format.html { redirect_to pull_requests_path, notice: "Review scope updated: #{mode_label}" }
+      format.turbo_stream { render_sync_stream(notice: notice_message) }
+      format.html { redirect_to pull_requests_path, notice: notice_message }
       format.json { render json: { only_requested_reviews: Setting.only_requested_reviews? } }
     end
   rescue GithubCliService::Error => e
@@ -152,6 +156,16 @@ class PullRequestsController < ApplicationController
   end
 
   private
+
+  def refresh_local_repo(repo_path)
+    return if repo_path.blank?
+
+    GithubCliService.fetch_latest_for_repo(repo_path)
+    nil
+  rescue GithubCliService::Error => e
+    Rails.logger.warn("Local repo refresh skipped for #{repo_path}: #{e.message}")
+    e.message
+  end
 
   def process_queue_if_needed
     return if Rails.cache.fetch("review_task_queue_processed", expires_in: QUEUE_PROCESS_INTERVAL) { false }

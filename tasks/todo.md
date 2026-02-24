@@ -93,3 +93,35 @@
 - Ran:
   `SKIP_COVERAGE=1 bin/rails test test/services/github_cli_service_test.rb test/controllers/review_comments_controller_test.rb test/controllers/api/v1/pull_requests_controller_test.rb test/controllers/pull_requests_controller_test.rb test/models/pull_request_test.rb test/models/review_task_test.rb test/controllers/repositories_controller_test.rb`
 - Result: `273 runs, 521 assertions, 0 failures, 0 errors, 37 skips`.
+
+## 2026-02-24 Dirty Repo PR Fetch Plan
+
+- [x] Add regression test proving PR fetch does not run checkout in main repo
+- [x] Replace `gh pr checkout --detach` with non-mutating git fetch of PR ref
+- [x] Run targeted worktree service tests and record results
+
+## 2026-02-24 Dirty Repo PR Fetch Review
+
+- Added regression coverage in `WorktreeServiceTest` to assert PR fetch never invokes checkout/switch.
+- Updated `WorktreeService#fetch_pr_ref` to use `git fetch origin pull/<number>/head` (non-mutating).
+- Ran:
+  `SKIP_COVERAGE=1 bin/rails test test/services/worktree_service_test.rb`
+- Result: `35 runs, 24 assertions, 0 failures, 0 errors, 18 skips`.
+
+## 2026-02-24 Review Scope Toggle Bug Plan
+
+- [x] Add regression test: toggling requested-only off still syncs when local git refresh fails
+- [x] Make `PullRequestsController#review_scope` resilient to local git refresh failures
+- [x] Run targeted controller tests and record results
+
+## 2026-02-24 Review Scope Toggle Bug Review
+
+- Added regression test in `PullRequestsControllerTest`:
+  `review_scope still syncs when local git refresh fails`.
+- Updated `PullRequestsController` to make local repo refresh best-effort:
+  - `sync` and `review_scope` now continue even if `GithubCliService.fetch_latest_for_repo` fails.
+  - Added `refresh_local_repo` helper to log warning and return non-fatal error.
+  - Success notices now include `(local repo refresh skipped)` when applicable.
+- Ran:
+  `SKIP_COVERAGE=1 bin/rails test test/controllers/pull_requests_controller_test.rb`
+- Result: `35 runs, 115 assertions, 0 failures, 0 errors, 0 skips`.

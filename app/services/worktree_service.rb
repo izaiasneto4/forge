@@ -72,12 +72,9 @@ class WorktreeService
   def fetch_pr_ref(pull_request)
     with_retry("fetch PR ##{pull_request.number}") do
       stdout, stderr, status = Open3.capture3(
-        "gh", "pr", "checkout", pull_request.number.to_s, "--detach",
-        chdir: @repo_path
+        "git", "-C", @repo_path, "fetch", "origin", "pull/#{pull_request.number}/head"
       )
       raise Error, "Failed to fetch PR: #{stderr}" unless status.success?
-
-      Open3.capture3("git", "-C", @repo_path, "checkout", "-")
     end
   end
 
