@@ -5,7 +5,7 @@
   repositories = repos_folder.present? ? RepoScannerService.new(repos_folder).scan : []
 %>
 <%= turbo_stream_from "pull_requests_board" %>
-<div class="min-h-screen flex flex-col" data-controller="kanban repo-selector sync review-modal bulk-actions board-filter archive-confirmation" data-board-filter-storage-key-value="pull_requests_filter">
+<div class="min-h-screen flex flex-col" data-controller="kanban repo-selector sync review-modal bulk-actions board-filter archive-confirmation" data-board-filter-storage-key-value="pull_requests_filter" data-board-filter-current-user-value="<%= Setting.github_login.to_s.downcase %>">
   <!-- Header Bar - Responsive -->
   <header class="linear-header">
     <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
@@ -172,6 +172,15 @@
                           onchange: "this.form.requestSubmit()" %>
         <span class="text-[11px] text-[color:var(--color-text-tertiary)] whitespace-nowrap">Requested to me only</span>
       <% end %>
+
+      <label class="flex items-center gap-2 ml-1 text-[11px] text-[color:var(--color-text-tertiary)] whitespace-nowrap">
+        <input type="checkbox"
+               checked
+               data-board-filter-target="selfPrToggle"
+               data-action="change->board-filter#toggleOwnPrs"
+               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+        Show my PRs
+      </label>
     </div>
 
     <div class="flex items-center gap-3">

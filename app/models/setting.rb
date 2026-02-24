@@ -6,6 +6,7 @@ class Setting < ApplicationRecord
   DEFAULT_CLI_CLIENT_KEY = "default_cli_client".freeze
   LAST_SYNCED_AT_KEY = "last_synced_at".freeze
   ONLY_REQUESTED_REVIEWS_KEY = "only_requested_reviews".freeze
+  GITHUB_LOGIN_KEY = "github_login".freeze
   AUTO_REVIEW_MODE_KEY = "auto_review_mode".freeze
   AUTO_REVIEW_DELAY_MIN_KEY = "auto_review_delay_min".freeze
   AUTO_REVIEW_DELAY_MAX_KEY = "auto_review_delay_max".freeze
@@ -101,6 +102,16 @@ class Setting < ApplicationRecord
     invalidate_cache!(ONLY_REQUESTED_REVIEWS_KEY)
     setting = find_or_initialize_by(key: ONLY_REQUESTED_REVIEWS_KEY)
     setting.update!(value: enabled.to_s)
+  end
+
+  def self.github_login
+    fetch(GITHUB_LOGIN_KEY) { super }
+  end
+
+  def self.github_login=(login)
+    invalidate_cache!(GITHUB_LOGIN_KEY)
+    setting = find_or_initialize_by(key: GITHUB_LOGIN_KEY)
+    setting.update!(value: login)
   end
 
   def self.sync_needed?

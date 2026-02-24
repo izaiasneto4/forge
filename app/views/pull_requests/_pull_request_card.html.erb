@@ -3,6 +3,7 @@
      data-kanban-target="card"
      data-board-filter-target="card"
      data-pr-id="<%= pr.id %>"
+     data-author="<%= pr.author.to_s.downcase %>"
      data-current-state="<%= pr.review_status %>"
      draggable="true"
      data-action="dragstart->kanban#dragStart dragend->kanban#dragEnd">

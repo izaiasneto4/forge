@@ -7,6 +7,7 @@ class GithubCliService
   def initialize(username: nil, repo_path: nil)
     @username = username || fetch_current_user
     @repo_path = repo_path || Setting.current_repo
+    Setting.github_login = @username if @username.present?
   end
 
   def fetch_review_requests

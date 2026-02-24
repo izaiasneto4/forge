@@ -3,10 +3,11 @@ import { Controller } from "@hotwired/stimulus"
 // Client-side filtering for kanban boards
 // Filters cards by text search and state
 export default class extends Controller {
-  static targets = ["searchInput", "stateFilter", "card", "column", "emptyState"]
+  static targets = ["searchInput", "stateFilter", "card", "column", "emptyState", "selfPrToggle"]
 
   static values = {
-    storageKey: { type: String, default: "board_filter" }
+    storageKey: { type: String, default: "board_filter" },
+    currentUser: { type: String, default: "" }
   }
 
   connect() {
@@ -45,7 +46,15 @@ export default class extends Controller {
       allBtn.classList.remove("linear-btn-ghost")
       allBtn.classList.add("linear-btn-primary")
     }
+    if (this.hasSelfPrToggleTarget) {
+      this.selfPrToggleTarget.checked = true
+    }
 
+    this.applyFilters()
+    this.saveFilter()
+  }
+
+  toggleOwnPrs() {
     this.applyFilters()
     this.saveFilter()
   }
@@ -59,17 +68,21 @@ export default class extends Controller {
       btn.classList.contains("linear-btn-primary")
     )
     const stateFilter = activeStateBtn?.dataset.state || "all"
+    const includeOwnPrs = !this.hasSelfPrToggleTarget || this.selfPrToggleTarget.checked
+    const currentUser = this.currentUserValue.toLowerCase()
 
     let visibleCounts = {}
 
     this.cardTargets.forEach(card => {
       const cardState = card.dataset.currentState
       const cardText = card.textContent.toLowerCase()
+      const cardAuthor = (card.dataset.author || "").toLowerCase()
 
       const matchesSearch = searchTerm === "" || cardText.includes(searchTerm)
       const matchesState = stateFilter === "all" || cardState === stateFilter
+      const matchesAuthor = includeOwnPrs || currentUser === "" || cardAuthor !== currentUser
 
-      if (matchesSearch && matchesState) {
+      if (matchesSearch && matchesState && matchesAuthor) {
         card.classList.remove("hidden")
         visibleCounts[cardState] = (visibleCounts[cardState] || 0) + 1
       } else {
@@ -93,7 +106,8 @@ export default class extends Controller {
       search: this.hasSearchInputTarget ? this.searchInputTarget.value : "",
       state: this.stateFilterTargets.find(btn =>
         btn.classList.contains("linear-btn-primary")
-      )?.dataset.state || "all"
+      )?.dataset.state || "all",
+      includeOwnPrs: !this.hasSelfPrToggleTarget || this.selfPrToggleTarget.checked
     }
     localStorage.setItem(this.storageKeyValue, JSON.stringify(filter))
   }
@@ -119,6 +133,9 @@ export default class extends Controller {
             btn.classList.add("linear-btn-ghost")
           }
         })
+      }
+      if (this.hasSelfPrToggleTarget && Object.prototype.hasOwnProperty.call(filter, "includeOwnPrs")) {
+        this.selfPrToggleTarget.checked = !!filter.includeOwnPrs
       }
 
       this.applyFilters()

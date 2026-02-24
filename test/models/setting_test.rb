@@ -245,6 +245,10 @@ class SettingTest < ActiveSupport::TestCase
     assert_equal "only_requested_reviews", Setting::ONLY_REQUESTED_REVIEWS_KEY
   end
 
+  test "GITHUB_LOGIN_KEY is github_login" do
+    assert_equal "github_login", Setting::GITHUB_LOGIN_KEY
+  end
+
   test "DEFAULT_CLI_CLIENT is claude" do
     assert_equal "claude", Setting::DEFAULT_CLI_CLIENT
   end
@@ -296,6 +300,15 @@ class SettingTest < ActiveSupport::TestCase
 
     Setting.only_requested_reviews = true
     assert Setting.only_requested_reviews?
+  end
+
+  test "github_login returns nil when not set" do
+    assert_nil Setting.github_login
+  end
+
+  test "github_login= stores login value" do
+    Setting.github_login = "octocat"
+    assert_equal "octocat", Setting.github_login
   end
 
   # Auto-review settings

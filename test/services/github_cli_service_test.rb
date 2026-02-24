@@ -155,6 +155,12 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert_equal [], result[:reviewed_by_me]
   end
 
+  test "initialize stores github login in settings" do
+    service = GithubCliService.new(username: "login_user", repo_path: "/tmp/test-repo")
+    assert_equal "login_user", Setting.github_login
+    assert_equal "login_user", service.instance_variable_get(:@username)
+  end
+
   test "fetch_all_prs_needing_attention includes all open PRs when requested-only is disabled" do
     Setting.stubs(:only_requested_reviews?).returns(false)
 
