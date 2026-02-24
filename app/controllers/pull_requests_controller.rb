@@ -1,7 +1,8 @@
 class PullRequestsController < ApplicationController
+  QUEUE_PROCESS_INTERVAL = 60.seconds
+
   def index
-    ReviewTask.recover_orphaned_in_review_tasks!
-    ReviewTask.process_queue_if_idle!
+    process_queue_if_needed
     @presenter = PullRequestIndexPresenter.new
     @current_repo = @presenter.current_repo
     @pending_review = @presenter.columns[:pending_review]
@@ -38,6 +39,30 @@ class PullRequestsController < ApplicationController
     respond_to do |format|
       format.turbo_stream { render_sync_stream(alert: "Sync failed: #{e.message}") }
       format.html { redirect_to pull_requests_path, alert: "Sync failed: #{e.message}" }
+      format.json { render json: { error: e.message }, status: :unprocessable_entity }
+    end
+  end
+
+  def review_scope
+    only_requested = ActiveModel::Type::Boolean.new.cast(params[:requested_to_me_only])
+    Setting.only_requested_reviews = only_requested
+
+    repo_path = Setting.current_repo
+    GithubCliService.fetch_latest_for_repo(repo_path) if repo_path.present?
+    GithubCliService.new(repo_path: repo_path).sync_to_database!
+    Setting.touch_last_synced!
+
+    mode_label = only_requested ? "requested to me only" : "all open PRs"
+
+    respond_to do |format|
+      format.turbo_stream { render_sync_stream(notice: "Review scope updated: #{mode_label}") }
+      format.html { redirect_to pull_requests_path, notice: "Review scope updated: #{mode_label}" }
+      format.json { render json: { only_requested_reviews: Setting.only_requested_reviews? } }
+    end
+  rescue GithubCliService::Error => e
+    respond_to do |format|
+      format.turbo_stream { render_sync_stream(alert: "Failed to update review scope: #{e.message}") }
+      format.html { redirect_to pull_requests_path, alert: "Failed to update review scope: #{e.message}" }
       format.json { render json: { error: e.message }, status: :unprocessable_entity }
     end
   end
@@ -81,14 +106,7 @@ class PullRequestsController < ApplicationController
       return
     end
 
-    deleted_count = 0
-    ActiveRecord::Base.transaction do
-      pull_requests = PullRequest.where(id: pr_ids)
-      pull_requests.each do |pull_request|
-        pull_request.soft_delete!
-        deleted_count += 1
-      end
-    end
+    deleted_count = PullRequest.where(id: pr_ids).update_all(deleted_at: Time.current, updated_at: Time.current)
 
     respond_to do |format|
       format.turbo_stream { render_sync_stream(notice: "#{deleted_count} pull requests deleted") }
@@ -134,6 +152,14 @@ class PullRequestsController < ApplicationController
   end
 
   private
+
+  def process_queue_if_needed
+    return if Rails.cache.fetch("review_task_queue_processed", expires_in: QUEUE_PROCESS_INTERVAL) { false }
+
+    ReviewTask.recover_orphaned_in_review_tasks!
+    ReviewTask.process_queue_if_idle!
+    Rails.cache.write("review_task_queue_processed", true, expires_in: QUEUE_PROCESS_INTERVAL)
+  end
 
   def render_sync_skipped_stream
     notice = PullRequestIndexPresenter.new.build_sync_skipped_message

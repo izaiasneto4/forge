@@ -131,6 +131,8 @@ class GithubCliServiceTest < ActiveSupport::TestCase
   end
 
   test "fetch_all_prs_needing_attention prioritizes review requests over reviewed_by_me" do
+    Setting.stubs(:only_requested_reviews?).returns(true)
+
     review_requested_pr = {
       github_id: 123,
       number: 123,
@@ -151,6 +153,25 @@ class GithubCliServiceTest < ActiveSupport::TestCase
 
     assert_equal [ review_requested_pr ], result[:pending_review]
     assert_equal [], result[:reviewed_by_me]
+  end
+
+  test "fetch_all_prs_needing_attention includes all open PRs when requested-only is disabled" do
+    Setting.stubs(:only_requested_reviews?).returns(false)
+
+    requested_pr = { github_id: 10, number: 10, title: "Requested", review_status: "pending_review" }
+    open_unrequested = { github_id: 20, number: 20, title: "Open and unrequested", review_status: "pending_review" }
+    reviewed_pr = { github_id: 30, number: 30, title: "Reviewed", review_status: "reviewed_by_me" }
+    rerequested_pr = { github_id: 40, number: 40, title: "Re-requested", review_status: "pending_review" }
+    reviewed_and_rerequested = { github_id: 40, number: 40, title: "Re-requested", review_status: "reviewed_by_me" }
+
+    @service.stubs(:fetch_review_requests).returns([ requested_pr, rerequested_pr ])
+    @service.stubs(:fetch_open_pull_requests).returns([ requested_pr, open_unrequested, reviewed_pr, rerequested_pr ])
+    @service.stubs(:fetch_reviewed_by_me).returns([ reviewed_pr, reviewed_and_rerequested ])
+
+    result = @service.fetch_all_prs_needing_attention
+
+    assert_equal [ requested_pr, open_unrequested, rerequested_pr ], result[:pending_review]
+    assert_equal [ reviewed_pr ], result[:reviewed_by_me]
   end
 
   # get_repo_info tests
@@ -195,8 +216,17 @@ class GithubCliServiceTest < ActiveSupport::TestCase
 
   # mark_reviewed_by_others tests
   test "mark_reviewed_by_others returns early when no pending PRs" do
+    Setting.stubs(:only_requested_reviews?).returns(true)
+
     result = @service.send(:mark_reviewed_by_others)
     assert_nil result
+  end
+
+  test "mark_reviewed_by_others skips when requested-only is disabled" do
+    Setting.stubs(:only_requested_reviews?).returns(false)
+    @service.expects(:run_gh_command).never
+
+    assert_nil @service.send(:mark_reviewed_by_others)
   end
 
   test "latest_my_review_state returns newest submitted state for current user" do

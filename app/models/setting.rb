@@ -5,6 +5,7 @@ class Setting < ApplicationRecord
   CURRENT_REPO_KEY = "current_repo".freeze
   DEFAULT_CLI_CLIENT_KEY = "default_cli_client".freeze
   LAST_SYNCED_AT_KEY = "last_synced_at".freeze
+  ONLY_REQUESTED_REVIEWS_KEY = "only_requested_reviews".freeze
   AUTO_REVIEW_MODE_KEY = "auto_review_mode".freeze
   AUTO_REVIEW_DELAY_MIN_KEY = "auto_review_delay_min".freeze
   AUTO_REVIEW_DELAY_MAX_KEY = "auto_review_delay_max".freeze
@@ -16,48 +17,90 @@ class Setting < ApplicationRecord
   DEFAULT_AUTO_REVIEW_DELAY_MIN = 5
   DEFAULT_AUTO_REVIEW_DELAY_MAX = 30
 
+  CACHE_TTL = 30.seconds
+
+  cattr_accessor :cache_enabled, default: true
+
+  def self.fetch(key)
+    return yield unless cache_enabled
+
+    cache_key = "setting/#{key}"
+    Rails.cache.fetch(cache_key, expires_in: CACHE_TTL) do
+      find_by(key: key)&.value
+    end
+  end
+
+  def self.write(key, value)
+    Rails.cache.write("setting/#{key}", value, expires_in: CACHE_TTL)
+  end
+
+  def self.invalidate_cache!(key = nil)
+    if key
+      Rails.cache.delete("setting/#{key}")
+    else
+      Rails.cache.delete_matched("setting/*")
+    end
+  end
+
   def self.repos_folder
-    find_by(key: REPOS_FOLDER_KEY)&.value
+    fetch(REPOS_FOLDER_KEY) { super }
   end
 
   def self.repos_folder=(path)
+    invalidate_cache!(REPOS_FOLDER_KEY)
     setting = find_or_initialize_by(key: REPOS_FOLDER_KEY)
     setting.update!(value: path)
   end
 
   def self.current_repo
-    find_by(key: CURRENT_REPO_KEY)&.value
+    fetch(CURRENT_REPO_KEY) { super }
   end
 
   def self.current_repo=(path)
+    invalidate_cache!(CURRENT_REPO_KEY)
     setting = find_or_initialize_by(key: CURRENT_REPO_KEY)
     setting.update!(value: path)
   end
 
   def self.default_cli_client
-    find_by(key: DEFAULT_CLI_CLIENT_KEY)&.value || DEFAULT_CLI_CLIENT
+    fetch(DEFAULT_CLI_CLIENT_KEY) { super } || DEFAULT_CLI_CLIENT
   end
 
   def self.default_cli_client=(client)
     return unless CLI_CLIENTS.include?(client)
+    invalidate_cache!(DEFAULT_CLI_CLIENT_KEY)
     setting = find_or_initialize_by(key: DEFAULT_CLI_CLIENT_KEY)
     setting.update!(value: client)
   end
 
   def self.last_synced_at
-    value = find_by(key: LAST_SYNCED_AT_KEY)&.value
+    value = fetch(LAST_SYNCED_AT_KEY)
     Time.parse(value) if value.present?
   rescue ArgumentError
     nil
   end
 
   def self.last_synced_at=(time)
+    invalidate_cache!(LAST_SYNCED_AT_KEY)
     setting = find_or_initialize_by(key: LAST_SYNCED_AT_KEY)
     setting.update!(value: time&.iso8601)
   end
 
   def self.touch_last_synced!
     self.last_synced_at = Time.current
+  end
+
+  def self.only_requested_reviews?
+    value = fetch(ONLY_REQUESTED_REVIEWS_KEY)
+    return true if value.nil?
+
+    value == "true"
+  end
+
+  def self.only_requested_reviews=(enabled)
+    invalidate_cache!(ONLY_REQUESTED_REVIEWS_KEY)
+    setting = find_or_initialize_by(key: ONLY_REQUESTED_REVIEWS_KEY)
+    setting.update!(value: enabled.to_s)
   end
 
   def self.sync_needed?
@@ -74,28 +117,31 @@ class Setting < ApplicationRecord
   end
 
   def self.auto_review_mode?
-    find_by(key: AUTO_REVIEW_MODE_KEY)&.value == "true"
+    fetch(AUTO_REVIEW_MODE_KEY) { super } == "true"
   end
 
   def self.auto_review_mode=(enabled)
+    invalidate_cache!(AUTO_REVIEW_MODE_KEY)
     setting = find_or_initialize_by(key: AUTO_REVIEW_MODE_KEY)
     setting.update!(value: enabled.to_s)
   end
 
   def self.auto_review_delay_min
-    parse_delay_value(find_by(key: AUTO_REVIEW_DELAY_MIN_KEY)&.value, default: DEFAULT_AUTO_REVIEW_DELAY_MIN)
+    parse_delay_value(fetch(AUTO_REVIEW_DELAY_MIN_KEY), default: DEFAULT_AUTO_REVIEW_DELAY_MIN)
   end
 
   def self.auto_review_delay_min=(seconds)
+    invalidate_cache!(AUTO_REVIEW_DELAY_MIN_KEY)
     setting = find_or_initialize_by(key: AUTO_REVIEW_DELAY_MIN_KEY)
     setting.update!(value: seconds.to_s)
   end
 
   def self.auto_review_delay_max
-    parse_delay_value(find_by(key: AUTO_REVIEW_DELAY_MAX_KEY)&.value, default: DEFAULT_AUTO_REVIEW_DELAY_MAX)
+    parse_delay_value(fetch(AUTO_REVIEW_DELAY_MAX_KEY), default: DEFAULT_AUTO_REVIEW_DELAY_MAX)
   end
 
   def self.auto_review_delay_max=(seconds)
+    invalidate_cache!(AUTO_REVIEW_DELAY_MAX_KEY)
     setting = find_or_initialize_by(key: AUTO_REVIEW_DELAY_MAX_KEY)
     setting.update!(value: seconds.to_s)
   end
@@ -106,10 +152,11 @@ class Setting < ApplicationRecord
   end
 
   def self.auto_submit_enabled?
-    find_by(key: AUTO_SUBMIT_ENABLED_KEY)&.value == "true"
+    fetch(AUTO_SUBMIT_ENABLED_KEY) { super } == "true"
   end
 
   def self.auto_submit_enabled=(enabled)
+    invalidate_cache!(AUTO_SUBMIT_ENABLED_KEY)
     setting = find_or_initialize_by(key: AUTO_SUBMIT_ENABLED_KEY)
     setting.update!(value: enabled.to_s)
   end

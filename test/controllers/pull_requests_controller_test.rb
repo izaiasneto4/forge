@@ -181,6 +181,36 @@ class PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Sync failed: GitHub API error"
   end
 
+  test "review_scope updates setting and syncs" do
+    GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
+    github_service = Class.new do
+      def sync_to_database!; end
+    end.new
+    GithubCliService.stubs(:new).returns(github_service)
+    Setting.stubs(:touch_last_synced!)
+
+    patch review_scope_pull_requests_path, params: { requested_to_me_only: "0" }, as: :turbo_stream
+
+    assert_response :success
+    assert_includes response.body, "Review scope updated: all open PRs"
+    refute Setting.only_requested_reviews?
+  end
+
+  test "review_scope handles sync error" do
+    GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
+    github_service = Class.new do
+      def sync_to_database!
+        raise GithubCliService::Error, "GitHub API error"
+      end
+    end.new
+    GithubCliService.stubs(:new).returns(github_service)
+
+    patch review_scope_pull_requests_path, params: { requested_to_me_only: "1" }, as: :turbo_stream
+
+    assert_response :success
+    assert_includes response.body, "Failed to update review scope: GitHub API error"
+  end
+
   test "sync with HTML response on error" do
     Setting.stubs(:sync_needed?).returns(true)
     GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)

@@ -13,6 +13,7 @@ Rails.application.routes.draw do
   resources :pull_requests, only: [ :index ] do
     collection do
       post :sync
+      patch :review_scope
       post :async_sync
       delete :bulk_destroy
     end

@@ -241,6 +241,10 @@ class SettingTest < ActiveSupport::TestCase
     assert_equal "last_synced_at", Setting::LAST_SYNCED_AT_KEY
   end
 
+  test "ONLY_REQUESTED_REVIEWS_KEY is only_requested_reviews" do
+    assert_equal "only_requested_reviews", Setting::ONLY_REQUESTED_REVIEWS_KEY
+  end
+
   test "DEFAULT_CLI_CLIENT is claude" do
     assert_equal "claude", Setting::DEFAULT_CLI_CLIENT
   end
@@ -275,6 +279,23 @@ class SettingTest < ActiveSupport::TestCase
     result = Setting.find_by(key: Setting::REPOS_FOLDER_KEY)
     assert result.present?
     assert_nil result.value
+  end
+
+  test "only_requested_reviews? defaults to true when not set" do
+    assert Setting.only_requested_reviews?
+  end
+
+  test "only_requested_reviews? returns false when set to false" do
+    Setting.create!(key: Setting::ONLY_REQUESTED_REVIEWS_KEY, value: "false")
+    refute Setting.only_requested_reviews?
+  end
+
+  test "only_requested_reviews= stores boolean value" do
+    Setting.only_requested_reviews = false
+    refute Setting.only_requested_reviews?
+
+    Setting.only_requested_reviews = true
+    assert Setting.only_requested_reviews?
   end
 
   # Auto-review settings

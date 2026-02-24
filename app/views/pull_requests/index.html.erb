@@ -159,6 +159,19 @@
               data-action="click->board-filter#clearFilters">
         Clear
       </button>
+
+      <%= form_with url: review_scope_pull_requests_path,
+                    method: :patch,
+                    class: "flex items-center gap-2 ml-1",
+                    data: { turbo_stream: true } do %>
+        <%= hidden_field_tag :requested_to_me_only, "0" %>
+        <%= check_box_tag :requested_to_me_only,
+                          "1",
+                          Setting.only_requested_reviews?,
+                          class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer",
+                          onchange: "this.form.requestSubmit()" %>
+        <span class="text-[11px] text-[color:var(--color-text-tertiary)] whitespace-nowrap">Requested to me only</span>
+      <% end %>
     </div>
 
     <div class="flex items-center gap-3">

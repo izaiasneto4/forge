@@ -19,16 +19,28 @@ class GithubCliService
     parse_prs(json, "reviewed_by_me")
   end
 
+  def fetch_open_pull_requests
+    json = run_gh_command("pr", "list", "--state", "open", "--json", pr_fields, "--limit", "100")
+    parse_prs(json, "pending_review")
+  end
+
   def fetch_all_prs_needing_attention
     review_requests = fetch_review_requests
     reviewed = fetch_reviewed_by_me
+    open_prs = Setting.only_requested_reviews? ? review_requests : fetch_open_pull_requests
 
-    # Re-requested reviews take precedence over "reviewed_by_me"
-    pending_ids = review_requests.map { |pr| pr[:github_id] }.to_set
+    requested_ids = review_requests.map { |pr| pr[:github_id] }.to_set
+    reviewed_ids = reviewed.map { |pr| pr[:github_id] }.to_set
+
+    # Keep PRs in pending when review has been requested again.
+    pending = open_prs.reject do |pr|
+      reviewed_ids.include?(pr[:github_id]) && !requested_ids.include?(pr[:github_id])
+    end
+    pending_ids = pending.map { |pr| pr[:github_id] }.to_set
     reviewed_only = reviewed.reject { |pr| pending_ids.include?(pr[:github_id]) }
 
     {
-      pending_review: review_requests,
+      pending_review: pending,
       reviewed_by_me: reviewed_only
     }
   end
@@ -236,6 +248,8 @@ class GithubCliService
   end
 
   def mark_reviewed_by_others
+    return unless Setting.only_requested_reviews?
+
     # Only check PRs that don't have a review task
     # If a user explicitly queued a review, respect that
     pending_prs = PullRequest.pending_review.left_joins(:review_task).where(review_tasks: { id: nil })
