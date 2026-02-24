@@ -19,7 +19,7 @@ class PullRequestIndexPresenter
   end
 
   def total_count
-    columns.values.sum(&:count)
+    @total_count ||= PullRequest.for_current_repo(current_repo).not_archived.count
   end
 
   def sync_status

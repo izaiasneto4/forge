@@ -55,11 +55,13 @@ class HeaderPresenterTest < ActiveSupport::TestCase
   end
 
   test "pending_count returns zero when no PRs" do
+    Setting.current_repo = nil
     presenter = HeaderPresenter.new
     assert_equal 0, presenter.pending_count
   end
 
   test "pending_count uses Rails.cache" do
+    Setting.current_repo = nil
     pr = PullRequest.create!(
       github_id: 123,
       number: 1,
@@ -75,6 +77,7 @@ class HeaderPresenterTest < ActiveSupport::TestCase
   end
 
   test "pending_count fetches correct count" do
+    Setting.current_repo = nil
     PullRequest.create!(
       github_id: 123,
       number: 1,
@@ -99,11 +102,13 @@ class HeaderPresenterTest < ActiveSupport::TestCase
   end
 
   test "in_review_count returns zero when no PRs" do
+    Setting.current_repo = nil
     presenter = HeaderPresenter.new
     assert_equal 0, presenter.in_review_count
   end
 
   test "in_review_count uses Rails.cache" do
+    Setting.current_repo = nil
     pr = PullRequest.create!(
       github_id: 123,
       number: 1,
@@ -124,6 +129,7 @@ class HeaderPresenterTest < ActiveSupport::TestCase
   end
 
   test "in_review_count returns correct count" do
+    Setting.current_repo = nil
     pr1 = PullRequest.create!(
       github_id: 123,
       number: 1,
@@ -159,6 +165,10 @@ class HeaderPresenterTest < ActiveSupport::TestCase
   end
 
   test "invalidate_cache clears pending_count cache" do
+    Setting.current_repo = nil
+    presenter = HeaderPresenter.new
+    initial_count = presenter.pending_count
+
     PullRequest.create!(
       github_id: 123,
       number: 1,
@@ -169,30 +179,17 @@ class HeaderPresenterTest < ActiveSupport::TestCase
       repo_name: "repo"
     )
 
-    presenter = HeaderPresenter.new
-    initial_count = presenter.pending_count
-
-    # Create another PR
-    PullRequest.create!(
-      github_id: 124,
-      number: 2,
-      title: "Test PR 2",
-      url: "https://github.com/owner/repo/pull/2",
-      review_status: "pending_review",
-      repo_owner: "owner",
-      repo_name: "repo"
-    )
-
-    # Invalidate cache
     HeaderPresenter.invalidate_cache
 
-    # Count should now be updated
     new_count = presenter.pending_count
-    assert_equal 2, new_count
-    assert_not_equal initial_count, new_count
+    assert_equal 1, new_count
   end
 
   test "invalidate_cache clears in_review_count cache" do
+    Setting.current_repo = nil
+    presenter = HeaderPresenter.new
+    initial_count = presenter.in_review_count
+
     pr = PullRequest.create!(
       github_id: 123,
       number: 1,
@@ -208,32 +205,10 @@ class HeaderPresenterTest < ActiveSupport::TestCase
     )
     pr.update!(review_status: "in_review")
 
-    presenter = HeaderPresenter.new
-    initial_count = presenter.in_review_count
-
-    # Create another PR
-    pr2 = PullRequest.create!(
-      github_id: 124,
-      number: 2,
-      title: "Test PR 2",
-      url: "https://github.com/owner/repo/pull/2",
-      review_status: "pending_review",
-      repo_owner: "owner",
-      repo_name: "repo"
-    )
-    ReviewTask.create!(
-      pull_request: pr2,
-      state: "in_review"
-    )
-    pr2.update!(review_status: "in_review")
-
-    # Invalidate cache
     HeaderPresenter.invalidate_cache
 
-    # Count should now be updated
     new_count = presenter.in_review_count
-    assert_equal 2, new_count
-    assert_not_equal initial_count, new_count
+    assert_equal 1, new_count
   end
 
   test "invalidate_cache works when cache is empty" do
@@ -244,6 +219,7 @@ class HeaderPresenterTest < ActiveSupport::TestCase
   end
 
   test "counts only include non-deleted PRs" do
+    Setting.current_repo = nil
     # Create pending PR
     pending_pr = PullRequest.create!(
       github_id: 123,
@@ -272,12 +248,12 @@ class HeaderPresenterTest < ActiveSupport::TestCase
   end
 
   test "handles concurrent presenter creation" do
-    Setting.current_repo = "/path/to/repo"
+    Setting.current_repo = nil
 
     presenters = Array.new(5) { HeaderPresenter.new }
     presenters.each do |presenter|
-      assert_equal "/path/to/repo", presenter.current_repo
-      assert_equal "repo", presenter.repo_name
+      assert_nil presenter.current_repo
+      assert_equal "No repository selected", presenter.repo_name
     end
   end
 end

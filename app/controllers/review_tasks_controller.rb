@@ -1,10 +1,10 @@
 class ReviewTasksController < ApplicationController
+  QUEUE_PROCESS_INTERVAL = 60.seconds
   before_action :set_review_task, only: %i[show update_state retry dequeue clear archive unarchive]
 
   def index
-    ReviewTask.recover_orphaned_in_review_tasks!
-    ReviewTask.process_queue_if_idle!
-    @review_tasks = ReviewTask.includes(:pull_request).order(created_at: :desc)
+    process_queue_if_needed
+    @review_tasks = ReviewTask.includes(:pull_request, :agent_logs).order(created_at: :desc)
     @grouped_tasks = {
       queued: @review_tasks.queued,
       pending_review: @review_tasks.pending_review,
@@ -24,8 +24,7 @@ class ReviewTasksController < ApplicationController
   end
 
   def create
-    ReviewTask.recover_orphaned_in_review_tasks!
-    ReviewTask.process_queue_if_idle!
+    process_queue_if_needed
     pull_request = PullRequest.find(params[:pull_request_id])
     cli_client = params[:cli_client].presence || Setting.default_cli_client
     review_type = params[:review_type].presence || "review"
@@ -178,6 +177,14 @@ class ReviewTasksController < ApplicationController
   end
 
   private
+
+  def process_queue_if_needed
+    return if Rails.cache.fetch("review_task_queue_processed", expires_in: QUEUE_PROCESS_INTERVAL) { false }
+
+    ReviewTask.recover_orphaned_in_review_tasks!
+    ReviewTask.process_queue_if_idle!
+    Rails.cache.write("review_task_queue_processed", true, expires_in: QUEUE_PROCESS_INTERVAL)
+  end
 
   def set_review_task
     @review_task = ReviewTask.find(params[:id])

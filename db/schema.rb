@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_24_090001) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_24_090003) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -35,13 +35,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_090001) do
     t.string "repo_name"
     t.string "repo_owner"
     t.string "review_status"
+    t.integer "review_tasks_count", default: 0
     t.string "title"
     t.datetime "updated_at", null: false
     t.datetime "updated_at_github"
     t.string "url"
     t.index ["deleted_at"], name: "index_pull_requests_on_deleted_at"
     t.index ["github_id"], name: "index_pull_requests_on_github_id"
+    t.index ["repo_owner", "repo_name", "archived", "deleted_at", "review_status"], name: "index_pull_requests_repo_filter"
+    t.index ["repo_owner", "repo_name"], name: "index_pull_requests_on_repo_owner_and_name"
     t.index ["review_status"], name: "index_pull_requests_on_review_status"
+    t.index ["review_tasks_count"], name: "index_pull_requests_on_review_tasks_count"
+    t.index ["updated_at_github"], name: "index_pull_requests_on_updated_at_github"
   end
 
   create_table "review_comments", force: :cascade do |t|
@@ -102,8 +107,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_090001) do
     t.datetime "updated_at", null: false
     t.string "worktree_path"
     t.index ["ai_model"], name: "index_review_tasks_on_ai_model"
+    t.index ["pull_request_id", "state"], name: "index_review_tasks_on_pull_request_id_and_state"
     t.index ["pull_request_id"], name: "index_review_tasks_on_pull_request_id"
     t.index ["retry_count"], name: "index_review_tasks_on_retry_count"
+    t.index ["state", "archived"], name: "index_review_tasks_state_archived"
     t.index ["state", "queued_at"], name: "index_review_tasks_on_state_and_queued_at"
     t.index ["state"], name: "index_review_tasks_on_state"
     t.index ["submission_status"], name: "index_review_tasks_on_submission_status"

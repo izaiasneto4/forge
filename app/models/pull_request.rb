@@ -4,6 +4,7 @@ class PullRequest < ApplicationRecord
   has_one :review_task, dependent: :destroy
 
   after_commit :invalidate_header_cache, on: [ :create, :update, :destroy ]
+  after_commit :invalidate_header_cache_on_review_status_change, if: :saved_change_to_review_status?
   after_commit :broadcast_status_change, if: :saved_change_to_review_status?
 
   validates :github_id, presence: true, uniqueness: true
@@ -185,7 +186,11 @@ class PullRequest < ApplicationRecord
   private
 
   def invalidate_header_cache
-    HeaderPresenter.invalidate_cache
+    HeaderPresenter.invalidate_cache(repo_full_name)
+  end
+
+  def invalidate_header_cache_on_review_status_change
+    invalidate_header_cache
   end
 
   def broadcast_status_change
