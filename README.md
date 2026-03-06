@@ -4,133 +4,193 @@
 
 # Forge
 
-A Rails application for automated GitHub PR code reviews. Syncs pull requests via GitHub CLI and runs AI-powered reviews using Claude CLI.
+Forge is a local-first Rails application for automated GitHub pull request review. It syncs PR metadata via GitHub CLI and runs code review agents through supported local CLIs such as Claude CLI, Codex, and OpenCode.
 
-## Requirements
+## Status
 
-- Ruby 3.4.2
+Forge is ready to be used and contributed to as open source, but its default operating model is still a trusted local or private-network deployment.
+
+Important:
+
+- Forge is designed for a single trusted operator by default.
+- The app invokes local tools such as `git`, `gh`, and AI review CLIs.
+- The current web UI and JSON API are not hardened for anonymous public internet access.
+
+If you want to expose a running Forge instance publicly, add authentication, TLS, host protection, and a CSP first.
+
+## Supported environment
+
+Tested assumptions in the repository:
+
+- Ruby `3.4.2`
 - SQLite
-- [GitHub CLI](https://cli.github.com/) (`gh`) - authenticated
-- [Claude CLI](https://github.com/anthropics/claude-code) (`claude`)
+- Node/npm for frontend tests
+- [GitHub CLI](https://cli.github.com/) (`gh`) authenticated against GitHub
+- at least one supported review CLI on your `PATH`
+  - [Claude CLI](https://github.com/anthropics/claude-code) (`claude`)
+  - Codex (`codex`)
+  - OpenCode (`opencode`)
 
-## Installation
+Platform notes:
+
+- The core app is Rails and can run anywhere the dependencies are available.
+- The folder picker UI uses `osascript`, so the interactive folder-picking flow is currently macOS-specific.
+- On non-macOS systems, configure the repositories folder directly in settings or through persisted app state instead of relying on the picker dialog.
+
+## Quick start
+
+1. Install dependencies and prepare the database:
 
 ```bash
-bin/setup   # Install dependencies and prepare database
-bin/dev     # Start development server
+bin/setup
 ```
 
-Visit `http://localhost:3000`
+2. Start the development stack:
 
-## CLI
-
-Forge includes a local CLI wrapper (`bin/forge`) backed by `/api/v1/*` JSON endpoints.
-
-### Quick Start
-
-1. Start Forge server:
 ```bash
 bin/dev
 ```
 
-2. In another terminal, verify CLI can talk to Forge:
-```bash
-bin/forge status
-```
+3. Visit [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
-3. If Forge is running on non-default host/port, set:
-```bash
-export FORGE_API_URL=http://127.0.0.1:3000
-```
+4. Open `/settings` and set your repositories folder to a directory containing local Git repositories.
 
-Default is `http://127.0.0.1:3000`.
+5. Ensure `gh` is authenticated and at least one supported review CLI is available on your `PATH`.
 
-### First-Time Setup Flow
+## Configuration
 
-1. Ensure `Setting.repos_folder` is configured in Forge UI (`/settings`) to a folder containing local git repos.
-2. Switch to a repo:
+Runtime configuration is intentionally small. See [.env.example](.env.example) for the public template.
+
+Common variables:
+
+- `FORGE_API_URL`
+  Default: `http://127.0.0.1:3000`
+- `RAILS_MAX_THREADS`
+- `JOB_CONCURRENCY`
+- `WEB_CONCURRENCY`
+- `RAILS_LOG_LEVEL`
+- `ANTHROPIC_MODEL` or `CLAUDE_MODEL`
+- `RAILS_MASTER_KEY` for production
+
+External credentials are typically provided by the tools Forge shells out to:
+
+- `gh auth login`
+- provider-specific auth for `claude`, `codex`, or `opencode`
+
+## First-time setup flow
+
+1. Start Forge locally with `bin/dev`.
+2. Configure the repositories folder in the UI at `/settings`.
+3. Switch to a repo:
+
 ```bash
 bin/forge repo switch ORG/REPO
 ```
-3. Sync PRs:
+
+4. Sync PRs:
+
 ```bash
 bin/forge sync --force
 ```
-4. List pending PRs:
+
+5. List pending PRs:
+
 ```bash
 bin/forge list --status pending_review
 ```
-5. Start review for a PR:
+
+6. Start a review:
+
 ```bash
 bin/forge review https://github.com/ORG/REPO/pull/123
 ```
-6. Watch logs:
+
+7. Watch logs:
+
 ```bash
 bin/forge logs TASK_ID --follow
 ```
 
-### Command Reference
+## CLI
 
-#### `bin/forge sync [--force] [--json]`
+Forge includes a local CLI wrapper at `bin/forge` backed by `/api/v1/*` JSON endpoints.
+
+If Forge is running on a non-default host or port:
+
+```bash
+export FORGE_API_URL=http://127.0.0.1:3000
+```
+
+### `bin/forge sync [--force] [--json]`
+
 Sync PR state from GitHub into Forge.
 
-- `--force`: bypass sync debounce window.
-- `--json`: print raw JSON response.
+- `--force`: bypass sync debounce window
+- `--json`: print raw JSON response
 
 Examples:
+
 ```bash
 bin/forge sync
 bin/forge sync --force
 bin/forge sync --json
 ```
 
-#### `bin/forge review <pr-url> [--client ...] [--type ...] [--json]`
+### `bin/forge review <pr-url> [--client ...] [--type ...] [--json]`
+
 Start or queue a review task for a PR URL.
 
-- `<pr-url>` must be a GitHub PR URL, e.g. `https://github.com/acme/api/pull/42`.
-- `--client`: `claude`, `codex`, or `opencode`.
-- `--type`: `review` or `swarm`.
-- `--json`: print raw JSON response.
+- `<pr-url>` must be a GitHub PR URL such as `https://github.com/acme/api/pull/42`
+- `--client`: `claude`, `codex`, or `opencode`
+- `--type`: `review` or `swarm`
+- `--json`: print raw JSON response
 
 Examples:
+
 ```bash
 bin/forge review https://github.com/acme/api/pull/42
 bin/forge review https://github.com/acme/api/pull/42 --client codex --type swarm
 bin/forge review https://github.com/acme/api/pull/42 --json
 ```
 
-#### `bin/forge status [--json]`
-Show current repo and review queue counts (`pending`, `in_review`, `queued`, `failed`).
+### `bin/forge status [--json]`
+
+Show current repo and review queue counts.
 
 Examples:
+
 ```bash
 bin/forge status
 bin/forge status --json
 ```
 
-#### `bin/forge list [--status ...] [--limit N] [--json]`
+### `bin/forge list [--status ...] [--limit N] [--json]`
+
 List PRs known to Forge.
 
-- `--status`: `pending_review`, `in_review`, `reviewed_by_me`, `waiting_implementation`, `reviewed_by_others`, `review_failed`, `all`.
-- `--limit`: 1-200.
-- `--json`: print raw JSON response.
+- `--status`: `pending_review`, `in_review`, `reviewed_by_me`, `waiting_implementation`, `reviewed_by_others`, `review_failed`, `all`
+- `--limit`: `1-200`
+- `--json`: print raw JSON response
 
 Examples:
+
 ```bash
 bin/forge list
 bin/forge list --status pending_review --limit 20
 bin/forge list --json
 ```
 
-#### `bin/forge logs <task-id> [--tail N] [--follow] [--json]`
+### `bin/forge logs <task-id> [--tail N] [--follow] [--json]`
+
 Show review task logs.
 
-- `<task-id>`: Forge review task id.
-- `--tail`: 1-1000 (default 100).
-- `--follow`: poll for new logs every 2s until Ctrl+C.
-- `--json`: print raw JSON response (cannot be used with `--follow`).
+- `<task-id>`: Forge review task id
+- `--tail`: `1-1000` (default `100`)
+- `--follow`: poll for new logs every 2s until `Ctrl+C`
+- `--json`: print raw JSON response and cannot be used with `--follow`
 
 Examples:
+
 ```bash
 bin/forge logs 42
 bin/forge logs 42 --tail 200
@@ -138,41 +198,64 @@ bin/forge logs 42 --follow
 bin/forge logs 42 --json
 ```
 
-#### `bin/forge repo switch <org/repo> [--json]`
-Switch Forge context to a local repository matching GitHub slug and run sync.
+### `bin/forge repo switch <org/repo> [--json]`
 
-- Requires repo to exist under configured repos folder.
-- If multiple local repos match, command fails with conflict.
+Switch Forge context to a local repository matching a GitHub slug and run sync.
+
+- Requires the repo to exist under the configured repositories folder
+- If multiple local repos match, the command fails with a conflict
 
 Examples:
+
 ```bash
 bin/forge repo switch acme/api
 bin/forge repo switch acme/api --json
 ```
 
-### Output and Exit Codes
+### Output and exit codes
 
-- Human-readable output by default.
-- `--json` outputs machine-readable JSON payload from API.
-- Exit codes:
+- human-readable output by default
+- `--json` outputs machine-readable JSON payload from the API
+- exit codes:
   - `0`: success
-  - `1`: API validation/business error
-  - `2`: connection error (Forge not reachable)
+  - `1`: API validation or business error
+  - `2`: connection error
 
-### Common Errors
+### Common errors
 
-- `Connection error`: Forge app is not running or `FORGE_API_URL` is wrong.
-- `API error (invalid_input)`: bad argument (invalid URL, bad status/limit, malformed repo slug).
-- `API error (not_found)`: missing task, PR, or repo mapping.
-- `API error (conflict)`: existing in-progress review or ambiguous repo switch.
-- `API error (sync_failed)`: GitHub sync failed.
+- `Connection error`: Forge is not running or `FORGE_API_URL` is wrong
+- `API error (invalid_input)`: bad argument such as invalid URL, bad status, or malformed repo slug
+- `API error (not_found)`: missing task, PR, or repo mapping
+- `API error (conflict)`: existing in-progress review or ambiguous repo switch
+- `API error (sync_failed)`: GitHub sync failed
 
-### Automation / CI Usage
+## Development
 
-Prefer `--json` for scripts:
+Useful commands:
 
 ```bash
-bin/forge status --json
-bin/forge list --status pending_review --limit 50 --json
-bin/forge review https://github.com/acme/api/pull/42 --json
+bin/setup
+bin/dev
+bin/rails test
+bin/rubocop
+npm test
+bin/ci
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution expectations and [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
+## Production notes
+
+The repository includes Docker and Kamal configuration, but the checked-in deploy config should be treated as an example starting point rather than a production-ready template.
+
+Before a real deployment:
+
+- set real hosts, registry, and secrets
+- enable TLS and host protection
+- review `config/environments/production.rb`
+- decide how you will authenticate access to the app
+- back up the persistent `storage/` volume
+
+## License
+
+Forge is available under the [MIT License](LICENSE).
