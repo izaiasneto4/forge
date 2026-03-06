@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_24_090003) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_24_170000) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -43,6 +43,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_090003) do
     t.index ["deleted_at"], name: "index_pull_requests_on_deleted_at"
     t.index ["github_id"], name: "index_pull_requests_on_github_id"
     t.index ["repo_owner", "repo_name", "archived", "deleted_at", "review_status"], name: "index_pull_requests_repo_filter"
+    t.index ["repo_owner", "repo_name", "number"], name: "index_pull_requests_on_repo_and_number_unique", unique: true
     t.index ["repo_owner", "repo_name"], name: "index_pull_requests_on_repo_owner_and_name"
     t.index ["review_status"], name: "index_pull_requests_on_review_status"
     t.index ["review_tasks_count"], name: "index_pull_requests_on_review_tasks_count"

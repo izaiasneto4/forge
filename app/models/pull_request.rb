@@ -1,5 +1,6 @@
 class PullRequest < ApplicationRecord
   REVIEW_STATUSES = %w[pending_review in_review reviewed_by_me waiting_implementation reviewed_by_others review_failed].freeze
+  REVIEW_STATUSES_REQUIRING_TASK = %w[in_review reviewed_by_me waiting_implementation review_failed].freeze
 
   has_one :review_task, dependent: :destroy
 
@@ -8,7 +9,7 @@ class PullRequest < ApplicationRecord
   after_commit :broadcast_status_change, if: :saved_change_to_review_status?
 
   validates :github_id, presence: true, uniqueness: true
-  validates :number, presence: true
+  validates :number, presence: true, uniqueness: { scope: [ :repo_owner, :repo_name ] }
   validates :title, presence: true
   validates :url, presence: true
   validates :repo_owner, presence: true
@@ -61,30 +62,6 @@ class PullRequest < ApplicationRecord
 
   def short_description
     description.to_s.truncate(150)
-  end
-
-  def soft_delete!
-    update!(deleted_at: Time.current)
-  end
-
-  def restore!
-    update!(deleted_at: nil, review_status: "pending_review")
-  end
-
-  def deleted?
-    deleted_at.present?
-  end
-
-  def archived?
-    archived == true
-  end
-
-  def archive!
-    update!(archived: true)
-  end
-
-  def unarchive!
-    update!(archived: false)
   end
 
   def soft_delete!
@@ -209,40 +186,10 @@ class PullRequest < ApplicationRecord
   end
 
   def review_status_consistency
-    # Ensure reviewed_by_me status requires an actual reviewed review_task
-    if review_status == "reviewed_by_me"
-      if review_task.nil?
-        errors.add(:review_status, "cannot be 'reviewed_by_me' without a review task")
-      elsif !review_task.reviewed? && !review_task.waiting_implementation? && !review_task.done?
-        errors.add(:review_status, "cannot be 'reviewed_by_me' when review task is not completed")
-      end
-    end
+    return if SyncMode.active?
+    return unless REVIEW_STATUSES_REQUIRING_TASK.include?(review_status)
+    return if review_task.present?
 
-    # Ensure in_review status matches ReviewTask state
-    if review_status == "in_review"
-      if review_task.nil?
-        errors.add(:review_status, "cannot be 'in_review' without a review task")
-      elsif !review_task.in_review?
-        errors.add(:review_status, "cannot be 'in_review' when review task is in #{review_task.state} state")
-      end
-    end
-
-    # Ensure review_failed status requires a failed review_task
-    if review_status == "review_failed"
-      if review_task.nil?
-        errors.add(:review_status, "cannot be 'review_failed' without a review task")
-      elsif !review_task.failed_review?
-        errors.add(:review_status, "cannot be 'review_failed' when review task has not failed")
-      end
-    end
-
-    # Ensure waiting_implementation status matches ReviewTask state
-    if review_status == "waiting_implementation"
-      if review_task.nil?
-        errors.add(:review_status, "cannot be 'waiting_implementation' without a review task")
-      elsif !review_task.waiting_implementation?
-        errors.add(:review_status, "cannot be 'waiting_implementation' when review task is in #{review_task.state} state")
-      end
-    end
+    errors.add(:review_status, "cannot be '#{review_status}' without a review task")
   end
 end

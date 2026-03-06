@@ -3,6 +3,7 @@ require "digest"
 
 class GithubCliService
   class Error < StandardError; end
+  PR_FETCH_LIMIT = 1000
 
   def initialize(username: nil, repo_path: nil)
     @username = username || fetch_current_user
@@ -11,24 +12,45 @@ class GithubCliService
   end
 
   def fetch_review_requests
-    json = run_gh_command("pr", "list", "--search", "review-requested:@me", "--json", pr_fields, "--limit", "100")
-    parse_prs(json, "pending_review")
+    fetch_pr_list(
+      "pr", "list",
+      "--search", "review-requested:@me",
+      "--json", pr_fields,
+      "--limit", PR_FETCH_LIMIT.to_s,
+      review_status: "pending_review"
+    )[:prs]
   end
 
   def fetch_reviewed_by_me
-    json = run_gh_command("pr", "list", "--search", "reviewed-by:@me", "--json", pr_fields, "--limit", "100")
-    parse_prs(json, "reviewed_by_me")
+    fetch_pr_list(
+      "pr", "list",
+      "--search", "reviewed-by:@me",
+      "--json", pr_fields,
+      "--limit", PR_FETCH_LIMIT.to_s,
+      review_status: "reviewed_by_me"
+    )[:prs]
   end
 
   def fetch_open_pull_requests
-    json = run_gh_command("pr", "list", "--state", "open", "--json", pr_fields, "--limit", "100")
-    parse_prs(json, "pending_review")
+    fetch_open_pull_requests_with_metadata[:prs]
+  end
+
+  def fetch_open_pull_requests_with_metadata
+    fetch_pr_list(
+      "pr", "list",
+      "--state", "open",
+      "--json", pr_fields,
+      "--limit", PR_FETCH_LIMIT.to_s,
+      review_status: "pending_review"
+    )
   end
 
   def fetch_all_prs_needing_attention
     review_requests = fetch_review_requests
     reviewed = fetch_reviewed_by_me
-    open_prs = Setting.only_requested_reviews? ? review_requests : fetch_open_pull_requests
+    only_requested = Setting.only_requested_reviews?
+    open_fetch = only_requested ? { prs: review_requests, complete: false } : fetch_open_pull_requests_with_metadata
+    open_prs = open_fetch[:prs]
 
     requested_ids = review_requests.map { |pr| pr[:github_id] }.to_set
     reviewed_ids = reviewed.map { |pr| pr[:github_id] }.to_set
@@ -42,7 +64,8 @@ class GithubCliService
 
     {
       pending_review: pending,
-      reviewed_by_me: reviewed_only
+      reviewed_by_me: reviewed_only,
+      open_prs_complete: open_fetch[:complete]
     }
   end
 
@@ -52,7 +75,7 @@ class GithubCliService
     ActiveRecord::Base.transaction do
       sync_prs(prs[:pending_review], "pending_review")
       sync_prs(prs[:reviewed_by_me], "reviewed_by_me")
-      remove_stale_prs(prs) if @repo_path.present?
+      remove_stale_prs(prs) if should_reconcile_stale_prs?(prs)
       mark_reviewed_by_others
     end
   end
@@ -135,22 +158,14 @@ class GithubCliService
     stale_prs = PullRequest.where(repo_owner: repo_info[:owner], repo_name: repo_info[:name])
                            .where.not(github_id: fetched_ids)
 
-    # Use destroy_all to trigger callbacks and cascade deletes properly
-    # This ensures ReviewTask's dependent: :destroy associations (review_comments, review_iterations, agent_logs)
-    # are properly cleaned up before deletion, avoiding foreign key constraint violations
+    # Soft-delete stale records to avoid destructive data loss and preserve review history.
     return unless stale_prs.exists?
 
     stale_count = stale_prs.count
     Rails.logger.info "Removing #{stale_count} stale PR(s) from #{repo_info[:owner]}/#{repo_info[:name]}"
 
-    begin
-      # destroy_all triggers ActiveRecord callbacks and handles dependent associations
-      stale_prs.destroy_all
-      Rails.logger.info "Successfully removed #{stale_count} stale PR(s)"
-    rescue ActiveRecord::InvalidForeignKey => e
-      Rails.logger.error "Foreign key constraint violation while removing stale PRs: #{e.message}"
-      raise Error, "Failed to remove stale PRs due to database constraint violation"
-    end
+    stale_prs.update_all(deleted_at: Time.current, updated_at: Time.current)
+    Rails.logger.info "Successfully soft-deleted #{stale_count} stale PR(s)"
   end
 
   def get_repo_info
@@ -175,9 +190,25 @@ class GithubCliService
   end
 
   def parse_prs(json, review_status)
-    return [] if json.strip.empty?
+    parse_pr_data(parse_pr_payload(json), review_status)
+  end
 
-    data = JSON.parse(json)
+  def fetch_pr_list(*args, review_status:)
+    json = run_gh_command(*args)
+    data = parse_pr_payload(json)
+    {
+      prs: parse_pr_data(data, review_status),
+      complete: data.size < PR_FETCH_LIMIT
+    }
+  end
+
+  def parse_pr_payload(json)
+    return [] if json.to_s.strip.empty?
+
+    JSON.parse(json)
+  end
+
+  def parse_pr_data(data, review_status)
     data.map do |pr|
       # Extract repo info from URL: https://github.com/owner/repo/pull/123
       url_parts = pr["url"].to_s.match(%r{github\.com/([^/]+)/([^/]+)/pull/})
@@ -200,7 +231,17 @@ class GithubCliService
 
 
 
+  def should_reconcile_stale_prs?(fetched_prs)
+    return false unless @repo_path.present?
+    return false if Setting.only_requested_reviews?
+
+    fetched_prs[:open_prs_complete] == true
+  end
+
+
   def extract_github_id(url)
+    url = url.to_s
+
     # Extract PR number and repo from URL for a stable unique ID
     # URL format: https://github.com/owner/repo/pull/123
     if url =~ %r{github\.com/([^/]+)/([^/]+)/pull/(\d+)}
@@ -268,7 +309,7 @@ class GithubCliService
     json = run_gh_command(
       "pr", "list",
       "--json", "number,state,reviewRequests",
-      "--limit", "100"
+      "--limit", PR_FETCH_LIMIT.to_s
     )
 
     data = JSON.parse(json)

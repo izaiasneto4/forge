@@ -7,7 +7,7 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
 
     limit = parse_integer(params[:limit], default: 50, min: 1, max: 200, name: "limit")
 
-    scope = PullRequest.not_archived.order(updated_at_github: :desc)
+    scope = PullRequest.for_current_repo(Setting.current_repo).not_archived.order(updated_at_github: :desc)
     scope = scope.where(review_status: status) unless status == "all"
 
     items = scope.limit(limit).map do |pr|
