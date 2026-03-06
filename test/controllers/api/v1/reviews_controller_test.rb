@@ -1,7 +1,15 @@
 require "test_helper"
 
 class Api::V1::ReviewsControllerTest < ActionDispatch::IntegrationTest
+  self.use_transactional_tests = false
+
   setup do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+
     @pr = PullRequest.create!(
       github_id: 999,
       number: 9,

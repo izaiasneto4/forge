@@ -242,7 +242,7 @@ class ReviewCommentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "REQUEST_CHANGES", @review_task.submitted_event
   end
 
-  test "submit with APPROVE keeps review in reviewed state" do
+  test "submit with APPROVE moves review to done column" do
     @pr.update!(review_status: "reviewed_by_me")
     submitter = Class.new do
       def submit_review(*)
@@ -257,8 +257,28 @@ class ReviewCommentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     @review_task.reload
     @pr.reload
-    assert_equal "reviewed", @review_task.state
-    assert_equal "reviewed_by_me", @pr.review_status
+    assert_equal "done", @review_task.state
+    assert_equal "reviewed_by_others", @pr.review_status
+    assert_equal "APPROVE", @review_task.submitted_event
+  end
+
+  test "submit with empty APPROVE moves task/PR to done column" do
+    @pr.update!(review_status: "reviewed_by_me")
+    submitter = Class.new do
+      def submit_review(*)
+        { result: "success" }
+      end
+    end.new
+    GithubReviewSubmitter.stubs(:new).returns(submitter)
+
+    post submit_review_task_review_comments_path(@review_task),
+         params: { event: "APPROVE", force_empty_submission: "true" }, as: :turbo_stream
+
+    assert_response :success
+    @review_task.reload
+    @pr.reload
+    assert_equal "done", @review_task.state
+    assert_equal "reviewed_by_others", @pr.review_status
     assert_equal "APPROVE", @review_task.submitted_event
   end
 

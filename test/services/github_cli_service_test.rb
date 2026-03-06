@@ -1,7 +1,16 @@
 require "test_helper"
 
 class GithubCliServiceTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
   setup do
+    Setting.delete_all
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+
     @service = GithubCliService.new(username: "testuser", repo_path: "/tmp/test-repo")
     @repo_owner = "testowner"
     @repo_name = "testrepo"
@@ -20,9 +29,17 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     ])
   end
 
+  teardown do
+    Setting.delete_all
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+  end
+
   # parse_prs tests (these don't require external calls)
   test "parse_prs handles missing URL" do
-    skip "Service doesn't handle nil URL gracefully - this would need a service fix"
     json = JSON.generate([
       {
         "number" => 123,
@@ -161,6 +178,23 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert_equal "login_user", service.instance_variable_get(:@username)
   end
 
+  test "initialize fetches current user when username is missing" do
+    GithubCliService.any_instance.expects(:fetch_current_user).returns("fetched_user")
+
+    service = GithubCliService.new(username: nil, repo_path: "/tmp/test-repo")
+
+    assert_equal "fetched_user", service.instance_variable_get(:@username)
+    assert_equal "fetched_user", Setting.github_login
+  end
+
+  test "initialize does not persist blank github login" do
+    Setting.github_login = "existing_user"
+
+    GithubCliService.new(username: "", repo_path: "/tmp/test-repo")
+
+    assert_equal "existing_user", Setting.github_login
+  end
+
   test "fetch_all_prs_needing_attention includes all open PRs when requested-only is disabled" do
     Setting.stubs(:only_requested_reviews?).returns(false)
 
@@ -171,13 +205,22 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     reviewed_and_rerequested = { github_id: 40, number: 40, title: "Re-requested", review_status: "reviewed_by_me" }
 
     @service.stubs(:fetch_review_requests).returns([ requested_pr, rerequested_pr ])
-    @service.stubs(:fetch_open_pull_requests).returns([ requested_pr, open_unrequested, reviewed_pr, rerequested_pr ])
+    @service.stubs(:fetch_open_pull_requests_with_metadata).returns(
+      { prs: [ requested_pr, open_unrequested, reviewed_pr, rerequested_pr ], complete: true }
+    )
     @service.stubs(:fetch_reviewed_by_me).returns([ reviewed_pr, reviewed_and_rerequested ])
 
     result = @service.fetch_all_prs_needing_attention
 
     assert_equal [ requested_pr, open_unrequested, rerequested_pr ], result[:pending_review]
     assert_equal [ reviewed_pr ], result[:reviewed_by_me]
+  end
+
+  test "fetch_open_pull_requests returns prs from metadata response" do
+    prs = [ { github_id: 1, number: 1 } ]
+    @service.stubs(:fetch_open_pull_requests_with_metadata).returns({ prs: prs, complete: true })
+
+    assert_equal prs, @service.fetch_open_pull_requests
   end
 
   test "sync_to_database does not rollback when reviewed_by_me PR has no local review task" do
@@ -219,6 +262,46 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert_equal "pending_review", stored_reviewed.review_status
   end
 
+  test "sync_to_database skips stale removal when requested-only scope is enabled" do
+    Setting.stubs(:only_requested_reviews?).returns(true)
+    @service.expects(:remove_stale_prs).never
+    @service.stubs(:mark_reviewed_by_others)
+    @service.stubs(:fetch_review_requests).returns([])
+    @service.stubs(:fetch_reviewed_by_me).returns([])
+
+    assert_nothing_raised { @service.sync_to_database! }
+  end
+
+  test "sync_to_database skips stale removal when open PR fetch hits limit boundary" do
+    Setting.stubs(:only_requested_reviews?).returns(false)
+    @service.expects(:remove_stale_prs).never
+    @service.stubs(:mark_reviewed_by_others)
+    @service.stubs(:fetch_review_requests).returns([])
+    @service.stubs(:fetch_reviewed_by_me).returns([])
+
+    limited_open_prs = Array.new(1000) do |i|
+      {
+        github_id: 20_000 + i,
+        number: i + 1,
+        title: "PR #{i + 1}",
+        description: "",
+        url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/#{i + 1}",
+        repo_owner: @repo_owner,
+        repo_name: @repo_name,
+        author: "author",
+        author_avatar: nil,
+        created_at_github: Time.current.iso8601,
+        updated_at_github: Time.current.iso8601,
+        review_status: "pending_review"
+      }
+    end
+    @service.stubs(:fetch_open_pull_requests_with_metadata).returns(
+      { prs: limited_open_prs, complete: false }
+    )
+
+    assert_nothing_raised { @service.sync_to_database! }
+  end
+
   test "sync_prs reuses archived PR record instead of creating duplicate github_id" do
     archived = PullRequest.create!(
       github_id: 9101,
@@ -254,6 +337,27 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert_equal "Reopened", archived.title
   end
 
+  test "remove_stale_prs soft-deletes stale records instead of destroying review data" do
+    pr = PullRequest.create!(
+      github_id: 9201,
+      number: 9201,
+      title: "Stale PR",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/9201",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+    task = ReviewTask.create!(pull_request: pr, state: "pending_review")
+
+    @service.stubs(:get_repo_info).returns({ owner: @repo_owner, name: @repo_name })
+    @service.send(:remove_stale_prs, { pending_review: [], reviewed_by_me: [] })
+
+    pr.reload
+    assert_not_nil pr.deleted_at
+    assert_equal task.id, pr.review_task.id
+    assert PullRequest.unscoped.exists?(pr.id)
+  end
+
   # get_repo_info tests
   test "get_repo_info returns nil for nil repo path" do
     service = GithubCliService.new(username: "test", repo_path: nil)
@@ -263,6 +367,77 @@ class GithubCliServiceTest < ActiveSupport::TestCase
   test "get_repo_info returns nil for non-existent repo path" do
     service = GithubCliService.new(username: "test", repo_path: "/nonexistent/path")
     assert_nil service.send(:get_repo_info)
+  end
+
+  test "get_repo_info parses https remote" do
+    Dir.mktmpdir do |dir|
+      PathValidator.stubs(:validate).with(dir).returns(dir)
+      Open3.expects(:capture2).with("git", "-C", dir, "remote", "get-url", "origin")
+        .returns([ "https://github.com/acme/widgets.git\n", stub(success?: true) ])
+
+      service = GithubCliService.new(username: "test", repo_path: dir)
+
+      assert_equal({ owner: "acme", name: "widgets" }, service.send(:get_repo_info))
+    end
+  end
+
+  test "get_repo_info parses ssh remote" do
+    Dir.mktmpdir do |dir|
+      PathValidator.stubs(:validate).with(dir).returns(dir)
+      Open3.expects(:capture2).with("git", "-C", dir, "remote", "get-url", "origin")
+        .returns([ "git@github.com:acme/widgets.git\n", stub(success?: true) ])
+
+      service = GithubCliService.new(username: "test", repo_path: dir)
+
+      assert_equal({ owner: "acme", name: "widgets" }, service.send(:get_repo_info))
+    end
+  end
+
+  test "get_repo_info returns nil when git command fails" do
+    Dir.mktmpdir do |dir|
+      PathValidator.stubs(:validate).with(dir).returns(dir)
+      Open3.expects(:capture2).with("git", "-C", dir, "remote", "get-url", "origin")
+        .returns([ "", stub(success?: false) ])
+
+      service = GithubCliService.new(username: "test", repo_path: dir)
+
+      assert_nil service.send(:get_repo_info)
+    end
+  end
+
+  test "get_repo_info returns nil for empty remote" do
+    Dir.mktmpdir do |dir|
+      PathValidator.stubs(:validate).with(dir).returns(dir)
+      Open3.expects(:capture2).with("git", "-C", dir, "remote", "get-url", "origin")
+        .returns([ "\n", stub(success?: true) ])
+
+      service = GithubCliService.new(username: "test", repo_path: dir)
+
+      assert_nil service.send(:get_repo_info)
+    end
+  end
+
+  test "get_repo_info returns nil for non-github remote" do
+    Dir.mktmpdir do |dir|
+      PathValidator.stubs(:validate).with(dir).returns(dir)
+      Open3.expects(:capture2).with("git", "-C", dir, "remote", "get-url", "origin")
+        .returns([ "git@example.com:acme/widgets.git\n", stub(success?: true) ])
+
+      service = GithubCliService.new(username: "test", repo_path: dir)
+
+      assert_nil service.send(:get_repo_info)
+    end
+  end
+
+  test "get_repo_info returns nil when capture raises" do
+    Dir.mktmpdir do |dir|
+      PathValidator.stubs(:validate).with(dir).returns(dir)
+      Open3.expects(:capture2).raises(StandardError)
+
+      service = GithubCliService.new(username: "test", repo_path: dir)
+
+      assert_nil service.send(:get_repo_info)
+    end
   end
 
   # fetch_latest_for_repo tests
@@ -294,6 +469,21 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "fetch_latest_for_repo raises when git pull fails after successful fetch" do
+    Dir.mktmpdir do |dir|
+      Open3.expects(:capture3).with("git", "-C", dir, "fetch", "origin")
+        .returns([ "ok", "", stub(success?: true) ])
+      Open3.expects(:capture3).with("git", "-C", dir, "pull", "--ff-only")
+        .returns([ "", "pull failed", stub(success?: false) ])
+
+      error = assert_raises(GithubCliService::Error) do
+        GithubCliService.fetch_latest_for_repo(dir)
+      end
+
+      assert_includes error.message, "git pull failed: pull failed"
+    end
+  end
+
   # mark_reviewed_by_others tests
   test "mark_reviewed_by_others returns early when no pending PRs" do
     Setting.stubs(:only_requested_reviews?).returns(true)
@@ -307,6 +497,53 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     @service.expects(:run_gh_command).never
 
     assert_nil @service.send(:mark_reviewed_by_others)
+  end
+
+  test "mark_reviewed_by_others updates only unrequested pending prs without tasks" do
+    Setting.stubs(:only_requested_reviews?).returns(true)
+
+    requested_pr = PullRequest.create!(
+      github_id: 4001,
+      number: 4001,
+      title: "Requested",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/4001",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+    unrequested_pr = PullRequest.create!(
+      github_id: 4002,
+      number: 4002,
+      title: "Unrequested",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/4002",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+    task_backed_pr = PullRequest.create!(
+      github_id: 4003,
+      number: 4003,
+      title: "Task backed",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/4003",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+    ReviewTask.create!(pull_request: task_backed_pr, state: "pending_review")
+
+    @service.stubs(:run_gh_command).returns(
+      [
+        { "number" => 4001, "state" => "OPEN", "reviewRequests" => [ { "login" => "testuser" } ] },
+        { "number" => 4002, "state" => "OPEN", "reviewRequests" => [] },
+        { "number" => 4003, "state" => "OPEN", "reviewRequests" => [] }
+      ].to_json
+    )
+
+    @service.send(:mark_reviewed_by_others)
+
+    assert_equal "pending_review", requested_pr.reload.review_status
+    assert_equal "reviewed_by_others", unrequested_pr.reload.review_status
+    assert_equal "pending_review", task_backed_pr.reload.review_status
   end
 
   test "latest_my_review_state returns newest submitted state for current user" do
@@ -330,6 +567,26 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert_equal "CHANGES_REQUESTED", @service.latest_my_review_state(pr)
   end
 
+  test "latest_my_review_state returns nil when current user has no submitted reviews" do
+    pr = PullRequest.create!(
+      github_id: 333010,
+      number: 335,
+      title: "No matching review",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/335",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+
+    payload = [
+      { "user" => { "login" => "other" }, "state" => "APPROVED", "submitted_at" => "2026-02-24T00:00:00Z" },
+      { "user" => { "login" => "testuser" }, "state" => "COMMENTED", "submitted_at" => nil }
+    ].to_json
+    @service.stubs(:run_gh_command).returns(payload)
+
+    assert_nil @service.latest_my_review_state(pr)
+  end
+
   test "review_requested_for_me? detects current user in requested reviewers" do
     pr = PullRequest.create!(
       github_id: 333002,
@@ -346,6 +603,22 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     )
 
     assert @service.review_requested_for_me?(pr)
+  end
+
+  test "review_requested_for_me? returns false when requested_reviewers missing" do
+    pr = PullRequest.create!(
+      github_id: 333011,
+      number: 336,
+      title: "No reviewers",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/336",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+
+    @service.stubs(:run_gh_command).returns({}.to_json)
+
+    refute @service.review_requested_for_me?(pr)
   end
 
   test "sync_prs resets completed task to pending_review when review is requested again" do
@@ -429,6 +702,40 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert PullRequest.exists?(pr.id)
   end
 
+  test "remove_stale_prs is no-op when repo info cannot be resolved" do
+    pr = PullRequest.create!(
+      github_id: 112,
+      number: 112,
+      title: "PR 112",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/112",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+
+    @service.stubs(:get_repo_info).returns(nil)
+    @service.send(:remove_stale_prs, { pending_review: [], reviewed_by_me: [] })
+
+    assert PullRequest.exists?(pr.id)
+  end
+
+  test "remove_stale_prs is no-op when no stale records exist" do
+    pr = PullRequest.create!(
+      github_id: 113,
+      number: 113,
+      title: "PR 113",
+      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/113",
+      repo_owner: @repo_owner,
+      repo_name: @repo_name,
+      review_status: "pending_review"
+    )
+
+    @service.stubs(:get_repo_info).returns({ owner: @repo_owner, name: @repo_name })
+    @service.send(:remove_stale_prs, { pending_review: [ { github_id: 113 } ], reviewed_by_me: [] })
+
+    assert_nil pr.reload.deleted_at
+  end
+
   # Integration tests that require database setup
   test "extract_github_id returns consistent hash for same URL" do
     url1 = "https://github.com/#{@repo_owner}/#{@repo_name}/pull/123"
@@ -448,6 +755,13 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert id > 0
   end
 
+  test "extract_github_id falls back to hashing non github urls" do
+    url = "not-a-github-url"
+    expected_id = Digest::SHA256.hexdigest(url).to_i(16) % (2**62)
+
+    assert_equal expected_id, @service.send(:extract_github_id, url)
+  end
+
   # pr_fields helper test
   test "pr_fields returns correct field string" do
     fields = @service.send(:pr_fields)
@@ -459,5 +773,26 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert_includes fields, "headRepositoryOwner"
     assert_includes fields, "createdAt"
     assert_includes fields, "updatedAt"
+  end
+
+  test "run_gh_command raises on cli failure" do
+    Open3.expects(:capture3).with("gh", "pr", "list").returns([ "", "boom", stub(success?: false) ])
+
+    error = assert_raises(GithubCliService::Error) do
+      @service.send(:run_gh_command, "pr", "list")
+    end
+
+    assert_includes error.message, "boom"
+  end
+
+  test "run_gh_command passes timeout and chdir when repo path exists" do
+    Dir.mktmpdir do |dir|
+      service = GithubCliService.new(username: "testuser", repo_path: dir)
+
+      Open3.expects(:capture3).with("gh", "api", "user", { chdir: dir, timeout: 5 })
+        .returns([ "ok", "", stub(success?: true) ])
+
+      assert_equal "ok", service.send(:run_gh_command, "api", "user", timeout: 5)
+    end
   end
 end

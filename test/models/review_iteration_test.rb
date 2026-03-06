@@ -29,12 +29,6 @@ class ReviewIterationTest < ActiveSupport::TestCase
     )
   end
 
-  teardown do
-    ReviewIteration.delete_all
-    ReviewTask.delete_all
-    PullRequest.delete_all
-  end
-
   # Validations
   test "valid with all required fields" do
     assert @iteration.valid?

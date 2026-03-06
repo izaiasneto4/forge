@@ -3,6 +3,25 @@ require "test_helper"
 class HeaderPresenterTest < ActiveSupport::TestCase
   setup do
     Rails.cache.clear
+    Setting.invalidate_cache!
+    HeaderPresenter.invalidate_cache
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+    Setting.delete_all
+  end
+
+  teardown do
+    Rails.cache.clear
+    Setting.invalidate_cache!
+    HeaderPresenter.invalidate_cache
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
     Setting.delete_all
   end
 

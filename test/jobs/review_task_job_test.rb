@@ -1,10 +1,15 @@
 require "test_helper"
 
 class ReviewTaskJobTest < ActiveJob::TestCase
+  self.use_transactional_tests = false
+
   setup do
-    Setting.delete_all
-    PullRequest.delete_all
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
     ReviewTask.delete_all
+    Setting.delete_all
+    PullRequest.unscoped.delete_all
 
     Setting.current_repo = "/tmp/test-repo"
     Setting.default_cli_client = "claude"
@@ -37,7 +42,7 @@ class ReviewTaskJobTest < ActiveJob::TestCase
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
-    PullRequest.delete_all
+    PullRequest.unscoped.delete_all
   end
 
   test "happy path: clears logs, builds worktree, starts review, stores model, streams output, validates, completes, creates comments, broadcasts" do

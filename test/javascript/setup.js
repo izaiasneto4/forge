@@ -4,6 +4,22 @@ import { fileURLToPath } from 'url'
 import { dirname, resolve } from 'path'
 import { Window } from 'happy-dom'
 import { Application } from '@hotwired/stimulus'
+import * as Turbo from '@hotwired/turbo'
+
+vi.mock('@hotwired/turbo', () => ({
+  renderStreamMessage: vi.fn()
+}))
+
+vi.mock('@rails/actioncable', () => ({
+  createConsumer: vi.fn(() => ({
+    subscriptions: {
+      create: vi.fn(() => ({
+        unsubscribe: vi.fn()
+      }))
+    },
+    disconnect: vi.fn()
+  }))
+}))
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -41,20 +57,17 @@ beforeEach(() => {
   global.window = window
   global.document = window.document
   global.navigator = window.navigator
+  global.Node = window.Node
+  global.Element = window.Element
+  global.HTMLElement = window.HTMLElement
+  global.CustomEvent = window.CustomEvent
+  global.KeyboardEvent = window.KeyboardEvent
+  global.Event = window.Event
   global.fetch = vi.fn()
-  global.Turbo = {
-    renderStreamMessage: vi.fn()
-  }
-  global.ActionCable = {
-    createConsumer: vi.fn(() => ({
-      subscriptions: {
-        create: vi.fn(() => ({
-          unsubscribe: vi.fn()
-        }))
-      },
-      disconnect: vi.fn()
-    }))
-  }
+  global.Turbo = Turbo
+  window.Turbo = Turbo
+  window.alert = vi.fn()
+  global.alert = window.alert
 
   Object.defineProperty(window.navigator, 'clipboard', {
     value: {

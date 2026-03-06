@@ -1,7 +1,15 @@
 require "test_helper"
 
 class PullRequestTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
   setup do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+
     @pr = PullRequest.new(
       github_id: 123,
       number: 42,
@@ -14,8 +22,21 @@ class PullRequestTest < ActiveSupport::TestCase
   end
 
   teardown do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
     ReviewTask.delete_all
-    PullRequest.delete_all
+    PullRequest.unscoped.delete_all
+  end
+
+  def attach_review_task(state: "reviewed")
+    @pr.save! unless @pr.persisted?
+    ReviewTask.create!(
+      pull_request: @pr,
+      state: state,
+      cli_client: "claude",
+      review_type: "review"
+    )
   end
 
   # Validations
@@ -81,17 +102,42 @@ class PullRequestTest < ActiveSupport::TestCase
     assert_includes duplicate.errors[:github_id], "has already been taken"
   end
 
+  test "invalid with duplicate number in same repo" do
+    @pr.save!
+    duplicate = PullRequest.new(
+      github_id: 9_999,
+      number: @pr.number,
+      title: "Duplicate Number",
+      url: "https://github.com/test/repo/pull/#{@pr.number}",
+      repo_owner: @pr.repo_owner,
+      repo_name: @pr.repo_name,
+      review_status: "pending_review"
+    )
+
+    refute duplicate.valid?
+    assert_includes duplicate.errors[:number], "has already been taken"
+  end
+
   # review_status_consistency validation
   test "review_status_consistency allows reviewed_by_me with reviewed review_task" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "reviewed")
+    @pr.review_status = "reviewed_by_me"
+
+    assert @pr.valid?
   end
 
   test "review_status_consistency allows reviewed_by_me with waiting_implementation review_task" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "waiting_implementation")
+    @pr.review_status = "reviewed_by_me"
+
+    assert @pr.valid?
   end
 
   test "review_status_consistency allows reviewed_by_me with done review_task" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "done")
+    @pr.review_status = "reviewed_by_me"
+
+    assert @pr.valid?
   end
 
   test "review_status_consistency rejects reviewed_by_me without review_task" do
@@ -100,20 +146,32 @@ class PullRequestTest < ActiveSupport::TestCase
     assert_includes @pr.errors[:review_status], "cannot be 'reviewed_by_me' without a review task"
   end
 
-  test "review_status_consistency rejects reviewed_by_me with pending_review review_task" do
-    skip "Foreign key constraint issue in test environment"
+  test "review_status_consistency allows reviewed_by_me with pending_review review_task" do
+    attach_review_task(state: "pending_review")
+    @pr.review_status = "reviewed_by_me"
+
+    assert @pr.valid?
   end
 
-  test "review_status_consistency rejects reviewed_by_me with in_review review_task" do
-    skip "Foreign key constraint issue in test environment"
+  test "review_status_consistency allows reviewed_by_me with in_review review_task" do
+    attach_review_task(state: "in_review")
+    @pr.review_status = "reviewed_by_me"
+
+    assert @pr.valid?
   end
 
-  test "review_status_consistency rejects reviewed_by_me with failed_review review_task" do
-    skip "Foreign key constraint issue in test environment"
+  test "review_status_consistency allows reviewed_by_me with failed_review review_task" do
+    attach_review_task(state: "failed_review")
+    @pr.review_status = "reviewed_by_me"
+
+    assert @pr.valid?
   end
 
   test "review_status_consistency allows in_review with in_review review_task" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "in_review")
+    @pr.review_status = "in_review"
+
+    assert @pr.valid?
   end
 
   test "review_status_consistency rejects in_review without review_task" do
@@ -122,16 +180,25 @@ class PullRequestTest < ActiveSupport::TestCase
     assert_includes @pr.errors[:review_status], "cannot be 'in_review' without a review task"
   end
 
-  test "review_status_consistency rejects in_review with pending_review review_task" do
-    skip "Foreign key constraint issue in test environment"
+  test "review_status_consistency allows in_review with pending_review review_task" do
+    attach_review_task(state: "pending_review")
+    @pr.review_status = "in_review"
+
+    assert @pr.valid?
   end
 
-  test "review_status_consistency rejects in_review with reviewed review_task" do
-    skip "Foreign key constraint issue in test environment"
+  test "review_status_consistency allows in_review with reviewed review_task" do
+    attach_review_task(state: "reviewed")
+    @pr.review_status = "in_review"
+
+    assert @pr.valid?
   end
 
   test "review_status_consistency allows review_failed with failed_review review_task" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "failed_review")
+    @pr.review_status = "review_failed"
+
+    assert @pr.valid?
   end
 
   test "review_status_consistency rejects review_failed without review_task" do
@@ -140,8 +207,11 @@ class PullRequestTest < ActiveSupport::TestCase
     assert_includes @pr.errors[:review_status], "cannot be 'review_failed' without a review task"
   end
 
-  test "review_status_consistency rejects review_failed with in_review review_task" do
-    skip "Foreign key constraint issue in test environment"
+  test "review_status_consistency allows review_failed with in_review review_task" do
+    attach_review_task(state: "in_review")
+    @pr.review_status = "review_failed"
+
+    assert @pr.valid?
   end
 
   test "review_status_consistency rejects waiting_implementation without review_task" do
@@ -203,7 +273,18 @@ class PullRequestTest < ActiveSupport::TestCase
   end
 
   test "pending_review scope includes only pending_review PRs" do
-    skip "Foreign key constraint issue in test environment"
+    @pr.save!
+    in_review = PullRequest.create!(
+      github_id: 456,
+      number: 43,
+      title: "In Review PR",
+      url: "https://github.com/test/repo/pull/43",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "reviewed_by_others"
+    )
+
+    assert_equal [ @pr ], PullRequest.pending_review.to_a
   end
 
   test "in_review scope includes only in_review PRs" do
@@ -278,7 +359,21 @@ class PullRequestTest < ActiveSupport::TestCase
   end
 
   test "review_failed scope includes only review_failed PRs" do
-    skip "Foreign key constraint issue in test environment"
+    @pr.save!
+    attach_review_task(state: "failed_review")
+    @pr.update!(review_status: "review_failed")
+
+    PullRequest.create!(
+      github_id: 456,
+      number: 43,
+      title: "Pending PR",
+      url: "https://github.com/test/repo/pull/43",
+      repo_owner: "test",
+      repo_name: "repo",
+      review_status: "pending_review"
+    )
+
+    assert_equal [ @pr ], PullRequest.review_failed.to_a
   end
 
   # Methods
@@ -415,7 +510,14 @@ class PullRequestTest < ActiveSupport::TestCase
   end
 
   test "fix_orphaned_review_states ignores PRs with valid review_task" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "reviewed")
+    @pr.update!(review_status: "reviewed_by_me")
+
+    count = PullRequest.fix_orphaned_review_states
+    @pr.reload
+
+    assert_equal 0, count
+    assert_equal "reviewed_by_me", @pr.review_status
   end
 
   test "fix_orphaned_review_states ignores pending_review PRs" do
@@ -429,35 +531,78 @@ class PullRequestTest < ActiveSupport::TestCase
   end
 
   test "fix_state_mismatches fixes PR in_review with pending_review task" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "pending_review")
+    @pr.update!(review_status: "in_review")
+
+    count = PullRequest.fix_state_mismatches
+    @pr.reload
+
+    assert_equal 1, count
+    assert_equal "pending_review", @pr.review_status
   end
 
   test "fix_state_mismatches fixes PR in_review with reviewed task" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "reviewed")
+    @pr.update!(review_status: "in_review")
+
+    count = PullRequest.fix_state_mismatches
+    @pr.reload
+
+    assert_equal 1, count
+    assert_equal "reviewed_by_me", @pr.review_status
   end
 
   test "fix_state_mismatches fixes PR reviewed_by_me with in_review task" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "in_review")
+    @pr.update!(review_status: "reviewed_by_me")
+
+    count = PullRequest.fix_state_mismatches
+    @pr.reload
+
+    assert_equal 1, count
+    assert_equal "in_review", @pr.review_status
   end
 
   test "fix_state_mismatches fixes PR reviewed_by_me with pending_review task" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "pending_review")
+    @pr.update!(review_status: "reviewed_by_me")
+
+    count = PullRequest.fix_state_mismatches
+    @pr.reload
+
+    assert_equal 1, count
+    assert_equal "pending_review", @pr.review_status
   end
 
   test "fix_state_mismatches ignores matching states" do
-    skip "Foreign key constraint issue in test environment"
+    attach_review_task(state: "in_review")
+    @pr.update!(review_status: "in_review")
+
+    count = PullRequest.fix_state_mismatches
+    @pr.reload
+
+    assert_equal 0, count
+    assert_equal "in_review", @pr.review_status
   end
 
   # Callbacks
   test "after_commit invalidates header cache on create" do
-    skip "HeaderPresenter.stub not available in minitest without additional gems"
+    HeaderPresenter.expects(:invalidate_cache).with("test/repo").at_least_once
+
+    @pr.save!
   end
 
   test "after_commit invalidates header cache on update" do
-    skip "HeaderPresenter.stub not available in minitest without additional gems"
+    @pr.save!
+
+    HeaderPresenter.expects(:invalidate_cache).with("test/repo").at_least_once
+    @pr.update!(title: "Updated title")
   end
 
   test "after_commit invalidates header cache on destroy" do
-    skip "HeaderPresenter.stub not available in minitest without additional gems"
+    @pr.save!
+
+    HeaderPresenter.expects(:invalidate_cache).with("test/repo").at_least_once
+    @pr.destroy!
   end
 end

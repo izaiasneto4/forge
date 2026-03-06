@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Application } from '@hotwired/stimulus'
+import { renderStreamMessage } from '@hotwired/turbo'
 import ReviewModalController from '../../../app/javascript/controllers/review_modal_controller.js'
+
+const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 describe('ReviewModalController', () => {
   let application
@@ -125,12 +128,26 @@ describe('ReviewModalController', () => {
       text: () => Promise.resolve('Error: test error')
     })
 
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    controller.submit({ preventDefault: vi.fn() })
+    await flushAsync()
 
-    await controller.submit({ preventDefault: vi.fn() })
+    expect(global.alert).toHaveBeenCalled()
+  })
 
-    expect(alertSpy).toHaveBeenCalled()
-    alertSpy.mockRestore()
+  it('renders turbo stream response on successful submit', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve('<turbo-stream>test</turbo-stream>')
+    })
+
+    controller.prIdTarget.value = '123'
+    controller.cliClientTarget.value = 'claude'
+    controller.reviewTypeTarget.value = 'full'
+
+    controller.submit({ preventDefault: vi.fn() })
+    await flushAsync()
+
+    expect(renderStreamMessage).toHaveBeenCalledWith('<turbo-stream>test</turbo-stream>')
   })
 
   it('cleans up on disconnect', () => {

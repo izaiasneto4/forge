@@ -13,11 +13,31 @@ class PathValidatorEdgeCaseTest < ActiveSupport::TestCase
   end
 
   test "validate returns nil when allowed_base realpath fails due to permissions" do
-    skip "Skipping permission test - requires elevated permissions"
+    Dir.mktmpdir do |base|
+      path = File.join(base, "existing")
+      Dir.mkdir(path)
+      validator = PathValidator.new
+
+      validator.stubs(:within_allowed_base?).raises(Errno::EACCES)
+
+      result = validator.validate(path, allowed_base: File.join(base, "restricted"))
+      assert_nil result, "Should return nil when allowed_base realpath raises EACCES"
+    end
   end
 
   test "validate returns nil when path is a symlink pointing to inaccessible location" do
-    skip "Skipping permission test - requires elevated permissions"
+    Dir.mktmpdir do |base|
+      target = File.join(base, "target")
+      link = File.join(base, "link")
+      Dir.mkdir(target)
+      File.symlink(target, link)
+
+      validator = PathValidator.new
+      validator.stubs(:resolve_path).raises(Errno::EACCES)
+
+      result = validator.validate(link)
+      assert_nil result, "Should return nil when symlink resolution raises EACCES"
+    end
   end
 
   test "validate handles circular symlinks gracefully" do
@@ -82,5 +102,12 @@ class PathValidatorEdgeCaseTest < ActiveSupport::TestCase
         assert_not_nil result, "Should handle './.' path"
       end
     end
+  end
+
+  test "validate_new_path returns nil when existing ancestor lookup hits symlink loop" do
+    validator = PathValidator.new
+    validator.stubs(:find_existing_ancestor).raises(Errno::ELOOP)
+
+    assert_nil validator.validate_new_path("/tmp/example/file")
   end
 end

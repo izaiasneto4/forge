@@ -1,8 +1,41 @@
 require "test_helper"
 
 class FolderPickerServiceTest < ActiveSupport::TestCase
-  test "call returns nil on non-macOS platforms" do
-    skip("Requires macOS integration test") unless RUBY_PLATFORM =~ /darwin/
+  test "call returns nil when osascript fails" do
+    Open3.expects(:capture3).with("osascript", "-e", includes("choose folder"))
+      .returns(["", "failed", stub(success?: false)])
+
+    assert_nil FolderPickerService.call
+  end
+
+  test "call returns stripped path when chooser succeeds with existing directory" do
+    Dir.mktmpdir do |dir|
+      Open3.expects(:capture3).with("osascript", "-e", includes("choose folder"))
+        .returns(["#{dir}/\n", "", stub(success?: true)])
+
+      assert_equal dir, FolderPickerService.call
+    end
+  end
+
+  test "call returns nil when chooser succeeds with blank result" do
+    Open3.expects(:capture3).with("osascript", "-e", includes("choose folder"))
+      .returns([" \n", "", stub(success?: true)])
+
+    assert_nil FolderPickerService.call
+  end
+
+  test "call returns nil when chooser succeeds with non-existent directory" do
+    Open3.expects(:capture3).with("osascript", "-e", includes("choose folder"))
+      .returns(["/tmp/does-not-exist/\n", "", stub(success?: true)])
+
+    assert_nil FolderPickerService.call
+  end
+
+  test "call returns nil when osascript raises" do
+    Open3.expects(:capture3).raises(StandardError, "boom")
+    Rails.logger.expects(:error).with("FolderPickerService: boom")
+
+    assert_nil FolderPickerService.call
   end
 
   test "service class responds to call" do

@@ -51,6 +51,10 @@ class GithubReviewSubmitterTest < ActiveSupport::TestCase
     @review_task&.destroy
   end
 
+  def status(success)
+    stub(success?: success)
+  end
+
   # validate_event! tests
   test "validate_event! accepts APPROVE" do
     assert_nothing_raised do
@@ -352,88 +356,172 @@ class GithubReviewSubmitterTest < ActiveSupport::TestCase
     @submitter.submit_review(event: "APPROVE", comments: @review_task.review_comments.none)
   end
 
-  # Tests requiring Open3 stub - skipped
   test "submit_review with pending comments" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.expects(:run_gh_api).with do |http_method, path, payload|
+      assert_equal "POST", http_method
+      assert_equal "/repos/test/repo/pulls/42/reviews", path
+      assert_equal "REQUEST_CHANGES", payload[:event]
+      assert_equal 3, payload[:comments].length
+      assert_includes payload[:body], "Found **3** issues"
+      true
+    end.returns({})
+
+    @submitter.submit_review
   end
 
   test "submit_review with custom event" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.expects(:run_gh_api).with do |_http_method, _path, payload|
+      assert_equal "APPROVE", payload[:event]
+      true
+    end.returns({})
+
+    @submitter.submit_review(event: "APPROVE")
   end
 
   test "submit_review with custom summary" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.expects(:run_gh_api).with do |_http_method, _path, payload|
+      assert_equal "Custom summary", payload[:body]
+      true
+    end.returns({})
+
+    @submitter.submit_review(summary: "Custom summary")
   end
 
   test "submit_review with empty comments" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.expects(:run_gh_api).with do |_http_method, _path, payload|
+      assert_equal "COMMENT", payload[:event]
+      assert_equal "Review completed with no actionable comments.", payload[:body]
+      assert_not payload.key?(:comments)
+      true
+    end.returns({})
+
+    @submitter.submit_review(comments: [])
   end
 
   test "submit_review with specific comments" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.expects(:run_gh_api).with do |_http_method, _path, payload|
+      assert_equal "COMMENT", payload[:event]
+      assert_equal 1, payload[:comments].length
+      assert_equal "app/controllers/users_controller.rb", payload[:comments][0][:path]
+      true
+    end.returns({})
+
+    @submitter.submit_review(comments: [ @comment2 ])
   end
 
   test "parse_api_error returns RateLimitError for rate limit errors" do
-    skip "Open3.stub not available in minitest without additional gems"
+    error = @submitter.send(:parse_api_error, "API rate limit exceeded; resets at 2024-01-01T12:00:00")
+    assert_instance_of GithubReviewSubmitter::RateLimitError, error
+    assert_equal Time.parse("2024-01-01T12:00:00"), error.reset_at
   end
 
   test "parse_api_error returns AuthenticationError for 401 errors" do
-    skip "Open3.stub not available in minitest without additional gems"
+    error = @submitter.send(:parse_api_error, "HTTP 401 Unauthorized")
+    assert_instance_of GithubReviewSubmitter::AuthenticationError, error
   end
 
   test "parse_api_error returns AuthenticationError for bad credentials" do
-    skip "Open3.stub not available in minitest without additional gems"
+    error = @submitter.send(:parse_api_error, "Bad credentials")
+    assert_instance_of GithubReviewSubmitter::AuthenticationError, error
   end
 
   test "parse_api_error returns NotFoundError for 404 errors" do
-    skip "Open3.stub not available in minitest without additional gems"
+    error = @submitter.send(:parse_api_error, "HTTP 404 Not Found")
+    assert_instance_of GithubReviewSubmitter::NotFoundError, error
   end
 
   test "parse_api_error returns StaleDiffError for position errors" do
-    skip "Open3.stub not available in minitest without additional gems"
+    stdout = {
+      message: "position is invalid",
+      errors: [
+        { field: "app/models/user.rb", message: "position invalid" }
+      ]
+    }.to_json
+
+    error = @submitter.send(:parse_api_error, "Validation failed", stdout)
+    assert_instance_of GithubReviewSubmitter::StaleDiffError, error
+    assert_includes error.message, "app/models/user.rb"
   end
 
   test "parse_api_error returns StaleDiffError for diff errors" do
-    skip "Open3.stub not available in minitest without additional gems"
+    error = @submitter.send(:parse_api_error, "diff hunk is outdated")
+    assert_instance_of GithubReviewSubmitter::StaleDiffError, error
   end
 
   test "parse_api_error returns SubmissionBlockedError for 403 errors" do
-    skip "Open3.stub not available in minitest without additional gems"
+    error = @submitter.send(:parse_api_error, "HTTP 403 Forbidden")
+    assert_instance_of GithubReviewSubmitter::SubmissionBlockedError, error
   end
 
   test "parse_api_error returns SubmissionBlockedError for protected branch" do
-    skip "Open3.stub not available in minitest without additional gems"
+    error = @submitter.send(:parse_api_error, "Review blocked by protected branch policy")
+    assert_instance_of GithubReviewSubmitter::SubmissionBlockedError, error
   end
 
   test "parse_api_error returns generic Error for unknown errors" do
-    skip "Open3.stub not available in minitest without additional gems"
+    error = @submitter.send(:parse_api_error, "  weird   failure   happened ")
+    assert_instance_of GithubReviewSubmitter::Error, error
+    assert_equal "GitHub API error: weird failure happened", error.message
   end
 
   test "run_gh_api handles non-JSON responses" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.expects(:run_gh_command_with_stdin).returns(["not json", "", status(true)])
+
+    error = assert_raises(GithubReviewSubmitter::Error) do
+      @submitter.send(:run_gh_api, "POST", "/test", { body: "hi" })
+    end
+
+    assert_includes error.message, "Failed to parse GitHub API response"
   end
 
   test "run_gh_api returns empty hash for empty response" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.expects(:run_gh_command_with_stdin).returns(["  \n", "", status(true)])
+
+    assert_equal({}, @submitter.send(:run_gh_api, "POST", "/test", { body: "hi" }))
   end
 
   test "run_gh_api parses JSON response" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.expects(:run_gh_command_with_stdin).returns([{ ok: true }.to_json, "", status(true)])
+
+    assert_equal({ "ok" => true }, @submitter.send(:run_gh_api, "POST", "/test", { body: "hi" }))
   end
 
   test "submit_single_comment submits single comment" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.stubs(:fetch_latest_commit_sha).returns("abc123")
+    @submitter.expects(:run_gh_api).with(
+      "POST",
+      "/repos/test/repo/pulls/42/comments",
+      has_entries(path: "app/models/user.rb", commit_id: "abc123", line: 10, side: "RIGHT")
+    ).returns({})
+
+    @submitter.submit_single_comment(@comment1)
   end
 
   test "submit_general_comment submits general comment" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.expects(:run_gh_api).with(
+      "POST",
+      "/repos/test/repo/issues/42/comments",
+      { body: "General note" }
+    ).returns({})
+
+    @submitter.submit_general_comment("General note")
   end
 
   test "build_single_comment_payload includes commit_id" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.stubs(:fetch_latest_commit_sha).returns("abc123")
+
+    payload = @submitter.send(:build_single_comment_payload, @comment1)
+
+    assert_equal "abc123", payload[:commit_id]
+    assert_equal "app/models/user.rb", payload[:path]
   end
 
   test "build_single_comment_payload includes line and side for comments with line_number" do
-    skip "Open3.stub not available in minitest without additional gems"
+    @submitter.stubs(:fetch_latest_commit_sha).returns("abc123")
+
+    payload = @submitter.send(:build_single_comment_payload, @comment1)
+
+    assert_equal 10, payload[:line]
+    assert_equal "RIGHT", payload[:side]
   end
 end

@@ -8,6 +8,10 @@ describe('SyncController', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve('')
+    })
     application = Application.start()
     application.register('sync', SyncController)
     document.body.innerHTML = `
@@ -113,6 +117,26 @@ describe('SyncController', () => {
 
     expect(controller.syncingValue).toBe(true)
     expect(controller.modalTarget.classList.contains('hidden')).toBe(false)
+  })
+
+  it('manual sync resets UI after request completes', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve('<turbo-stream>ok</turbo-stream>')
+    })
+
+    const event = { preventDefault: vi.fn() }
+
+    await controller.sync(event)
+
+    expect(event.preventDefault).toHaveBeenCalled()
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/pull_requests/sync',
+      expect.objectContaining({ method: 'POST' })
+    )
+    expect(controller.syncingValue).toBe(false)
+    expect(controller.modalTarget.classList.contains('hidden')).toBe(true)
+    expect(controller.buttonTextTarget.textContent).toBe('Sync')
   })
 
   it('does not sync when already syncing', () => {

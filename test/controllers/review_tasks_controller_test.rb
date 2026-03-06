@@ -1,7 +1,21 @@
 require "test_helper"
 
 class ReviewTasksControllerTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
+
+  self.use_transactional_tests = false
+
   setup do
+    clear_enqueued_jobs
+    clear_performed_jobs
+    ActiveJob::Base.queue_adapter = :test
+    Rails.cache.clear
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+
     @pr = PullRequest.create!(
       github_id: 123,
       number: 1,
@@ -15,6 +29,17 @@ class ReviewTasksControllerTest < ActionDispatch::IntegrationTest
       pull_request: @pr,
       state: "pending_review"
     )
+  end
+
+  teardown do
+    clear_enqueued_jobs
+    clear_performed_jobs
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+    Rails.cache.clear
   end
 
   test "index returns success" do
@@ -67,7 +92,8 @@ class ReviewTasksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "show with Turbo Stream format" do
-    skip "No show.turbo_stream.erb view exists yet"
+    get review_task_path(@review_task), as: :turbo_stream
+    assert_response :not_acceptable
   end
 
   test "create with default cli_client and review_type" do

@@ -30,8 +30,6 @@ describe('FlashController', () => {
   })
 
   it('auto-dismisses flash message', () => {
-    controller.connect()
-
     vi.advanceTimersByTime(2000)
 
     expect(controller.element.classList.contains('opacity-0')).toBe(true)
@@ -60,8 +58,6 @@ describe('FlashController', () => {
     const element = document.querySelector('[data-controller="flash"]')
     const customController = application.getControllerForElementAndIdentifier(element, 'flash')
 
-    customController.connect()
-
     vi.advanceTimersByTime(2000)
 
     expect(element.classList.contains('opacity-0')).toBe(false)
@@ -76,8 +72,6 @@ describe('FlashController', () => {
     const element = document.querySelector('[data-controller="flash"]')
     const customController = application.getControllerForElementAndIdentifier(element, 'flash')
 
-    customController.connect()
-
     vi.advanceTimersByTime(3000)
     expect(element.classList.contains('opacity-0')).toBe(false)
 
@@ -86,8 +80,6 @@ describe('FlashController', () => {
   })
 
   it('clears timeout on disconnect', () => {
-    controller.connect()
-
     controller.disconnect()
 
     vi.advanceTimersByTime(5000)

@@ -118,4 +118,65 @@ class PathValidatorTest < ActiveSupport::TestCase
       assert_nil result
     end
   end
+
+  test "validate_new_path returns nil for nil input" do
+    assert_nil PathValidator.validate_new_path(nil)
+  end
+
+  test "validate_new_path returns nil for path traversal input" do
+    assert_nil PathValidator.validate_new_path("../tmp/file")
+  end
+
+  test "validate_new_path returns nil when no existing ancestor exists below root" do
+    validator = PathValidator.new
+    pathname = Pathname.new("/definitely/missing/path/file.txt")
+
+    validator.stubs(:find_existing_ancestor).returns(nil)
+
+    assert_nil validator.validate_new_path(pathname.to_s)
+  end
+
+  test "validate_new_path returns clean path when ancestor exists" do
+    Dir.mktmpdir do |base|
+      Dir.mkdir(File.join(base, "nested"))
+      path = File.join(base, "nested", "child", "file.txt")
+
+      result = PathValidator.validate_new_path(path)
+
+      assert_equal Pathname.new(path).cleanpath.to_s, result
+    end
+  end
+
+  test "validate_new_path returns nil when path is outside allowed_base" do
+    Dir.mktmpdir do |base|
+      Dir.mktmpdir do |outside|
+        path = File.join(outside, "child", "file.txt")
+
+        result = PathValidator.validate_new_path(path, allowed_base: base)
+
+        assert_nil result
+      end
+    end
+  end
+
+  test "validate_new_path returns clean path when path is within allowed_base" do
+    Dir.mktmpdir do |base|
+      target = File.join(base, "subdir", "file.txt")
+
+      result = PathValidator.validate_new_path(target, allowed_base: base)
+
+      assert_equal Pathname.new(target).cleanpath.to_s, result
+    end
+  end
+
+  test "validate_new_path returns nil when allowed_base realpath raises" do
+    Dir.mktmpdir do |base|
+      path = File.join(base, "child", "file.txt")
+      validator = PathValidator.new
+
+      Pathname.any_instance.stubs(:realpath).raises(Errno::EACCES)
+
+      assert_nil validator.validate_new_path(path, allowed_base: base)
+    end
+  end
 end

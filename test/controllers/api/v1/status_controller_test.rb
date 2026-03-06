@@ -1,6 +1,16 @@
 require "test_helper"
 
 class Api::V1::StatusControllerTest < ActionDispatch::IntegrationTest
+  self.use_transactional_tests = false
+
+  setup do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+  end
+
   test "returns status payload" do
     Setting.stubs(:current_repo).returns(nil)
     Setting.stubs(:last_synced_at).returns(nil)

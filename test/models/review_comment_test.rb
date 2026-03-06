@@ -29,12 +29,6 @@ class ReviewCommentTest < ActiveSupport::TestCase
     )
   end
 
-  teardown do
-    ReviewComment.delete_all
-    ReviewTask.delete_all
-    PullRequest.delete_all
-  end
-
   # Validations
   test "valid with all required fields" do
     assert @comment.valid?

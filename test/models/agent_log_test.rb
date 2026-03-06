@@ -1,7 +1,15 @@
 require "test_helper"
 
 class AgentLogTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
   setup do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+
     @pr = PullRequest.create!(
       github_id: 123,
       number: 42,
@@ -27,9 +35,11 @@ class AgentLogTest < ActiveSupport::TestCase
   end
 
   teardown do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
-    PullRequest.delete_all
+    PullRequest.unscoped.delete_all
   end
 
   # Validations
@@ -80,15 +90,34 @@ class AgentLogTest < ActiveSupport::TestCase
 
   # Callbacks
   test "after_create_commit broadcasts to ActionCable" do
-    skip "ActionCable.server.stub not available in minitest without additional gems"
+    @log.save!
+    ActionCable.server.expects(:broadcast)
+
+    @log.send(:broadcast_to_review_task)
   end
 
   test "after_create_commit includes all expected payload fields" do
-    skip "ActionCable.server.stub not available in minitest without additional gems"
+    @log.save!
+    ActionCable.server.expects(:broadcast).with(
+      "review_task_#{@task.id}_logs",
+      has_entries(
+        id: @log.id,
+        log_type: "output",
+        message: "Test log message"
+      )
+    )
+
+    @log.send(:broadcast_to_review_task)
   end
 
   test "after_create_commit uses iso8601 for created_at" do
-    skip "ActionCable.server.stub not available in minitest without additional gems"
+    @log.save!
+    ActionCable.server.expects(:broadcast).with do |_channel, payload|
+      assert_equal @log.created_at.iso8601, payload[:created_at]
+      true
+    end
+
+    @log.send(:broadcast_to_review_task)
   end
 
   # Constants

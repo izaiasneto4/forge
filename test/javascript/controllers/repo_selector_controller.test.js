@@ -83,6 +83,7 @@ describe('RepoSelectorController', () => {
     global.fetch = vi.fn().mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve({
         ok: true,
+        headers: { get: () => 'text/vnd.turbo-stream.html' },
         text: () => Promise.resolve('')
       }), 100))
     )
@@ -98,6 +99,7 @@ describe('RepoSelectorController', () => {
   it('hides loading state after selection', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
+      headers: { get: () => 'text/vnd.turbo-stream.html' },
       text: () => Promise.resolve('')
     })
 

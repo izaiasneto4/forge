@@ -1,8 +1,13 @@
 require "test_helper"
 
 class SettingsControllerTest < ActionDispatch::IntegrationTest
+  self.use_transactional_tests = false
+
   setup do
-    # Reset settings before each test by deleting all Setting records
+    Setting.delete_all
+  end
+
+  teardown do
     Setting.delete_all
   end
 
@@ -67,14 +72,12 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "pick_folder exists and returns JSON" do
-    skip("Requires GUI interaction - test manually on macOS")
+    FolderPickerService.expects(:call).returns("/tmp")
 
-    # Just test that the endpoint exists and returns JSON structure
-    # We can't easily mock FolderPickerService in minitest without additional gems
     post pick_folder_settings_path, as: :json
     assert_response :success
     json_response = JSON.parse(response.body)
-    assert json_response.key?("path")
+    assert_equal "/tmp", json_response["path"]
   end
 
   test "pick_folder uses FolderPickerService" do

@@ -1,7 +1,14 @@
 require "test_helper"
 
 class RepositoriesControllerTest < ActionDispatch::IntegrationTest
+  self.use_transactional_tests = false
+
   setup do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
     Setting.delete_all
     @repo_path = Dir.mktmpdir
     system("git", "-C", @repo_path, "init", out: File::NULL, err: File::NULL, exception: true)
@@ -10,6 +17,12 @@ class RepositoriesControllerTest < ActionDispatch::IntegrationTest
   end
 
   teardown do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+    Setting.delete_all
     FileUtils.rm_rf(@repo_path) if Dir.exist?(@repo_path)
   end
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Application } from '@hotwired/stimulus'
 import CommentChecklistController from '../../../app/javascript/controllers/comment_checklist_controller.js'
 
@@ -43,6 +43,7 @@ describe('CommentChecklistController', () => {
 
   it('toggles checkbox', async () => {
     const checkbox = controller.checkboxTargets[0]
+    checkbox.checked = true
     const event = { currentTarget: checkbox, preventDefault: vi.fn() }
 
     await controller.toggle(event)
@@ -181,7 +182,7 @@ describe('CommentChecklistController', () => {
     controller.deselectAll = vi.fn()
     controller.keydown(event)
 
-    expect(event.preventDefault).toHaveBeenCalled()
+    expect(controller.deselectAll).toHaveBeenCalledWith(event)
   })
 
   it('prepares form submission', () => {

@@ -40,6 +40,7 @@ describe('BulkActionsController', () => {
   })
 
   it('toggles all checkboxes', () => {
+    controller.selectAllTarget.checked = true
     const event = { target: controller.selectAllTarget }
 
     controller.toggleAll(event)
@@ -50,6 +51,7 @@ describe('BulkActionsController', () => {
 
   it('deselects all when all are selected', () => {
     controller.checkboxTargets.forEach(cb => cb.checked = true)
+    controller.selectAllTarget.checked = false
     const event = { target: controller.selectAllTarget }
 
     controller.toggleAll(event)
@@ -163,6 +165,7 @@ describe('BulkActionsController', () => {
 
   it('updates UI when selected value changes', () => {
     controller.selectedValue = ['1', '2']
+    controller.selectedValueChanged()
 
     expect(controller.toolbarTarget.classList.contains('hidden')).toBe(false)
     expect(controller.countTarget.textContent).toBe('2')

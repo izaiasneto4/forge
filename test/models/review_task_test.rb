@@ -2,6 +2,12 @@ require "test_helper"
 
 class ReviewTaskTest < ActiveSupport::TestCase
   setup do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+
     @pr = PullRequest.create!(
       github_id: 123,
       number: 42,
@@ -25,7 +31,7 @@ class ReviewTaskTest < ActiveSupport::TestCase
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
-    PullRequest.delete_all
+    PullRequest.unscoped.delete_all
   end
 
   # Validations
@@ -447,32 +453,52 @@ class ReviewTaskTest < ActiveSupport::TestCase
 
   # Review output
   test "parsed_review_items returns empty array when review_output is nil" do
-    skip "ReviewOutputParser.stub not available in minitest without additional gems"
+    assert_equal [], @task.parsed_review_items
   end
 
   test "parsed_review_items returns empty array when review_output is blank" do
-    skip "ReviewOutputParser.stub not available in minitest without additional gems"
+    @task.review_output = "   "
+    assert_equal [], @task.parsed_review_items
   end
 
   test "parsed_review_items delegates to ReviewOutputParser" do
-    skip "ReviewOutputParser.stub not available in minitest without additional gems"
+    @task.review_output = "parsed output"
+    ReviewOutputParser.expects(:parse).with("parsed output").returns([ { "body" => "item" } ])
+
+    assert_equal [ { "body" => "item" } ], @task.parsed_review_items
   end
 
   # Logs
   test "add_log creates agent_log with message" do
-    skip "Foreign key constraint issue in test environment"
+    @task.save!
+
+    assert_difference "AgentLog.count", 1 do
+      @task.add_log("hello")
+    end
+
+    assert_equal "hello", @task.agent_logs.last.message
   end
 
   test "add_log uses default log_type" do
-    skip "Foreign key constraint issue in test environment"
+    @task.save!
+    @task.add_log("hello")
+
+    assert_equal "output", @task.agent_logs.last.log_type
   end
 
   test "add_log uses custom log_type" do
-    skip "Foreign key constraint issue in test environment"
+    @task.save!
+    @task.add_log("oops", log_type: "error")
+
+    assert_equal "error", @task.agent_logs.last.log_type
   end
 
   test "add_log ignores blank messages" do
-    skip "Foreign key constraint issue in test environment"
+    @task.save!
+
+    assert_no_difference "AgentLog.count" do
+      @task.add_log("   ")
+    end
   end
 
   test "clear_logs! destroys all agent_logs" do
@@ -519,11 +545,39 @@ class ReviewTaskTest < ActiveSupport::TestCase
   end
 
   test "archive_current_review! creates ReviewIteration when output exists" do
-    skip "Foreign key constraint issue in test environment"
+    @task.update!(
+      state: "reviewed",
+      review_output: "review output",
+      started_at: 10.minutes.ago,
+      completed_at: 5.minutes.ago,
+      ai_model: "claude-3"
+    )
+
+    assert_difference "ReviewIteration.count", 1 do
+      @task.archive_current_review!
+    end
+
+    iteration = @task.review_iterations.last
+    assert_equal 1, iteration.iteration_number
+    assert_equal "review output", iteration.review_output
+    assert_equal "reviewed", iteration.from_state
+    assert_equal "archived", iteration.to_state
+    assert_equal "claude-3", iteration.ai_model
   end
 
   test "archive_current_review! creates ReviewIteration when comments exist" do
-    skip "Foreign key constraint issue in test environment"
+    @task.save!
+    ReviewComment.create!(
+      review_task: @task,
+      file_path: "app/models/user.rb",
+      body: "Fix this",
+      severity: "major",
+      status: "pending"
+    )
+
+    assert_difference "ReviewIteration.count", 1 do
+      @task.archive_current_review!
+    end
   end
 
   test "archive_current_review! does not create iteration without output or comments" do
@@ -535,7 +589,21 @@ class ReviewTaskTest < ActiveSupport::TestCase
   end
 
   test "reset_for_new_review! clears comments and logs" do
-    skip "Foreign key constraint issue in test environment"
+    @task.save!
+    ReviewComment.create!(
+      review_task: @task,
+      file_path: "app/models/user.rb",
+      body: "Fix this",
+      severity: "major",
+      status: "pending"
+    )
+    @task.add_log("log 1")
+
+    @task.reset_for_new_review!
+    @task.reload
+
+    assert_equal 0, @task.review_comments.count
+    assert_equal 0, @task.agent_logs.count
   end
 
   test "reset_for_new_review! clears review fields" do
@@ -563,7 +631,34 @@ class ReviewTaskTest < ActiveSupport::TestCase
   end
 
   test "move_backward! archives and resets then changes state" do
-    skip "Foreign key constraint issue in test environment"
+    @task.update!(
+      state: "reviewed",
+      review_output: "review output",
+      ai_model: "claude-3",
+      started_at: 10.minutes.ago,
+      completed_at: 5.minutes.ago,
+      retry_count: 2,
+      retry_history: '[{"attempt":1}]'
+    )
+    ReviewComment.create!(
+      review_task: @task,
+      file_path: "app/models/user.rb",
+      body: "Fix this",
+      severity: "major",
+      status: "pending"
+    )
+    @task.add_log("log 1")
+
+    result = @task.move_backward!("pending_review")
+    @task.reload
+
+    assert result
+    assert_equal "pending_review", @task.state
+    assert_nil @task.review_output
+    assert_nil @task.ai_model
+    assert_equal 0, @task.review_comments.count
+    assert_equal 0, @task.agent_logs.count
+    assert_equal 1, @task.review_iterations.count
   end
 
   test "move_backward! returns false when not backward movement" do
@@ -575,7 +670,15 @@ class ReviewTaskTest < ActiveSupport::TestCase
   end
 
   test "move_backward! runs in transaction" do
-    skip "ReviewIteration.stub not available in minitest without additional gems"
+    @task.update!(state: "reviewed", review_output: "review output")
+    @task.expects(:reset_for_new_review!).raises(StandardError, "boom")
+
+    assert_raises(StandardError) do
+      @task.move_backward!("pending_review")
+    end
+
+    assert_equal 0, @task.review_iterations.count
+    assert_equal "reviewed", @task.reload.state
   end
 
   # History helpers
@@ -811,12 +914,24 @@ class ReviewTaskTest < ActiveSupport::TestCase
     assert_equal "pending_review", @pr.review_status
   end
 
-  test "after_commit broadcasts state change" do
-    skip "Turbo::StreamsChannel.stub not available in minitest without additional gems"
+  test "broadcast_state_change sends turbo stream update" do
+    ApplicationController.expects(:render).returns("<turbo-stream></turbo-stream>")
+    Turbo::StreamsChannel.expects(:broadcast_stream_to).with(
+      "review_tasks_board",
+      has_key(:content)
+    )
+
+    @task.send(:broadcast_state_change)
   end
 
-  test "after_commit does not broadcast when state unchanged" do
-    skip "Turbo::StreamsChannel.stub not available in minitest without additional gems"
+  test "broadcast_state_change swallows broadcast errors" do
+    ApplicationController.expects(:render).returns("<turbo-stream></turbo-stream>")
+    Turbo::StreamsChannel.expects(:broadcast_stream_to).raises(StandardError, "boom")
+    Rails.logger.expects(:error).at_least_once
+
+    assert_nothing_raised do
+      @task.send(:broadcast_state_change)
+    end
   end
 
   # Queue functionality

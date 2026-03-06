@@ -58,7 +58,7 @@ describe('EventSelectorController', () => {
   })
 
   it('selects event', () => {
-    const item = controller.element.querySelector('[data-action*="select"]:first-child')
+    const item = controller.element.querySelectorAll("[data-action='click->event-selector#select']")[0]
     const event = { preventDefault: vi.fn(), currentTarget: item }
 
     controller.select(event)
@@ -70,7 +70,7 @@ describe('EventSelectorController', () => {
   })
 
   it('updates active state on selection', () => {
-    const items = controller.element.querySelectorAll('[data-action*="select"]')
+    const items = controller.element.querySelectorAll("[data-action='click->event-selector#select']")
     const firstItem = items[0]
     const secondItem = items[1]
 
@@ -82,7 +82,7 @@ describe('EventSelectorController', () => {
   })
 
   it('closes dropdown after selection', () => {
-    const item = controller.element.querySelector('[data-action*="select"]:first-child')
+    const item = controller.element.querySelectorAll("[data-action='click->event-selector#select']")[0]
     controller.openValue = true
     controller.updateDropdownVisibility()
 

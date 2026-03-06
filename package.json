@@ -22,6 +22,7 @@
     "@rails/actioncable": "^8.1.200",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/user-event": "^14.6.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "happy-dom": "^20.3.7",
     "vitest": "^4.0.18"

@@ -2,25 +2,33 @@ require "test_helper"
 
 class SyncPullRequestsJobTest < ActiveJob::TestCase
   setup do
+    Rails.cache.clear
+    Setting.invalidate_cache!
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
     Setting.delete_all
     @job = SyncPullRequestsJob.new
   end
 
   teardown do
+    Rails.cache.clear
+    Setting.invalidate_cache!
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
     Setting.delete_all
-    PullRequest.delete_all
   end
 
   test "happy path: fetch latest, sync to database, restore deleted, touch last synced, broadcast completed" do
     repo_path = "/tmp/test-repo"
     Setting.current_repo = repo_path
 
-    mock_service = Class.new do
-      def sync_to_database!
-      end
-    end.new
-
-    GithubCliService.stubs(:new).returns(mock_service)
+    Sync::Orchestrator.any_instance.stubs(:call).returns({ created: 0, updated: 0, deleted: 0, fetched: 0 })
     GithubCliService.stubs(:fetch_latest_for_repo)
     Setting.stubs(:touch_last_synced!)
     ActionCable.server.stubs(:broadcast)
@@ -33,12 +41,7 @@ class SyncPullRequestsJobTest < ActiveJob::TestCase
   test "happy path: does not fetch latest when repo path is blank" do
     Setting.current_repo = nil
 
-    mock_service = Class.new do
-      def sync_to_database!
-      end
-    end.new
-
-    GithubCliService.stubs(:new).returns(mock_service)
+    Sync::Orchestrator.any_instance.stubs(:call).returns({ created: 0, updated: 0, deleted: 0, fetched: 0 })
     GithubCliService.stubs(:fetch_latest_for_repo)
     Setting.stubs(:touch_last_synced!)
     ActionCable.server.stubs(:broadcast)
@@ -51,14 +54,8 @@ class SyncPullRequestsJobTest < ActiveJob::TestCase
   test "error path: broadcasts failed and re-raises GithubCliService::Error" do
     Setting.current_repo = "/tmp/test-repo"
 
-    mock_service = Class.new do
-      def sync_to_database!
-        raise GithubCliService::Error, "Sync failed"
-      end
-    end.new
-
-    GithubCliService.stubs(:new).returns(mock_service)
     GithubCliService.stubs(:fetch_latest_for_repo)
+    Sync::Orchestrator.any_instance.stubs(:call).raises(GithubCliService::Error, "Sync failed")
 
     error = assert_raises(GithubCliService::Error) do
       SyncPullRequestsJob.perform_now
@@ -66,7 +63,7 @@ class SyncPullRequestsJobTest < ActiveJob::TestCase
     assert_equal "Sync failed", error.message
   end
 
-  test "restore_deleted_prs: restores PR that was not re-synced" do
+  test "keeps deleted PR deleted when sync does not re-fetch it" do
     deleted_pr = PullRequest.create!(
       github_id: 123,
       number: 123,
@@ -78,59 +75,20 @@ class SyncPullRequestsJobTest < ActiveJob::TestCase
       deleted_at: 1.day.ago
     )
 
-    mock_service = Class.new do
-      def sync_to_database!
-      end
-    end.new
-
-    GithubCliService.stubs(:new).returns(mock_service)
+    Sync::Orchestrator.any_instance.stubs(:call).returns({ created: 0, updated: 0, deleted: 0, fetched: 0 })
     GithubCliService.stubs(:fetch_latest_for_repo)
     Setting.stubs(:touch_last_synced!)
     ActionCable.server.stubs(:broadcast)
 
     SyncPullRequestsJob.perform_now
 
-    deleted_pr.reload
-    assert_nil deleted_pr.deleted_at, "PR should be restored (deleted_at should be nil)"
+    deleted_pr = PullRequest.unscoped.find(deleted_pr.id)
+    assert_not_nil deleted_pr.deleted_at, "PR should remain deleted when it is not re-fetched"
     assert_equal "pending_review", deleted_pr.review_status
   end
 
-  test "restore_deleted_prs: restores PRs that are still deleted and not re-synced" do
-    deleted_pr = PullRequest.create!(
-      github_id: 456,
-      number: 456,
-      title: "Deleted PR",
-      url: "https://github.com/test/repo/pull/456",
-      repo_owner: "test",
-      repo_name: "repo",
-      review_status: "pending_review",
-      deleted_at: 1.day.ago
-    )
-
-    mock_service = Class.new do
-      def sync_to_database!
-      end
-    end.new
-
-    GithubCliService.stubs(:new).returns(mock_service)
-    GithubCliService.stubs(:fetch_latest_for_repo)
-    Setting.stubs(:touch_last_synced!)
-    ActionCable.server.stubs(:broadcast)
-
-    SyncPullRequestsJob.perform_now
-
-    deleted_pr.reload
-    assert_nil deleted_pr.deleted_at, "PR should be restored"
-    assert_equal "pending_review", deleted_pr.review_status, "Status should be reset to pending_review"
-  end
-
-  test "restore_deleted_prs: does nothing when no deleted PRs exist" do
-    mock_service = Class.new do
-      def sync_to_database!
-      end
-    end.new
-
-    GithubCliService.stubs(:new).returns(mock_service)
+  test "does nothing with deleted records when no deleted PRs exist" do
+    Sync::Orchestrator.any_instance.stubs(:call).returns({ created: 0, updated: 0, deleted: 0, fetched: 0 })
     GithubCliService.stubs(:fetch_latest_for_repo)
     Setting.stubs(:touch_last_synced!)
     ActionCable.server.stubs(:broadcast)
@@ -140,7 +98,7 @@ class SyncPullRequestsJobTest < ActiveJob::TestCase
     end
   end
 
-  test "restore_deleted_prs: handles multiple deleted PRs with mixed scenarios" do
+  test "keeps multiple deleted PRs deleted when sync does not re-fetch them" do
     deleted_pr_1 = PullRequest.create!(
       github_id: 789,
       number: 789,
@@ -163,24 +121,19 @@ class SyncPullRequestsJobTest < ActiveJob::TestCase
       deleted_at: 2.days.ago
     )
 
-    mock_service = Class.new do
-      def sync_to_database!
-      end
-    end.new
-
-    GithubCliService.stubs(:new).returns(mock_service)
+    Sync::Orchestrator.any_instance.stubs(:call).returns({ created: 0, updated: 0, deleted: 0, fetched: 0 })
     GithubCliService.stubs(:fetch_latest_for_repo)
     Setting.stubs(:touch_last_synced!)
     ActionCable.server.stubs(:broadcast)
 
     SyncPullRequestsJob.perform_now
 
-    deleted_pr_1.reload
-    assert_nil deleted_pr_1.deleted_at, "Deleted PR should be restored"
+    deleted_pr_1 = PullRequest.unscoped.find(deleted_pr_1.id)
+    assert_not_nil deleted_pr_1.deleted_at, "Deleted PR should remain deleted"
     assert_equal "pending_review", deleted_pr_1.review_status
 
-    deleted_pr_2.reload
-    assert_nil deleted_pr_2.deleted_at, "Deleted PR should be restored"
+    deleted_pr_2 = PullRequest.unscoped.find(deleted_pr_2.id)
+    assert_not_nil deleted_pr_2.deleted_at, "Deleted PR should remain deleted"
     assert_equal "pending_review", deleted_pr_2.review_status
   end
 
@@ -189,12 +142,7 @@ class SyncPullRequestsJobTest < ActiveJob::TestCase
 
     broadcasts = []
 
-    mock_service = Class.new do
-      def sync_to_database!
-      end
-    end.new
-
-    GithubCliService.stubs(:new).returns(mock_service)
+    Sync::Orchestrator.any_instance.stubs(:call).returns({ created: 0, updated: 0, deleted: 0, fetched: 0 })
     GithubCliService.stubs(:fetch_latest_for_repo)
     Setting.stubs(:touch_last_synced!)
     ActionCable.server.stubs(:broadcast).with do |channel, data|
@@ -214,14 +162,8 @@ class SyncPullRequestsJobTest < ActiveJob::TestCase
 
     broadcasts = []
 
-    mock_service = Class.new do
-      def sync_to_database!
-        raise GithubCliService::Error, "Network error"
-      end
-    end.new
-
-    GithubCliService.stubs(:new).returns(mock_service)
     GithubCliService.stubs(:fetch_latest_for_repo)
+    Sync::Orchestrator.any_instance.stubs(:call).raises(GithubCliService::Error, "Network error")
     ActionCable.server.stubs(:broadcast).with do |channel, data|
       broadcasts << { channel:, data: }
     end
@@ -236,22 +178,16 @@ class SyncPullRequestsJobTest < ActiveJob::TestCase
     assert_instance_of String, failed_broadcast[:data][:timestamp]
   end
 
-  test "handles exception during broadcast_sync_failed and still re-raises original error" do
+  test "handles exception during broadcast_sync_failed and re-raises original sync error" do
     Setting.current_repo = "/tmp/test-repo"
 
-    mock_service = Class.new do
-      def sync_to_database!
-        raise GithubCliService::Error, "Original error"
-      end
-    end.new
-
-    GithubCliService.stubs(:new).returns(mock_service)
     GithubCliService.stubs(:fetch_latest_for_repo)
+    Sync::Orchestrator.any_instance.stubs(:call).raises(GithubCliService::Error, "Original error")
     ActionCable.server.stubs(:broadcast).raises(StandardError, "Broadcast failed")
 
-    error = assert_raises(StandardError) do
+    error = assert_raises(GithubCliService::Error) do
       SyncPullRequestsJob.perform_now
     end
-    assert_equal "Broadcast failed", error.message
+    assert_equal "Original error", error.message
   end
 end

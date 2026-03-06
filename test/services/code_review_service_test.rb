@@ -82,7 +82,15 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
 
   # detect_model tests
   test "detect_model delegates to ModelDetector" do
-    skip "ModelDetector.stub not available in minitest without additional gems"
+    ModelDetector.expects(:detect).with("claude").returns("claude-3.7-sonnet")
+
+    service = CodeReviewService.for(
+      cli_client: "claude",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+
+    assert_equal "claude-3.7-sonnet", service.detect_model
   end
 
   # run_review tests
@@ -97,6 +105,88 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
     assert_raises(CodeReviewService::Error) do
       service.run_review
     end
+  end
+
+  test "run_review returns normalized output when command succeeds" do
+    service = CodeReviewService.for(
+      cli_client: "claude",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+    stdin = stub(close: true)
+    stdout = stub(read: "review output")
+    stderr = stub(read: "")
+    wait_thr = stub(value: stub(success?: true))
+
+    Open3.expects(:popen3).with(*service.send(:cmd_args_for_review), chdir: @worktree_path)
+      .returns([stdin, stdout, stderr, wait_thr])
+
+    assert_equal "review output", service.run_review
+  end
+
+  test "run_review returns output when command fails but output is present" do
+    service = CodeReviewService.for(
+      cli_client: "claude",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+    stdin = stub(close: true)
+    stdout = stub(read: "partial output")
+    stderr = stub(read: "stderr")
+    wait_thr = stub(value: stub(success?: false))
+
+    Open3.expects(:popen3).with(*service.send(:cmd_args_for_review), chdir: @worktree_path)
+      .returns([stdin, stdout, stderr, wait_thr])
+    Rails.logger.expects(:error).with("claude review error: stderr")
+
+    assert_equal "partial output", service.run_review
+  end
+
+  test "run_review raises Error when command fails with blank output" do
+    service = CodeReviewService.for(
+      cli_client: "claude",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+    stdin = stub(close: true)
+    stdout = stub(read: "")
+    stderr = stub(read: "stderr")
+    wait_thr = stub(value: stub(success?: false))
+
+    Open3.expects(:popen3).with(*service.send(:cmd_args_for_review), chdir: @worktree_path)
+      .returns([stdin, stdout, stderr, wait_thr])
+    Rails.logger.expects(:error).with("claude review error: stderr")
+
+    error = assert_raises(CodeReviewService::Error) do
+      service.run_review
+    end
+
+    assert_equal "claude review failed: stderr", error.message
+  end
+
+  test "run_review_streaming yields each line and returns normalized output" do
+    service = CodeReviewService.for(
+      cli_client: "claude",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+    stdin = stub(close: true)
+    stdout_err = Class.new do
+      def each_line
+        yield "line 1\n"
+        yield "line 2\n"
+      end
+    end.new
+    wait_thr = stub(value: stub(success?: true))
+    yielded = []
+
+    Open3.expects(:popen2e).with(*service.send(:cmd_args_for_review), chdir: @worktree_path)
+      .yields(stdin, stdout_err, wait_thr)
+
+    result = service.run_review_streaming { |line| yielded << line }
+
+    assert_equal [ "line 1\n", "line 2\n" ], yielded
+    assert_equal "line 1\nline 2\n", result
   end
 
   # review_prompt tests (private)
@@ -296,6 +386,42 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
     assert_includes cmd_args, service.send(:codex_last_message_path)
   end
 
+  test "non-codex command args omit output-last-message flag" do
+    service = CodeReviewService.for(
+      cli_client: "claude",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+
+    refute_includes service.send(:cmd_args_for_review), "--output-last-message"
+  end
+
+  test "clear_codex_last_message! deletes existing file for codex" do
+    service = CodeReviewService.for(
+      cli_client: "codex",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+    path = service.send(:codex_last_message_path)
+    File.write(path, "old")
+
+    service.send(:clear_codex_last_message!)
+
+    refute File.exist?(path)
+  end
+
+  test "clear_codex_last_message! is no-op for non-codex" do
+    service = CodeReviewService.for(
+      cli_client: "claude",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+
+    assert_nothing_raised do
+      service.send(:clear_codex_last_message!)
+    end
+  end
+
   test "normalize_output uses codex last message when available" do
     service = CodeReviewService.for(
       cli_client: "codex",
@@ -307,5 +433,26 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
     output = service.send(:normalize_output, "header\nuser\nprompt\n")
 
     assert_equal "```json\n[]\n```", output
+  end
+
+  test "normalize_output falls back to raw output when codex file is blank" do
+    service = CodeReviewService.for(
+      cli_client: "codex",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+    File.write(service.send(:codex_last_message_path), "")
+
+    assert_equal "raw output", service.send(:normalize_output, "raw output")
+  end
+
+  test "normalize_output returns raw output for non-codex" do
+    service = CodeReviewService.for(
+      cli_client: "claude",
+      worktree_path: @worktree_path,
+      pull_request: @pr
+    )
+
+    assert_equal "raw output", service.send(:normalize_output, "raw output")
   end
 end

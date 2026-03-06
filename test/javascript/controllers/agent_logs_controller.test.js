@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Application } from '@hotwired/stimulus'
+import { createConsumer } from '@rails/actioncable'
 import AgentLogsController from '../../../app/javascript/controllers/agent_logs_controller.js'
 
 describe('AgentLogsController', () => {
@@ -23,7 +24,7 @@ describe('AgentLogsController', () => {
 
   it('connects and creates ActionCable subscription', () => {
     expect(controller).toBeDefined()
-    expect(global.ActionCable.createConsumer).toHaveBeenCalled()
+    expect(createConsumer).toHaveBeenCalled()
     expect(controller.reviewTaskIdValue).toBe(1)
   })
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Application } from '@hotwired/stimulus'
+import { renderStreamMessage } from '@hotwired/turbo'
 import ReviewCommentsController from '../../../app/javascript/controllers/review_comments_controller.js'
 
 describe('ReviewCommentsController', () => {
@@ -97,29 +98,22 @@ describe('ReviewCommentsController', () => {
   it('handles submit errors', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     const event = { preventDefault: vi.fn() }
 
     await controller.submit(event)
 
-    expect(alertSpy).toHaveBeenCalledWith('Failed to submit review. Please try again.')
-
-    alertSpy.mockRestore()
+    expect(window.alert).toHaveBeenCalledWith('Failed to submit review. Please try again.')
   })
 
-  it('handles submit button target from event', async () => {
+  it('renders turbo stream response on success', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      text: () => Promise.resolve('')
+      text: () => Promise.resolve('<turbo-stream>test</turbo-stream>')
     })
-
-    const customButton = document.createElement('button')
-    controller.submitButtonTarget = null
-
-    const event = { preventDefault: vi.fn(), currentTarget: customButton }
+    const event = { preventDefault: vi.fn(), currentTarget: controller.submitButtonTarget }
 
     await controller.submit(event)
 
-    expect(customButton.disabled).toBe(false)
+    expect(renderStreamMessage).toHaveBeenCalledWith('<turbo-stream>test</turbo-stream>')
   })
 })

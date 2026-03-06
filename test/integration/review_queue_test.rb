@@ -25,7 +25,7 @@ class ReviewQueueTest < ActionDispatch::IntegrationTest
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
-    PullRequest.delete_all
+    PullRequest.unscoped.delete_all
     Setting.delete_all
   end
 
