@@ -126,8 +126,13 @@ class ReviewCommentsController < ApplicationController
     if effective_event == "REQUEST_CHANGES"
       @review_task.mark_waiting_implementation!
       @review_task.pull_request.update!(review_status: "waiting_implementation")
+    elsif effective_event == "APPROVE"
+      @review_task.mark_done!
+      @review_task.pull_request.update!(review_status: "reviewed_by_others")
     elsif @review_task.waiting_implementation?
       @review_task.update!(state: "reviewed")
+      @review_task.pull_request.update!(review_status: "reviewed_by_me")
+    else
       @review_task.pull_request.update!(review_status: "reviewed_by_me")
     end
   end
