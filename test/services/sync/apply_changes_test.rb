@@ -39,9 +39,9 @@ class Sync::ApplyChangesTest < ActiveSupport::TestCase
 
     result = Sync::ApplyChanges.new(
       changes: {
-        to_create: [base_attrs(id: 3, number: 3)],
-        to_update: [[existing, base_attrs(id: 1, number: 1, title: "New")]],
-        to_delete: [deleted]
+        to_create: [ base_attrs(id: 3, number: 3) ],
+        to_update: [ [ existing, base_attrs(id: 1, number: 1, title: "New") ] ],
+        to_delete: [ deleted ]
       }
     ).call
 

@@ -39,8 +39,8 @@ class PullRequestIndexPresenterTest < ActiveSupport::TestCase
 
     columns = PullRequestIndexPresenter.new.columns
 
-    assert_equal [1], columns[:pending_review].map(&:number)
-    assert_equal [2], columns[:reviewed_by_me].map(&:number)
+    assert_equal [ 1 ], columns[:pending_review].map(&:number)
+    assert_equal [ 2 ], columns[:reviewed_by_me].map(&:number)
     assert_empty columns[:in_review]
   end
 

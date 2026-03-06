@@ -169,7 +169,7 @@ class WorktreeServiceTest < ActiveSupport::TestCase
     Open3.expects(:capture3).with(
       "gh", "pr", "view", "42", "--json", "headRefName",
       chdir: @repo_path
-    ).returns(["", "boom", status(false)])
+    ).returns([ "", "boom", status(false) ])
 
     @service.expects(:fetch_pr_ref).with(@pr)
     @service.expects(:create_worktree).with(worktree_path, "pr-42", @pr)
@@ -184,7 +184,7 @@ class WorktreeServiceTest < ActiveSupport::TestCase
     FileUtils.stubs(:rm_rf)
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "worktree", "remove", "--force", worktree_path
-    ).returns(["", "", status(true)])
+    ).returns([ "", "", status(true) ])
     FileUtils.expects(:rm_rf).with(worktree_path)
 
     @service.cleanup_worktree(worktree_path)
@@ -197,7 +197,7 @@ class WorktreeServiceTest < ActiveSupport::TestCase
     FileUtils.stubs(:rm_rf)
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "worktree", "remove", "--force", worktree_path
-    ).returns(["", "fatal", status(false)])
+    ).returns([ "", "fatal", status(false) ])
     Rails.logger.expects(:warn).with("Worktree cleanup warning: fatal")
     FileUtils.expects(:rm_rf).with(worktree_path)
 
@@ -229,7 +229,7 @@ class WorktreeServiceTest < ActiveSupport::TestCase
     Open3.expects(:capture3).with(
       "gh", "pr", "view", "42", "--json", "headRefName",
       chdir: @repo_path
-    ).returns([{"headRefName":"feature/test"}.to_json, "", status(true)])
+    ).returns([ { "headRefName": "feature/test" }.to_json, "", status(true) ])
 
     assert_equal "feature/test", @service.send(:fetch_pr_branch, @pr)
   end
@@ -238,7 +238,7 @@ class WorktreeServiceTest < ActiveSupport::TestCase
     Open3.expects(:capture3).with(
       "gh", "pr", "view", "42", "--json", "headRefName",
       chdir: @repo_path
-    ).returns(["", "boom", status(false)])
+    ).returns([ "", "boom", status(false) ])
 
     assert_equal "pr-42", @service.send(:fetch_pr_branch, @pr)
   end
@@ -247,7 +247,7 @@ class WorktreeServiceTest < ActiveSupport::TestCase
     Open3.expects(:capture3).with(
       "gh", "pr", "view", "42", "--json", "headRefName",
       chdir: @repo_path
-    ).returns(["{bad json", "", status(true)])
+    ).returns([ "{bad json", "", status(true) ])
 
     assert_equal "pr-42", @service.send(:fetch_pr_branch, @pr)
   end
@@ -297,10 +297,10 @@ class WorktreeServiceTest < ActiveSupport::TestCase
 
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "fetch", "origin", "pull/42/head"
-    ).in_sequence(sequence).returns(["", "Connection timed out", transient])
+    ).in_sequence(sequence).returns([ "", "Connection timed out", transient ])
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "fetch", "origin", "pull/42/head"
-    ).in_sequence(sequence).returns(["", "", success])
+    ).in_sequence(sequence).returns([ "", "", success ])
     Rails.logger.expects(:warn).with(regexp_matches(/Transient network error during fetch PR #42, attempt 1\/3/))
     @service.expects(:sleep).with(2)
 
@@ -314,7 +314,7 @@ class WorktreeServiceTest < ActiveSupport::TestCase
 
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "fetch", "origin", "pull/42/head"
-    ).times(3).returns(["", "Connection refused", transient])
+    ).times(3).returns([ "", "Connection refused", transient ])
     Rails.logger.expects(:warn).times(2)
     @service.expects(:sleep).with(2)
     @service.expects(:sleep).with(4)
@@ -330,7 +330,7 @@ class WorktreeServiceTest < ActiveSupport::TestCase
   test "fetch_pr_ref raises Error on non-transient errors immediately" do
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "fetch", "origin", "pull/42/head"
-    ).returns(["", "Authentication failed", status(false)])
+    ).returns([ "", "Authentication failed", status(false) ])
     @service.expects(:sleep).never
 
     error = assert_raises(WorktreeService::Error) do
@@ -346,7 +346,7 @@ class WorktreeServiceTest < ActiveSupport::TestCase
     PathValidator.expects(:validate_new_path).with(worktree_path, allowed_base: @repo_path).returns(worktree_path)
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "worktree", "add", worktree_path, "-b", "forge-review-pr-42", "origin/feature/test"
-    ).returns(["", "", status(true)])
+    ).returns([ "", "", status(true) ])
 
     assert_nothing_raised do
       @service.send(:create_worktree, worktree_path, "feature/test", @pr)
@@ -359,10 +359,10 @@ class WorktreeServiceTest < ActiveSupport::TestCase
     PathValidator.expects(:validate_new_path).with(worktree_path, allowed_base: @repo_path).returns(worktree_path)
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "worktree", "add", worktree_path, "-b", "forge-review-pr-42", "origin/feature/test"
-    ).returns(["", "missing branch", status(false)])
+    ).returns([ "", "missing branch", status(false) ])
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "worktree", "add", worktree_path, "FETCH_HEAD"
-    ).returns(["", "", status(true)])
+    ).returns([ "", "", status(true) ])
 
     assert_nothing_raised do
       @service.send(:create_worktree, worktree_path, "feature/test", @pr)
@@ -375,10 +375,10 @@ class WorktreeServiceTest < ActiveSupport::TestCase
     PathValidator.expects(:validate_new_path).with(worktree_path, allowed_base: @repo_path).returns(worktree_path)
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "worktree", "add", worktree_path, "-b", "forge-review-pr-42", "origin/feature/test"
-    ).returns(["", "missing branch", status(false)])
+    ).returns([ "", "missing branch", status(false) ])
     Open3.expects(:capture3).with(
       "git", "-C", @repo_path, "worktree", "add", worktree_path, "FETCH_HEAD"
-    ).returns(["", "still broken", status(false)])
+    ).returns([ "", "still broken", status(false) ])
 
     error = assert_raises(WorktreeService::Error) do
       @service.send(:create_worktree, worktree_path, "feature/test", @pr)

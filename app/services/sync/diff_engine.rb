@@ -29,9 +29,9 @@ module Sync
         if existing.nil?
           @to_create << fetched
         elsif existing.deleted_at.present?
-          @to_update << [existing, fetched.merge(deleted_at: nil, archived: false)]
+          @to_update << [ existing, fetched.merge(deleted_at: nil, archived: false) ]
         elsif pr_changed?(existing, fetched)
-          @to_update << [existing, fetched]
+          @to_update << [ existing, fetched ]
         end
       end
 

@@ -119,7 +119,7 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
     wait_thr = stub(value: stub(success?: true))
 
     Open3.expects(:popen3).with(*service.send(:cmd_args_for_review), chdir: @worktree_path)
-      .returns([stdin, stdout, stderr, wait_thr])
+      .returns([ stdin, stdout, stderr, wait_thr ])
 
     assert_equal "review output", service.run_review
   end
@@ -136,7 +136,7 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
     wait_thr = stub(value: stub(success?: false))
 
     Open3.expects(:popen3).with(*service.send(:cmd_args_for_review), chdir: @worktree_path)
-      .returns([stdin, stdout, stderr, wait_thr])
+      .returns([ stdin, stdout, stderr, wait_thr ])
     Rails.logger.expects(:error).with("claude review error: stderr")
 
     assert_equal "partial output", service.run_review
@@ -154,7 +154,7 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
     wait_thr = stub(value: stub(success?: false))
 
     Open3.expects(:popen3).with(*service.send(:cmd_args_for_review), chdir: @worktree_path)
-      .returns([stdin, stdout, stderr, wait_thr])
+      .returns([ stdin, stdout, stderr, wait_thr ])
     Rails.logger.expects(:error).with("claude review error: stderr")
 
     error = assert_raises(CodeReviewService::Error) do

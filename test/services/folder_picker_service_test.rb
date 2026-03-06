@@ -3,7 +3,7 @@ require "test_helper"
 class FolderPickerServiceTest < ActiveSupport::TestCase
   test "call returns nil when osascript fails" do
     Open3.expects(:capture3).with("osascript", "-e", includes("choose folder"))
-      .returns(["", "failed", stub(success?: false)])
+      .returns([ "", "failed", stub(success?: false) ])
 
     assert_nil FolderPickerService.call
   end
@@ -11,7 +11,7 @@ class FolderPickerServiceTest < ActiveSupport::TestCase
   test "call returns stripped path when chooser succeeds with existing directory" do
     Dir.mktmpdir do |dir|
       Open3.expects(:capture3).with("osascript", "-e", includes("choose folder"))
-        .returns(["#{dir}/\n", "", stub(success?: true)])
+        .returns([ "#{dir}/\n", "", stub(success?: true) ])
 
       assert_equal dir, FolderPickerService.call
     end
@@ -19,14 +19,14 @@ class FolderPickerServiceTest < ActiveSupport::TestCase
 
   test "call returns nil when chooser succeeds with blank result" do
     Open3.expects(:capture3).with("osascript", "-e", includes("choose folder"))
-      .returns([" \n", "", stub(success?: true)])
+      .returns([ " \n", "", stub(success?: true) ])
 
     assert_nil FolderPickerService.call
   end
 
   test "call returns nil when chooser succeeds with non-existent directory" do
     Open3.expects(:capture3).with("osascript", "-e", includes("choose folder"))
-      .returns(["/tmp/does-not-exist/\n", "", stub(success?: true)])
+      .returns([ "/tmp/does-not-exist/\n", "", stub(success?: true) ])
 
     assert_nil FolderPickerService.call
   end

@@ -45,7 +45,7 @@ class Sync::DiffEngineTest < ActiveSupport::TestCase
   test "returns empty result when repo info cannot be determined" do
     Dir.stubs(:exist?).returns(false)
 
-    result = Sync::DiffEngine.new(fetched_prs: [base_attrs(id: 1, number: 1)], repo_path: "/missing").call
+    result = Sync::DiffEngine.new(fetched_prs: [ base_attrs(id: 1, number: 1) ], repo_path: "/missing").call
 
     assert_equal({ to_create: [], to_update: [], to_delete: [] }, result)
   end
@@ -70,9 +70,9 @@ class Sync::DiffEngineTest < ActiveSupport::TestCase
 
     result = Sync::DiffEngine.new(fetched_prs: fetched, repo_path: "/tmp/repo").call
 
-    assert_equal [6], result[:to_create].map { |attrs| attrs[:github_id] }
-    assert_equal [1, 2, 3], result[:to_update].map { |existing, _| existing.github_id }
-    assert_equal [4], result[:to_delete].map(&:github_id)
+    assert_equal [ 6 ], result[:to_create].map { |attrs| attrs[:github_id] }
+    assert_equal [ 1, 2, 3 ], result[:to_update].map { |existing, _| existing.github_id }
+    assert_equal [ 4 ], result[:to_delete].map(&:github_id)
     refute_includes result[:to_delete].map(&:github_id), archived.github_id
     assert_equal false, result[:to_update].find { |existing, _| existing == existing_deleted }[1][:archived]
     assert_nil result[:to_update].find { |existing, _| existing == existing_deleted }[1][:deleted_at]

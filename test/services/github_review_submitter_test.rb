@@ -465,7 +465,7 @@ class GithubReviewSubmitterTest < ActiveSupport::TestCase
   end
 
   test "run_gh_api handles non-JSON responses" do
-    @submitter.expects(:run_gh_command_with_stdin).returns(["not json", "", status(true)])
+    @submitter.expects(:run_gh_command_with_stdin).returns([ "not json", "", status(true) ])
 
     error = assert_raises(GithubReviewSubmitter::Error) do
       @submitter.send(:run_gh_api, "POST", "/test", { body: "hi" })
@@ -475,13 +475,13 @@ class GithubReviewSubmitterTest < ActiveSupport::TestCase
   end
 
   test "run_gh_api returns empty hash for empty response" do
-    @submitter.expects(:run_gh_command_with_stdin).returns(["  \n", "", status(true)])
+    @submitter.expects(:run_gh_command_with_stdin).returns([ "  \n", "", status(true) ])
 
     assert_equal({}, @submitter.send(:run_gh_api, "POST", "/test", { body: "hi" }))
   end
 
   test "run_gh_api parses JSON response" do
-    @submitter.expects(:run_gh_command_with_stdin).returns([{ ok: true }.to_json, "", status(true)])
+    @submitter.expects(:run_gh_command_with_stdin).returns([ { ok: true }.to_json, "", status(true) ])
 
     assert_equal({ "ok" => true }, @submitter.send(:run_gh_api, "POST", "/test", { body: "hi" }))
   end
