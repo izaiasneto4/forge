@@ -1,3 +1,7 @@
+# Example Kamal configuration for a private Forge deployment.
+# Replace all placeholder hosts, registry values, and secrets before use.
+# This file is not a production-ready deployment recipe as checked in.
+
 # Name of your application. Used to uniquely configure containers.
 service: forge
 
@@ -7,10 +11,10 @@ image: forge
 # Deploy to these servers.
 servers:
   web:
-    - 192.168.0.1
+    - 203.0.113.10
   # job:
   #   hosts:
-  #     - 192.168.0.1
+  #     - 203.0.113.10
   #   cmd: bin/jobs
 
 # Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
@@ -27,7 +31,7 @@ servers:
 # Where you keep your container images.
 registry:
   # Alternatives: hub.docker.com / registry.digitalocean.com / ghcr.io / ...
-  server: localhost:5555
+  server: registry.example.com
 
   # Needed for authenticated registries.
   # username: your-user
