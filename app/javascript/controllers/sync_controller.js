@@ -12,42 +12,28 @@ export default class extends Controller {
   }
 
   async autoSync() {
-    if (this.syncingValue) return
-
-    this.syncingValue = true
-    this.disableButton()
-
-    try {
-      const response = await fetch(this.urlValue, {
-        method: "POST",
-        headers: {
-          "Accept": "text/vnd.turbo-stream.html",
-          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
-        }
-      })
-
-      if (response.ok) {
-        const html = await response.text()
-        Turbo.renderStreamMessage(html)
-      }
-    } catch (error) {
-      console.error("Auto-sync failed:", error)
-    } finally {
-      this.reset()
-    }
+    await this.performSync({ force: false, showModal: false, logLabel: "Auto-sync" })
   }
 
   async forceSync(event) {
     event.preventDefault()
+    await this.performSync({ force: true, showModal: true, logLabel: "Force sync" })
+  }
 
-    if (this.syncingValue) return
+  async sync(event) {
+    event.preventDefault()
+    await this.performSync({ force: false, showModal: true, logLabel: "Sync" })
+  }
+
+  async performSync({ force = false, showModal = false, logLabel = "Sync" } = {}) {
+    if (this.syncingValue) return false
 
     this.syncingValue = true
-    this.showModal()
+    if (showModal) this.showModal()
     this.disableButton()
-
     try {
-      const response = await fetch(`${this.urlValue}?force=true`, {
+      const url = force ? `${this.urlValue}?force=true` : this.urlValue
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Accept": "text/vnd.turbo-stream.html",
@@ -60,21 +46,11 @@ export default class extends Controller {
         Turbo.renderStreamMessage(html)
       }
     } catch (error) {
-      console.error("Force sync failed:", error)
+      console.error(`${logLabel} failed:`, error)
     } finally {
       this.reset()
     }
-  }
-
-  sync(event) {
-    if (this.syncingValue) {
-      event.preventDefault()
-      return
-    }
-
-    this.syncingValue = true
-    this.showModal()
-    this.disableButton()
+    return true
   }
 
   showModal() {
