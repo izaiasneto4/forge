@@ -1,5 +1,72 @@
 # 2026-02-24 Review Comment UX + Suggested Fix Guardrails Plan
 
+## 2026-03-04 Unit Coverage Plan
+
+### Plan
+
+- [x] Audit current Ruby and JS unit-test coverage with fresh reports, not the stale checked-in `coverage/` artifact
+- [ ] Expand Ruby SimpleCov tracking from the current API/CLI subset to all unit-testable app/lib code
+- [ ] Exclude non-unit targets from the 100% gate explicitly (`views`, generated framework glue, integration/system paths) so the goal is honest
+- [ ] Remove skipped-test debt by replacing fragile stubs with Mocha expectations or test doubles
+- [ ] Fix test-environment data/setup issues causing foreign-key skips
+- [ ] Separate unit and non-unit suites in CI so coverage is enforced only on unit suites
+- [ ] Add a JS coverage gate for `app/javascript/controllers/**` at 100% line/branch/function if feasible, otherwise document exact exceptions
+- [ ] Fill uncovered branches file-by-file, starting with the currently gated Ruby files, then models/services/jobs/controllers/helpers/presenters/validators/lib
+- [ ] Add or tighten scripts so local + CI runs fail on coverage regression
+- [ ] Run full unit suites with coverage enabled and record final percentages and remaining exceptions
+
+### Notes
+
+- Current Ruby gate is intentionally narrow: `test/test_helper.rb` tracks only API controllers, a few services, and `lib/forge/**`.
+- Current JS setup can generate coverage, but CI does not enforce it.
+- There are currently many explicit skips in Ruby tests, so “100% unit tested” is blocked until those are either implemented or explicitly carved out of scope.
+
+### Interim Review
+
+- Restored Ruby suite health by adding missing `SyncMode`, fixing `PullRequest` review-task validation, and aligning sync job tests with the current `Sync::Orchestrator` architecture.
+- Added audit-only SimpleCov mode via `FULL_COVERAGE_AUDIT=1` so repo-wide unit coverage can be measured without breaking the narrow CI gate.
+- Fresh Ruby baseline:
+  - `SKIP_COVERAGE=1 bin/rails test` => pass (`1117 runs, 0 failures, 0 errors, 84 skips`)
+  - `script/check_cli_api_coverage` => pass again at `100%` line and branch for the narrow tracked subset
+  - `FULL_COVERAGE_AUDIT=1 bin/rails test` => `1.75%` line coverage, `0.0%` branch coverage across the broader tracked unit surface (`72 / 4104` lines)
+- Fresh JS baseline:
+  - coverage command now runs after adding `@vitest/coverage-v8`
+  - current blocker is test health, not tooling: `11` failing specs plus `1` unhandled Happy DOM/Stimulus environment error
+
+### 2026-03-04 Progress Review
+
+- Stabilized the Ruby suite in single-process SQLite mode:
+  - `SKIP_COVERAGE=1 bin/rails test` => pass (`1172 runs, 2951 assertions, 0 failures, 0 errors, 84 skips`)
+- Stabilized the JS suite and coverage runner:
+  - `npm test` => pass
+  - `npm run test:coverage` => pass
+- Added missing Ruby tests for:
+  - `app/services/sync/**`
+  - broadcasters
+  - configuration objects
+  - helpers
+  - presenters
+  - channels
+  - base app classes
+- Added missing JS tests for:
+  - `archive_confirmation_controller`
+  - `notifications_controller`
+  - `submit_confirmation_controller`
+  - JS bootstrap files
+  - PWA service worker
+- Fixed broad test-isolation debt in non-transactional/request/job suites:
+  - standardized child-first cleanup for `ReviewComment` / `ReviewIteration` / `AgentLog` / `ReviewTask` / `PullRequest`
+  - disabled transactional tests only where SQLite/request behavior required it
+  - kept broad model suites transactional to avoid `database is locked` regressions
+- Current Ruby unit audit, excluding `test/integration/**` as planned:
+  - `FULL_COVERAGE_AUDIT=1 bin/rails test test/channels test/config test/controllers test/helpers test/jobs test/lib test/models test/presenters test/services test/tasks test/validators`
+  - result: `1117 runs, 2404 assertions, 0 failures, 0 errors, 84 skips`
+  - coverage: `86.48%` line (`2328 / 2692`), `75.59%` branch (`678 / 897`)
+- Remaining blockers to true 100%:
+  - `84` Ruby skips still need to be replaced or explicitly excluded
+  - Ruby branch coverage is still far from target, especially in older model/service/controller files with partial tests
+  - JS suite is healthy, but coverage still needs file-by-file expansion to reach enforced `100%`
+
 ## Plan
 
 - [x] Add regression tests for `ReviewCommentBuilder` to ensure prose `suggested_fix` is not fenced as code
@@ -347,4 +414,61 @@
   - Re-ran targeted tests:
     - `SKIP_COVERAGE=1 bin/rails test test/services/github_review_submitter_test.rb:343 test/services/github_review_submitter_test.rb:330`
     - `SKIP_COVERAGE=1 bin/rails test test/controllers/review_comments_controller_test.rb:201`
+  - Result: all pass.
+
+## 2026-02-24 Approval Column Transition Plan
+
+- [x] Add regression test proving `APPROVE` submission should move card to Done lane
+- [x] Update review lifecycle transition to mark approved submissions as done
+- [x] Re-run targeted controller tests to verify `APPROVE` + `REQUEST_CHANGES` behavior
+
+## 2026-02-24 Approval Column Transition Review
+
+- Added failing-first regression coverage in `ReviewCommentsControllerTest`:
+  - `submit with APPROVE moves review to done column`
+  - `submit with empty APPROVE moves task/PR to done column`
+- Updated `ReviewCommentsController#transition_review_lifecycle!`:
+  - `REQUEST_CHANGES` -> `review_task.waiting_implementation` + `pull_request.waiting_implementation`
+  - `APPROVE` -> `review_task.done` + `pull_request.reviewed_by_others` (Done lane)
+  - `COMMENT` keeps existing reviewed lane behavior.
+- Validation:
+  - `SKIP_COVERAGE=1 PARALLEL_WORKERS=1 bin/rails test test/controllers/review_comments_controller_test.rb:225 test/controllers/review_comments_controller_test.rb:245 test/controllers/review_comments_controller_test.rb:265`
+  - Result: pass.
+
+## 2026-02-24 Sync Stability Fix Plan
+
+- [x] Add failing regression tests for stale reconciliation safety and deleted-PR restore behavior
+- [x] Make GitHub sync reconciliation non-destructive (soft delete stale PRs only)
+- [x] Skip stale reconciliation when fetched open-PR set is incomplete or requested-only scope is enabled
+- [x] Prevent background sync job from restoring deleted PRs not re-fetched from GitHub
+- [x] Ensure sync failure broadcast errors do not mask original sync error
+- [x] Scope API pull-request listing to current selected repo
+- [x] Add DB uniqueness guard for PR identity per repo (`repo_owner`, `repo_name`, `number`)
+- [x] Fix manual sync button flow to always reset UI state after request
+- [x] Run targeted Rails + JS tests and record output
+
+## 2026-02-24 Sync Stability Fix Review
+
+- Added failing-first regression tests in:
+  - `GithubCliServiceTest` for stale reconciliation gating and soft-delete behavior.
+  - `SyncPullRequestsJobTest` for deleted-PR preservation and broadcast error handling.
+  - `Api::V1::PullRequestsControllerTest` for current-repo scoping.
+  - `sync_controller` JS test for manual sync UI reset.
+- Backend sync changes:
+  - Raised PR fetch limit from `100` to `1000` (`PR_FETCH_LIMIT`).
+  - Added completeness tracking for open PR fetches and gated stale reconciliation.
+  - Disabled stale reconciliation in requested-only mode.
+  - Replaced destructive stale `destroy_all` with soft-delete (`deleted_at`).
+  - Removed job-side restoration of deleted PRs not re-fetched from GitHub.
+  - Wrapped sync-failure broadcast in safe rescue to preserve original sync exception.
+- API and model changes:
+  - Scoped `/api/v1/pull_requests` to `PullRequest.for_current_repo(Setting.current_repo)`.
+  - Added model-level uniqueness for `number` scoped to repo.
+  - Added DB unique index migration: `index_pull_requests_on_repo_and_number_unique`.
+- Frontend change:
+  - `sync_controller` now runs manual sync via async fetch path and always resets modal/button state in `finally`.
+- Validation:
+  - `SKIP_COVERAGE=1 bin/rails test test/services/github_cli_service_test.rb test/jobs/sync_pull_requests_job_test.rb test/controllers/api/v1/pull_requests_controller_test.rb test/models/pull_request_test.rb`
+  - `SKIP_COVERAGE=1 bin/rails test test/services/github_cli_service_test.rb test/jobs/sync_pull_requests_job_test.rb test/controllers/pull_requests_controller_test.rb test/controllers/api/v1/syncs_controller_test.rb test/controllers/repositories_controller_test.rb test/controllers/api/v1/repositories_controller_test.rb test/controllers/api/v1/reviews_controller_test.rb test/controllers/api/v1/pull_requests_controller_test.rb test/models/pull_request_test.rb`
+  - `npm test -- test/javascript/controllers/sync_controller.test.js`
   - Result: all pass.
