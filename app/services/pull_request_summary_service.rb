@@ -171,19 +171,23 @@ class PullRequestSummaryService
   end
 
   def run_ai_prompt(prompt)
-    config = CodeReviewService::CLIENTS[@cli_client] || CodeReviewService::CLIENTS["claude"]
-    command = [ config[:command] ] + config[:args]
-
     if @cli_client == "codex"
       output_path = File.join(Dir.tmpdir, "forge-pr-summary-#{SecureRandom.hex(6)}.md")
-      stdout, stderr, status = Open3.capture3(*(command + [ "--output-last-message", output_path, prompt ]))
+      stdout, stderr, status = Open3.capture3("codex", "exec", "--output-last-message", output_path, prompt)
       content = File.exist?(output_path) ? File.read(output_path) : stdout
       File.delete(output_path) if File.exist?(output_path)
       raise Error, stderr.presence || stdout.presence || "AI summary command failed" unless status.success? || content.present?
       return content
     end
 
-    stdout, stderr, status = Open3.capture3(*(command + [ prompt ]))
+    stdout, stderr, status =
+      case @cli_client
+      when "opencode"
+        Open3.capture3("opencode", "run", prompt)
+      else
+        Open3.capture3("claude", "-p", prompt)
+      end
+
     raise Error, stderr.presence || stdout.presence || "AI summary command failed" unless status.success? && stdout.present?
 
     stdout

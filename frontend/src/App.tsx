@@ -12,7 +12,6 @@ import { ThemeProvider, useTheme } from './lib/theme'
 import { ToastProvider, useToasts } from './lib/toasts'
 import { handleReviewNotification, handleUiEvent } from './lib/uiEvents'
 import { PullRequestSummaryPanel } from './components/PullRequestSummaryPanel'
-import { ReviewLoadIndicator } from './components/ReviewLoadIndicator'
 import { RepoSwitcher } from './components/RepoSwitcher'
 import type {
   AgentLogItem,

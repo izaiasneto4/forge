@@ -11,6 +11,10 @@
     {
       "fingerprint": "2f83233ff4db655b64a45eb645675dcc382e8aa4dfc06a047c7b4f572b85e5d5",
       "note": "PR number normalized to positive Integer before ref interpolation; Open3 array args avoid shell injection"
+    },
+    {
+      "fingerprint": "cefdcd718e45901453f3e2e3a718165bd13c44ae99104e21b85a6b9352b953ee",
+      "note": "Codex summary execution uses literal command/args via Open3 array form; dynamic values are passed as separate argv entries"
     }
   ]
 }
