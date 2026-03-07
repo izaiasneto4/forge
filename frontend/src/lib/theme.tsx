@@ -11,7 +11,7 @@ import {
 
 import { api } from './api'
 import { queryKeys } from './queryKeys'
-import type { BootstrapResponse } from './types/api'
+import type { BootstrapResponse } from '../types/api'
 
 type Theme = 'light' | 'dark'
 
@@ -54,13 +54,13 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 
     try {
       const response = await api.patch<{ settings: { theme_preference: Theme | null } }>('/api/v1/settings/theme', { theme_preference: nextTheme })
-      queryClient.setQueryData<BootstrapResponse>(queryKeys.bootstrap, (current) => {
+      queryClient.setQueryData<BootstrapResponse>(queryKeys.bootstrap, (current: BootstrapResponse | undefined) => {
         if (!current) return current
         return {
           ...current,
           settings: {
             ...current.settings,
-            theme_preference: response.data.settings.theme_preference,
+            theme_preference: response.settings.theme_preference,
           },
         }
       })
