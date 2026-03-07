@@ -6,8 +6,10 @@ import { BrowserRouter, NavLink, Route, Routes, useNavigate, useParams } from 'r
 import { api, ApiResponseError } from './lib/api'
 import { subscribe } from './lib/cable'
 import { filterPullRequestColumns, type SortOption } from './lib/pullRequestFilters'
+import { queryKeys } from './lib/queryKeys'
 import { ThemeProvider, useTheme } from './lib/theme'
 import { ToastProvider, useToasts } from './lib/toasts'
+import { handleReviewNotification, handleUiEvent } from './lib/uiEvents'
 import type {
   AgentLogItem,
   BootstrapResponse,
@@ -26,15 +28,6 @@ import type {
 } from './types/api'
 
 const queryClient = new QueryClient()
-
-const queryKeys = {
-  bootstrap: ['bootstrap'] as const,
-  pullRequestBoard: ['pull_request_board'] as const,
-  reviewTaskBoard: ['review_task_board'] as const,
-  repositories: ['repositories'] as const,
-  settings: ['settings'] as const,
-  reviewTaskDetail: (id: string) => ['review_task_detail', id] as const,
-}
 
 const pullRequestColumns: Array<{ key: PullRequestStatus; title: string }> = [
   { key: 'pending_review', title: 'Pending Review' },
@@ -182,29 +175,7 @@ function UiEventSubscriptions() {
     { channel: 'UiEventsChannel' },
     {
       received: (raw) => {
-        const event = raw as { event?: string; error?: string }
-
-        switch (event.event) {
-          case 'pull_request.updated':
-          case 'pull_request.bulk_deleted':
-            client.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
-            client.invalidateQueries({ queryKey: queryKeys.bootstrap })
-            break
-          case 'review_task.updated':
-            client.invalidateQueries({ queryKey: queryKeys.reviewTaskBoard })
-            client.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
-            break
-          case 'sync.started':
-          case 'sync.completed':
-            client.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
-            client.invalidateQueries({ queryKey: queryKeys.bootstrap })
-            break
-          case 'sync.failed':
-            pushToast(event.error ?? 'Sync failed', 'error')
-            break
-          default:
-            break
-        }
+        handleUiEvent(raw as { event?: string; error?: string }, client, pushToast)
       },
     },
   ), [client, pushToast])
@@ -213,19 +184,7 @@ function UiEventSubscriptions() {
     { channel: 'ReviewNotificationsChannel' },
     {
       received: (raw) => {
-        const event = raw as { type?: string; pr_number?: number; reason?: string }
-
-        if (event.type === 'review_completed') {
-          pushToast(`Review completed for PR #${event.pr_number}`, 'success')
-          client.invalidateQueries({ queryKey: queryKeys.reviewTaskBoard })
-          client.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
-        }
-
-        if (event.type === 'review_failed') {
-          pushToast(`Review failed for PR #${event.pr_number}: ${event.reason ?? 'unknown'}`, 'error')
-          client.invalidateQueries({ queryKey: queryKeys.reviewTaskBoard })
-          client.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
-        }
+        handleReviewNotification(raw as { type?: string; pr_number?: number; reason?: string }, client, pushToast)
       },
     },
   ), [client, pushToast])

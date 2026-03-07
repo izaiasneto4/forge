@@ -1,3 +1,25 @@
+# 2026-03-07 Claude Review Detail Refresh Bug Plan
+
+## Plan
+
+- [x] Add a frontend regression test proving `review_task.updated` invalidates active review-task detail queries
+- [x] Invalidate review-task detail queries when ActionCable broadcasts review task state changes
+- [x] Run targeted frontend tests and verify against live Claude review task data
+
+## Review
+
+- Claude reviews were not actually hanging in the backend; the latest Claude task for PR `#382` had already completed as `reviewed` in the DB.
+- The review-task detail page stayed stale because global `review_task.updated` ActionCable events only invalidated the board queries, not active `review_task_detail` queries.
+- Added a frontend regression test for that invalidation contract and extracted the event handling into a small helper so the behavior is testable.
+- Also invalidate review-task detail queries on review completion/failure toast events as a second refresh path.
+
+### Verification
+
+- `npm --prefix frontend run test -- src/lib/uiEvents.test.ts`
+- `npm --prefix frontend run build`
+- Live data check:
+  - `bin/rails runner 'puts ReviewTask.find(38).slice(:state, :started_at, :completed_at).to_json'` showed task `38` already in `reviewed` state while the UI screenshot still showed `pending_review`
+
 # 2026-03-07 Local-First PR Sync Engine Plan
 
 ## Plan
