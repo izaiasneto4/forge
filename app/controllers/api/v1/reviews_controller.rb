@@ -22,6 +22,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
 
     review_task.cli_client = params[:cli_client].presence || Setting.default_cli_client
     review_task.review_type = params[:review_type].presence || "review"
+    review_task.pull_request_snapshot = pull_request.current_snapshot_or_create!
 
     if ReviewTask.any_review_running?
       review_task.state = "queued"
@@ -54,7 +55,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
     end
   rescue ActiveRecord::RecordInvalid => e
     render_error("invalid_input", e.record.errors.full_messages.join(", "))
-  rescue GithubCliService::Error => e
+  rescue GithubCliService::Error, Sync::GithubAdapter::Error => e
     render_error("sync_failed", e.message)
   end
 
@@ -64,10 +65,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
     pull_request = PullRequest.find_by(url: parsed[:url])
     return pull_request if pull_request
 
-    repo_path = Setting.current_repo
-    GithubCliService.fetch_latest_for_repo(repo_path) if repo_path.present?
-    GithubCliService.new(repo_path: repo_path).sync_to_database!
-    Setting.touch_last_synced!
+    Sync::Engine.new(repo_path: Setting.current_repo).call(trigger: "focused_pr", pull_request_number: parsed[:number])
 
     PullRequest.find_by(repo_owner: parsed[:owner], repo_name: parsed[:name], number: parsed[:number])
   end

@@ -22,9 +22,7 @@ class Api::V1::RepositoriesController < Api::V1::BaseController
     repo_path = resolution[:path]
     Setting.current_repo = repo_path
 
-    GithubCliService.fetch_latest_for_repo(repo_path)
-    GithubCliService.new(repo_path: repo_path).sync_to_database!
-    Setting.touch_last_synced!
+    result = Sync::Engine.new(repo_path: repo_path).call(trigger: "repo_switch")
 
     render_ok(
       {
@@ -32,12 +30,13 @@ class Api::V1::RepositoriesController < Api::V1::BaseController
         repo_path: repo_path,
         repo: slug,
         synced: true,
+        sync: result[:sync],
         repositories: Api::V1::UiPayloads::Repositories.new.as_json,
         board: Api::V1::UiPayloads::PullRequestBoard.new.as_json
       },
       :created
     )
-  rescue GithubCliService::Error => e
+  rescue GithubCliService::Error, Sync::GithubAdapter::Error => e
     render_error("sync_failed", "Switched repo but sync failed: #{e.message}")
   end
 end

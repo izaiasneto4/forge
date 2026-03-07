@@ -72,14 +72,9 @@ class GithubCliService
   end
 
   def sync_to_database!
-    prs = fetch_all_prs_needing_attention
-
-    ActiveRecord::Base.transaction do
-      sync_prs(prs[:pending_review], "pending_review")
-      sync_prs(prs[:reviewed_by_me], "reviewed_by_me")
-      remove_stale_prs(prs) if should_reconcile_stale_prs?(prs)
-      mark_reviewed_by_others
-    end
+    Sync::Engine.new(repo_path: @repo_path).call
+  rescue Sync::GithubAdapter::Error, ActiveRecord::ActiveRecordError => e
+    raise Error, e.message
   end
 
   def latest_my_review_state(pull_request)
@@ -148,7 +143,7 @@ class GithubCliService
   end
 
   def pr_fields
-    "number,title,body,url,author,headRepositoryOwner,headRefName,createdAt,updatedAt"
+    "number,title,body,url,author,headRepositoryOwner,headRefName,createdAt,updatedAt,additions,deletions,changedFiles"
   end
 
   def run_gh_command(*args, timeout: nil)
@@ -247,6 +242,9 @@ class GithubCliService
         author_avatar: pr.dig("author", "avatarUrl"),
         created_at_github: pr["createdAt"],
         updated_at_github: pr["updatedAt"],
+        additions: pr["additions"],
+        deletions: pr["deletions"],
+        changed_files: pr["changedFiles"],
         review_requested_for_me: review_status == "pending_review",
         review_status: review_status
       }

@@ -9,11 +9,7 @@ module Api
         end
 
         def sync_status
-          {
-            last_synced_at: Setting.last_synced_at&.iso8601,
-            seconds_until_sync_allowed: Setting.seconds_until_sync_allowed,
-            sync_needed: Setting.sync_needed?
-          }
+          PullRequestIndexPresenter.new.sync_status
         end
 
         def current_repo_payload
@@ -65,6 +61,21 @@ module Api
             archived: pull_request.archived?,
             created_at_github: pull_request.created_at_github&.iso8601,
             updated_at_github: pull_request.updated_at_github&.iso8601,
+            remote_state: pull_request.remote_state,
+            inactive_reason: pull_request.inactive_reason,
+            snapshot_status: pull_request.snapshot_status,
+            analysis_status: pull_request.analysis_status,
+            head_sha: pull_request.head_sha,
+            base_sha: pull_request.base_sha,
+            head_ref: pull_request.head_ref,
+            base_ref: pull_request.base_ref,
+            latest_review_state: pull_request.latest_review_state,
+            review_decision: pull_request.review_decision,
+            check_status: pull_request.check_status,
+            draft: pull_request.draft,
+            additions: pull_request.additions,
+            deletions: pull_request.deletions,
+            changed_files: pull_request.changed_files,
             review_requested_for_me: pull_request.review_requested_for_me?,
             review_task: pull_request.review_task.present? ? review_task_payload(pull_request.review_task, include_pull_request: false) : nil
           }
@@ -92,6 +103,9 @@ module Api
             has_review_history: review_task.has_review_history?,
             current_iteration_number: review_task.current_iteration_number,
             swarm_review: review_task.swarm_review?,
+            pull_request_snapshot_id: review_task.pull_request_snapshot_id,
+            analysis_status: review_task.analysis_stale? ? "stale" : review_task.pull_request.analysis_status,
+            snapshot_current: review_task.snapshot_current?,
             pull_request: include_pull_request ? compact_pull_request_payload(review_task.pull_request) : nil
           }
         end
@@ -106,7 +120,14 @@ module Api
             author_avatar: pull_request.author_avatar,
             repo_name: pull_request.repo_name,
             repo_full_name: pull_request.repo_full_name,
-            review_status: pull_request.review_status
+            review_status: pull_request.review_status,
+            remote_state: pull_request.remote_state,
+            inactive_reason: pull_request.inactive_reason,
+            snapshot_status: pull_request.snapshot_status,
+            analysis_status: pull_request.analysis_status,
+            additions: pull_request.additions,
+            deletions: pull_request.deletions,
+            changed_files: pull_request.changed_files
           }
         end
 

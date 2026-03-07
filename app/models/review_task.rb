@@ -10,6 +10,7 @@ class ReviewTask < ApplicationRecord
   STATE_ORDER = %w[queued pending_review in_review reviewed waiting_implementation done].freeze
 
   belongs_to :pull_request
+  belongs_to :pull_request_snapshot, optional: true
   has_many :agent_logs, dependent: :destroy
   has_many :review_comments, dependent: :destroy
   has_many :review_iterations, dependent: :destroy
@@ -75,6 +76,17 @@ class ReviewTask < ApplicationRecord
 
   def pending_submission?
     submission_status == "pending_submission"
+  end
+
+  def analysis_stale?
+    return false if pull_request_snapshot.blank?
+    return false if pull_request.current_snapshot.blank?
+
+    pull_request_snapshot_id != pull_request.current_snapshot.id
+  end
+
+  def snapshot_current?
+    !analysis_stale?
   end
 
   def submitted?
@@ -197,7 +209,8 @@ class ReviewTask < ApplicationRecord
       state: "pending_review",
       started_at: nil,
       completed_at: nil,
-      worktree_path: nil
+      worktree_path: nil,
+      pull_request_snapshot: pull_request.current_snapshot_or_create!
     )
     pull_request.update!(review_status: "pending_review")
   end

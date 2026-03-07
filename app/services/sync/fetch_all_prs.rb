@@ -92,6 +92,9 @@ module Sync
         author_avatar: pr.dig("author", "avatarUrl"),
         created_at_github: pr["createdAt"],
         updated_at_github: pr["updatedAt"],
+        additions: pr["additions"],
+        deletions: pr["deletions"],
+        changed_files: pr["changedFiles"],
         review_requested_for_me: false
       }
     end
@@ -103,7 +106,7 @@ module Sync
     end
 
     def pr_fields
-      "number,title,body,url,author,headRepositoryOwner,headRefName,createdAt,updatedAt"
+      "number,title,body,url,author,headRepositoryOwner,headRefName,createdAt,updatedAt,additions,deletions,changedFiles"
     end
 
     def extract_github_id(url)

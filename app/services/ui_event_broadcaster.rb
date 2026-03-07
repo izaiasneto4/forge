@@ -33,20 +33,31 @@ class UiEventBroadcaster
       )
     end
 
-    def sync_completed(repo_path)
+    def sync_started(repo_path, sync: nil)
       broadcast(
-        "sync.completed",
+        "sync.started",
         repo_path: repo_path,
-        repo: RepoSlugResolver.from_path(repo_path)
+        repo: RepoSlugResolver.from_path(repo_path),
+        sync: sync
       )
     end
 
-    def sync_failed(repo_path, error:)
+    def sync_completed(repo_path, sync: nil)
+      broadcast(
+        "sync.completed",
+        repo_path: repo_path,
+        repo: RepoSlugResolver.from_path(repo_path),
+        sync: sync
+      )
+    end
+
+    def sync_failed(repo_path, error:, sync: nil)
       broadcast(
         "sync.failed",
         repo_path: repo_path,
         repo: RepoSlugResolver.from_path(repo_path),
-        error: error
+        error: error,
+        sync: sync
       )
     end
   end

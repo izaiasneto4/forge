@@ -8,7 +8,7 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
 
     limit = parse_integer(params[:limit], default: 50, min: 1, max: 200, name: "limit")
 
-    scope = PullRequest.for_current_repo(Setting.current_repo).not_archived.order(updated_at_github: :desc)
+    scope = PullRequest.for_current_repo(Setting.current_repo).active_remote.order(updated_at_github: :desc)
     scope = scope.where(review_status: status) unless status == "all"
 
     items = scope.limit(limit).map do |pr|
@@ -35,33 +35,34 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
 
   def sync
     force = parse_boolean(params[:force])
+    sync_state = SyncState.for_repo_path(Setting.current_repo)
 
-    unless force || Setting.sync_needed?
+    unless force || sync_state.nil? || sync_state.sync_needed?
       return render_ok(
         {
           message: PullRequestIndexPresenter.new.build_sync_skipped_message,
+          sync: sync_state&.payload,
+          already_running: false,
           board: Api::V1::UiPayloads::PullRequestBoard.new.as_json
         }
       )
     end
 
     repo_path = Setting.current_repo
-    refresh_error = refresh_local_repo(repo_path)
-    GithubCliService.new(repo_path: repo_path).sync_to_database!
-    Setting.touch_last_synced!
-
-    message = "Synced with GitHub"
-    message += " (local repo refresh skipped)" if refresh_error.present?
+    result = Sync::Engine.new(repo_path: repo_path).call(trigger: "manual")
+    message = result[:already_running] ? "Sync already running" : "Synced with GitHub"
 
     render_ok(
       {
         message: message,
+        sync: result[:sync],
+        already_running: result[:already_running],
         board: Api::V1::UiPayloads::PullRequestBoard.new.as_json
       }
     )
   rescue ArgumentError => e
     render_error("invalid_input", e.message)
-  rescue GithubCliService::Error => e
+  rescue GithubCliService::Error, Sync::GithubAdapter::Error => e
     render_error("sync_failed", e.message)
   end
 
@@ -159,6 +160,7 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
 
     review_task.cli_client = cli_client
     review_task.review_type = review_type
+    review_task.pull_request_snapshot = pull_request.current_snapshot_or_create!
 
     if ReviewTask.any_review_running?
       review_task.state = "queued"
@@ -195,13 +197,4 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
     Rails.cache.write("review_task_queue_processed", true, expires_in: QUEUE_PROCESS_INTERVAL)
   end
 
-  def refresh_local_repo(repo_path)
-    return if repo_path.blank?
-
-    GithubCliService.fetch_latest_for_repo(repo_path)
-    nil
-  rescue GithubCliService::Error => e
-    Rails.logger.warn("Local repo refresh skipped for #{repo_path}: #{e.message}")
-    e.message
-  end
 end

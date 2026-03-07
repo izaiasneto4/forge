@@ -15,7 +15,8 @@ class Api::V1::StatusController < Api::V1::BaseController
           failed_review: ReviewTask.failed_review.count
         },
         running_task_id: running&.id,
-        last_synced_at: Setting.last_synced_at&.iso8601
+        last_synced_at: SyncState.for_repo_path(Setting.current_repo)&.last_succeeded_at&.iso8601,
+        sync_status: PullRequestIndexPresenter.new.sync_status
       }
     )
   end
