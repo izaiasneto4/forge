@@ -30,18 +30,18 @@ class ReviewTaskBroadcasterTest < ActiveSupport::TestCase
     PullRequest.unscoped.delete_all
   end
 
-  test "broadcasts state change stream" do
-    ApplicationController.stubs(:render).returns("<turbo-stream></turbo-stream>")
-    Turbo::StreamsChannel.expects(:broadcast_stream_to).with(
-      "review_tasks_board",
-      content: "<turbo-stream></turbo-stream>"
+  test "broadcasts state change event" do
+    @review_task.stubs(:state_before_last_save).returns("pending_review")
+    UiEventBroadcaster.expects(:review_task_updated).with(
+      @review_task,
+      previous_state: "pending_review"
     )
 
     ReviewTaskBroadcaster.new(@review_task).broadcast_state_change
   end
 
   test "swallows broadcast errors" do
-    ApplicationController.stubs(:render).raises(StandardError, "broken")
+    UiEventBroadcaster.stubs(:review_task_updated).raises(StandardError, "broken")
 
     assert_nothing_raised do
       ReviewTaskBroadcaster.new(@review_task).broadcast_state_change

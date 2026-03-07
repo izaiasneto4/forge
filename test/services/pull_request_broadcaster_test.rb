@@ -13,21 +13,20 @@ class PullRequestBroadcasterTest < ActiveSupport::TestCase
     )
   end
 
-  test "broadcasts status change stream" do
+  test "broadcasts status change event" do
     @pull_request.review_status = "reviewed_by_me"
     @pull_request.stubs(:review_status_before_last_save).returns("pending_review")
 
-    ApplicationController.stubs(:render).returns("<turbo-stream></turbo-stream>")
-    Turbo::StreamsChannel.expects(:broadcast_stream_to).with(
-      "pull_requests_board",
-      content: "<turbo-stream></turbo-stream>"
+    UiEventBroadcaster.expects(:pull_request_updated).with(
+      @pull_request,
+      previous_status: "pending_review"
     )
 
     PullRequestBroadcaster.new(@pull_request).broadcast_status_change
   end
 
   test "swallows broadcast errors" do
-    ApplicationController.stubs(:render).raises(StandardError, "broken")
+    UiEventBroadcaster.stubs(:pull_request_updated).raises(StandardError, "broken")
 
     assert_nothing_raised do
       PullRequestBroadcaster.new(@pull_request).broadcast_status_change

@@ -1,3 +1,37 @@
+# 2026-03-06 React/Vite Frontend + API-Only Rails
+
+## Plan
+
+- [ ] Replace Rails HTML/Turbo UI contract with JSON + ActionCable event contracts for pull requests, review tasks, repositories, settings, and review submissions
+- [ ] Add frontend-facing serializers/presenters so Rails exposes stable page/domain payloads instead of view partials
+- [ ] Build standalone `frontend/` Vite + React + TypeScript app with route parity for `/`, `/review_tasks`, `/review_tasks/:id`, `/repositories`, and `/settings`
+- [ ] Port current visual system into frontend Tailwind/CSS and recreate the main interactive flows without Turbo/Stimulus
+- [ ] Rewire dev/build scripts so Vite proxies `/api` and `/cable` in dev and the built frontend can be served statically in production
+- [ ] Remove importmap/Stimulus/Turbo/tailwindcss-rails app UI runtime and delete obsolete Rails UI views/controllers/assets
+- [ ] Run targeted Rails tests, frontend tests, and production build checks; record results and remaining gaps
+
+## Notes
+
+- Existing UI behavior is concentrated in five screens: pull request board, review task board, review task detail, repositories, settings.
+- Existing real-time behavior is split between Turbo stream board updates and ActionCable JSON payloads for notifications/logs.
+- Current `api/v1` covers CLI flows only; it is not yet complete enough for the browser UI.
+
+## Review
+
+- Added browser-facing Rails API endpoints for bootstrap, pull request board/actions, review task board/detail/actions, review submissions, repositories, and settings.
+- Added typed JSON websocket broadcasts via `UiEventBroadcaster` and `UiEventsChannel`; retained ActionCable notifications/log streams.
+- Built a standalone `frontend/` Vite + React + TypeScript app that serves the main routes and compiles into `public/frontend`.
+- Switched the public Rails UI surface to SPA/static entrypoints plus `/api`, `/cable`, and `/up`.
+- Removed the old Turbo/Stimulus/importmap/tailwindcss-rails runtime, deleted the legacy Rails UI views/controllers, and moved Node UI tooling ownership to `frontend/`.
+- Added frontend Vitest coverage for the API client smoke path and Rails request smoke coverage for the new frontend API surface.
+
+### Verification
+
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+- `SKIP_COVERAGE=1 asdf exec bundle exec rails test test/controllers/api/v1/frontend_surface_test.rb test/controllers/api/v1/pull_requests_controller_test.rb test/controllers/api/v1/repositories_controller_test.rb test/controllers/api/v1/review_task_logs_controller_test.rb test/controllers/api/v1/status_controller_test.rb test/controllers/api/v1/syncs_controller_test.rb test/services/pull_request_broadcaster_test.rb test/services/review_task_broadcaster_test.rb`
+- `asdf exec bundle exec rails routes | rg "/cable|frontend#index|api/v1/bootstrap|api/v1/pull_requests/board|api/v1/review_tasks/board|api/v1/settings|api/v1/repositories|api/v1/review_tasks/:id/submissions"`
+
 # 2026-02-24 Review Comment UX + Suggested Fix Guardrails Plan
 
 ## 2026-03-04 Unit Coverage Plan

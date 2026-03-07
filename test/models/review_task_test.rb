@@ -914,19 +914,18 @@ class ReviewTaskTest < ActiveSupport::TestCase
     assert_equal "pending_review", @pr.review_status
   end
 
-  test "broadcast_state_change sends turbo stream update" do
-    ApplicationController.expects(:render).returns("<turbo-stream></turbo-stream>")
-    Turbo::StreamsChannel.expects(:broadcast_stream_to).with(
-      "review_tasks_board",
-      has_key(:content)
+  test "broadcast_state_change sends ui event" do
+    @task.stubs(:state_before_last_save).returns("pending_review")
+    UiEventBroadcaster.expects(:review_task_updated).with(
+      @task,
+      previous_state: "pending_review"
     )
 
     @task.send(:broadcast_state_change)
   end
 
   test "broadcast_state_change swallows broadcast errors" do
-    ApplicationController.expects(:render).returns("<turbo-stream></turbo-stream>")
-    Turbo::StreamsChannel.expects(:broadcast_stream_to).raises(StandardError, "boom")
+    UiEventBroadcaster.expects(:review_task_updated).raises(StandardError, "boom")
     Rails.logger.expects(:error).at_least_once
 
     assert_nothing_raised do

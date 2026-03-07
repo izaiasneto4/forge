@@ -2,29 +2,13 @@
   "name": "forge",
   "version": "1.0.0",
   "description": "Local-first Rails app for automated GitHub PR reviews using external CLI agents.",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib",
-    "test": "test"
-  },
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest watch",
-    "test:coverage": "vitest run --coverage"
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:test": "npm --prefix frontend run test",
+    "frontend:test:coverage": "npm --prefix frontend run test:coverage"
   },
   "keywords": [],
   "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "@hotwired/stimulus": "^3.2.2",
-    "@hotwired/turbo": "^8.0.21",
-    "@playwright/test": "^1.58.0",
-    "@rails/actioncable": "^8.1.200",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/user-event": "^14.6.1",
-    "@vitest/coverage-v8": "^4.0.18",
-    "@vitest/ui": "^4.0.18",
-    "happy-dom": "^20.3.7",
-    "vitest": "^4.0.18"
-  }
+  "license": "MIT"
 }
