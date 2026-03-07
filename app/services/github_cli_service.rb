@@ -48,12 +48,14 @@ class GithubCliService
   def fetch_all_prs_needing_attention
     review_requests = fetch_review_requests
     reviewed = fetch_reviewed_by_me
-    only_requested = Setting.only_requested_reviews?
-    open_fetch = only_requested ? { prs: review_requests, complete: false } : fetch_open_pull_requests_with_metadata
+    open_fetch = fetch_open_pull_requests_with_metadata
     open_prs = open_fetch[:prs]
 
     requested_ids = review_requests.map { |pr| pr[:github_id] }.to_set
     reviewed_ids = reviewed.map { |pr| pr[:github_id] }.to_set
+
+    open_prs = annotate_review_requests(open_prs, requested_ids)
+    reviewed = annotate_review_requests(reviewed, requested_ids)
 
     # Keep PRs in pending when review has been requested again.
     pending = open_prs.reject do |pr|
@@ -245,16 +247,20 @@ class GithubCliService
         author_avatar: pr.dig("author", "avatarUrl"),
         created_at_github: pr["createdAt"],
         updated_at_github: pr["updatedAt"],
+        review_requested_for_me: review_status == "pending_review",
         review_status: review_status
       }
     end
   end
 
-
+  def annotate_review_requests(prs, requested_ids)
+    prs.map do |pr|
+      pr.merge(review_requested_for_me: requested_ids.include?(pr[:github_id]))
+    end
+  end
 
   def should_reconcile_stale_prs?(fetched_prs)
     return false unless @repo_path.present?
-    return false if Setting.only_requested_reviews?
 
     fetched_prs[:open_prs_complete] == true
   end

@@ -69,14 +69,8 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
     only_requested = parse_boolean(params[:requested_to_me_only])
     Setting.only_requested_reviews = only_requested
 
-    repo_path = Setting.current_repo
-    refresh_error = refresh_local_repo(repo_path)
-    GithubCliService.new(repo_path: repo_path).sync_to_database!
-    Setting.touch_last_synced!
-
     mode_label = only_requested ? "requested to me only" : "all open PRs"
     message = "Review scope updated: #{mode_label}"
-    message += " (local repo refresh skipped)" if refresh_error.present?
 
     render_ok(
       {

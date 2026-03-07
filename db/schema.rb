@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_24_170000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_07_030000) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -34,6 +34,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_170000) do
     t.integer "number"
     t.string "repo_name"
     t.string "repo_owner"
+    t.boolean "review_requested_for_me", default: false, null: false
     t.string "review_status"
     t.integer "review_tasks_count", default: 0
     t.string "title"
@@ -45,6 +46,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_170000) do
     t.index ["repo_owner", "repo_name", "archived", "deleted_at", "review_status"], name: "index_pull_requests_repo_filter"
     t.index ["repo_owner", "repo_name", "number"], name: "index_pull_requests_on_repo_and_number_unique", unique: true
     t.index ["repo_owner", "repo_name"], name: "index_pull_requests_on_repo_owner_and_name"
+    t.index ["review_requested_for_me"], name: "index_pull_requests_on_review_requested_for_me"
     t.index ["review_status"], name: "index_pull_requests_on_review_status"
     t.index ["review_tasks_count"], name: "index_pull_requests_on_review_tasks_count"
     t.index ["updated_at_github"], name: "index_pull_requests_on_updated_at_github"

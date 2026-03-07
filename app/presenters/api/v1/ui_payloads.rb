@@ -65,6 +65,7 @@ module Api
             archived: pull_request.archived?,
             created_at_github: pull_request.created_at_github&.iso8601,
             updated_at_github: pull_request.updated_at_github&.iso8601,
+            review_requested_for_me: pull_request.review_requested_for_me?,
             review_task: pull_request.review_task.present? ? review_task_payload(pull_request.review_task, include_pull_request: false) : nil
           }
         end
