@@ -45,6 +45,7 @@
 
 # Test results
 /test-results
+/coverage
 
 # IDE/tools
 .automaker/
