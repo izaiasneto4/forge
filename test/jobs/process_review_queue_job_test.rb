@@ -6,6 +6,7 @@ class ProcessReviewQueueJobTest < ActiveJob::TestCase
   self.use_transactional_tests = false
 
   setup do
+    Rails.cache.clear
     clear_enqueued_jobs
     clear_performed_jobs
     ActiveJob::Base.queue_adapter = :test
@@ -13,6 +14,7 @@ class ProcessReviewQueueJobTest < ActiveJob::TestCase
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
 
     @pr = PullRequest.create!(
@@ -27,12 +29,14 @@ class ProcessReviewQueueJobTest < ActiveJob::TestCase
   end
 
   teardown do
+    Rails.cache.clear
     clear_enqueued_jobs
     clear_performed_jobs
     ReviewComment.delete_all
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
   end
 

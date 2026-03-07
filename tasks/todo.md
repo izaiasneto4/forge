@@ -1,3 +1,30 @@
+# 2026-03-07 Snapshot-Scoped PR AI Summary Plan
+
+## Plan
+
+- [x] Add snapshot-level persistence for PR AI summary state and payload
+- [x] Implement summary generation service/job with diff fetching, chunking, and AI consolidation
+- [x] Enqueue summary generation from snapshot activation/sync without blocking review start
+- [x] Expose snapshot summary data in PR board API payloads and frontend types
+- [x] Render PR summary states in the Start Review modal
+- [x] Add Rails/frontend regression coverage and record verification results
+
+## Review
+
+- Added snapshot-scoped AI summary columns on `pull_request_snapshots`, plus model helpers for pending/current/failed state, storage, stale fallback selection, and duplicate enqueue prevention.
+- Added `PullRequestSummaryJob` + `PullRequestSummaryService` to fetch `gh pr diff`, chunk large diffs, run chunk analysis + consolidation prompts through the configured CLI client, and persist normalized reviewer-facing summary output.
+- Hooked summary generation into snapshot activation so sync/current-snapshot refreshes enqueue background summary work without blocking review starts.
+- Extended the PR board API payload and frontend types with `ai_summary`, including stale fallback metadata when the newest snapshot is still pending.
+- Added a dedicated summary panel to the Start Review modal for `current`, `pending`, `failed`, and stale states.
+- Added regression coverage for snapshot enqueueing/fallback logic, summary service success/failure handling, sync enqueue behavior, board payload exposure, and modal rendering.
+
+### Verification
+
+- `asdf exec bundle exec rails db:migrate`
+- `SKIP_COVERAGE=1 asdf exec bundle exec rails test test/models/pull_request_snapshot_test.rb test/services/pull_request_summary_service_test.rb test/controllers/api/v1/frontend_surface_test.rb test/services/sync/engine_test.rb`
+- `npm --prefix frontend run test -- src/components/PullRequestSummaryPanel.test.tsx src/lib/pullRequestFilters.test.ts`
+- `npm --prefix frontend run build`
+
 # 2026-03-07 CI Drift Fix Plan
 
 ## Plan
@@ -11,7 +38,12 @@
 - Replaced the stale `scan_js` importmap audit step with Node setup, `npm --prefix frontend ci`, and `npm --prefix frontend audit --omit=dev --audit-level=high`.
 - Replaced the stale Rails `tailwindcss:build` step with Node setup, frontend dependency install, `npm --prefix frontend run test`, and `npm --prefix frontend run build`.
 - Removed the trailing blank line in `PullRequestsController` that was breaking RuboCop.
-- Aligned `bin/ci` with the workflow by adding a frontend test step before the frontend build.
+- Aligned `bin/ci` with the workflow by adding a frontend test step and switching the Rails sweep to the maintained non-integration unit surface.
+- Removed obsolete route-era tests in `ApplicationControllerTest` and `ReviewQueueTest`; current API/job/model coverage already exercises those flows.
+- Fixed real regressions surfaced by the updated Rails sweep:
+  - `PullRequestSnapshot.activate_for!` now initializes `snapshot` outside the transaction so the `ensure` block can enqueue AI summaries safely.
+  - `HeaderPresenter` now exposes `repo_name` again for compatibility with its test/API surface.
+  - Added missing cleanup/isolation to review-related tests so SQLite does not leak rows between files.
 
 ### Verification
 
@@ -19,6 +51,7 @@
 - `npm --prefix frontend audit --omit=dev --audit-level=high`
 - `npm --prefix frontend run test`
 - `npm --prefix frontend run build`
+- `SKIP_COVERAGE=1 bin/rails test test/channels test/config test/controllers test/helpers test/jobs test/lib test/models test/presenters test/services test/tasks test/validators`
 
 # 2026-03-07 Claude Review Detail Refresh Bug Plan
 

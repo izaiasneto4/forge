@@ -3,6 +3,15 @@ require "ostruct"
 
 class ReviewCommentBuilderTest < ActiveSupport::TestCase
   setup do
+    Rails.cache.clear
+    Setting.delete_all
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
+    PullRequest.unscoped.delete_all
+
     @pull_request = PullRequest.create!(
       github_id: 123,
       number: 456,
@@ -20,6 +29,17 @@ class ReviewCommentBuilderTest < ActiveSupport::TestCase
       review_type: "review"
     )
     @builder = ReviewCommentBuilder.new(@review_task)
+  end
+
+  teardown do
+    Rails.cache.clear
+    Setting.delete_all
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
+    PullRequest.unscoped.delete_all
   end
 
   test "persist_all returns empty array when no items" do

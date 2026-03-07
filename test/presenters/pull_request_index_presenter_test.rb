@@ -1,19 +1,31 @@
 require "test_helper"
 
 class PullRequestIndexPresenterTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
   setup do
+    Rails.cache.clear
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
     ReviewTask.delete_all
     PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
     SyncState.delete_all
+    Setting.delete_all
     Setting.current_repo = nil
   end
 
   teardown do
+    Rails.cache.clear
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
     ReviewTask.delete_all
     PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
     SyncState.delete_all
+    Setting.delete_all
   end
 
   test "columns groups only active pull requests by status" do

@@ -4,10 +4,13 @@ class Api::V1::ReviewsControllerTest < ActionDispatch::IntegrationTest
   self.use_transactional_tests = false
 
   setup do
+    Rails.cache.clear
+    Setting.delete_all
     ReviewComment.delete_all
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
 
     @pr = PullRequest.create!(
@@ -20,6 +23,17 @@ class Api::V1::ReviewsControllerTest < ActionDispatch::IntegrationTest
       review_status: "pending_review"
     )
     Setting.default_cli_client = "claude"
+  end
+
+  teardown do
+    Rails.cache.clear
+    Setting.delete_all
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
+    PullRequest.unscoped.delete_all
   end
 
   test "creates pending review when no other running" do

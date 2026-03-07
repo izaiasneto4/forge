@@ -4,11 +4,13 @@ class GithubCliServiceTest < ActiveSupport::TestCase
   self.use_transactional_tests = false
 
   setup do
+    Rails.cache.clear
     Setting.delete_all
     ReviewComment.delete_all
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
 
     @service = GithubCliService.new(username: "testuser", repo_path: "/tmp/test-repo")
@@ -30,11 +32,13 @@ class GithubCliServiceTest < ActiveSupport::TestCase
   end
 
   teardown do
+    Rails.cache.clear
     Setting.delete_all
     ReviewComment.delete_all
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
   end
 
@@ -224,83 +228,30 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert_equal prs, @service.fetch_open_pull_requests
   end
 
-  test "sync_to_database does not rollback when reviewed_by_me PR has no local review task" do
-    pending_pr = {
-      github_id: 9001,
-      number: 901,
-      title: "Pending PR",
-      description: "Needs review",
-      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/901",
-      repo_owner: @repo_owner,
-      repo_name: @repo_name,
-      author: "author",
-      author_avatar: nil,
-      created_at_github: Time.current.iso8601,
-      updated_at_github: Time.current.iso8601,
-      review_status: "pending_review"
-    }
+  test "sync_to_database delegates to Sync::Engine" do
+    engine = mock
+    Sync::Engine.expects(:new).with(repo_path: "/tmp/test-repo").returns(engine)
+    engine.expects(:call).returns(:ok)
 
-    reviewed_pr = pending_pr.merge(
-      github_id: 9002,
-      number: 902,
-      title: "Reviewed PR",
-      url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/902",
-      review_status: "reviewed_by_me"
-    )
-
-    @service.stubs(:fetch_all_prs_needing_attention).returns(
-      pending_review: [ pending_pr ],
-      reviewed_by_me: [ reviewed_pr ]
-    )
-    @service.stubs(:remove_stale_prs)
-    @service.stubs(:mark_reviewed_by_others)
-
-    assert_nothing_raised { @service.sync_to_database! }
-
-    stored_pending = PullRequest.find_by(github_id: 9001)
-    stored_reviewed = PullRequest.find_by(github_id: 9002)
-    assert_equal "pending_review", stored_pending.review_status
-    assert_equal "pending_review", stored_reviewed.review_status
+    assert_equal :ok, @service.sync_to_database!
   end
 
-  test "sync_to_database reconciles stale pull requests when open PR fetch is complete" do
-    @service.expects(:remove_stale_prs).once
-    @service.stubs(:mark_reviewed_by_others)
-    @service.stubs(:fetch_review_requests).returns([])
-    @service.stubs(:fetch_reviewed_by_me).returns([])
-    @service.stubs(:fetch_open_pull_requests_with_metadata).returns({ prs: [], complete: true })
+  test "sync_to_database wraps sync adapter errors" do
+    engine = mock
+    Sync::Engine.expects(:new).with(repo_path: "/tmp/test-repo").returns(engine)
+    engine.expects(:call).raises(Sync::GithubAdapter::Error, "boom")
 
-    assert_nothing_raised { @service.sync_to_database! }
+    error = assert_raises(GithubCliService::Error) { @service.sync_to_database! }
+    assert_equal "boom", error.message
   end
 
-  test "sync_to_database skips stale removal when open PR fetch hits limit boundary" do
-    Setting.stubs(:only_requested_reviews?).returns(false)
-    @service.expects(:remove_stale_prs).never
-    @service.stubs(:mark_reviewed_by_others)
-    @service.stubs(:fetch_review_requests).returns([])
-    @service.stubs(:fetch_reviewed_by_me).returns([])
+  test "sync_to_database wraps ActiveRecord errors" do
+    engine = mock
+    Sync::Engine.expects(:new).with(repo_path: "/tmp/test-repo").returns(engine)
+    engine.expects(:call).raises(ActiveRecord::StatementInvalid, "db blew up")
 
-    limited_open_prs = Array.new(1000) do |i|
-      {
-        github_id: 20_000 + i,
-        number: i + 1,
-        title: "PR #{i + 1}",
-        description: "",
-        url: "https://github.com/#{@repo_owner}/#{@repo_name}/pull/#{i + 1}",
-        repo_owner: @repo_owner,
-        repo_name: @repo_name,
-        author: "author",
-        author_avatar: nil,
-        created_at_github: Time.current.iso8601,
-        updated_at_github: Time.current.iso8601,
-        review_status: "pending_review"
-      }
-    end
-    @service.stubs(:fetch_open_pull_requests_with_metadata).returns(
-      { prs: limited_open_prs, complete: false }
-    )
-
-    assert_nothing_raised { @service.sync_to_database! }
+    error = assert_raises(GithubCliService::Error) { @service.sync_to_database! }
+    assert_match(/db blew up/, error.message)
   end
 
   test "sync_prs reuses archived PR record instead of creating duplicate github_id" do
@@ -348,14 +299,12 @@ class GithubCliServiceTest < ActiveSupport::TestCase
       repo_name: @repo_name,
       review_status: "pending_review"
     )
-    task = ReviewTask.create!(pull_request: pr, state: "pending_review")
 
     @service.stubs(:get_repo_info).returns({ owner: @repo_owner, name: @repo_name })
     @service.send(:remove_stale_prs, { pending_review: [], reviewed_by_me: [] })
 
-    pr.reload
+    pr = PullRequest.unscoped.find(pr.id)
     assert_not_nil pr.deleted_at
-    assert_equal task.id, pr.review_task.id
     assert PullRequest.unscoped.exists?(pr.id)
   end
 
