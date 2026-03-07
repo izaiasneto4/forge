@@ -1,9 +1,0 @@
-<%= turbo_stream.replace dom_id(@review_comment) do %>
-  <%= render partial: "review_comments/review_comment_checklist_item", locals: { comment: @review_comment } %>
-<% end %>
-
-<%# Update the toolbar to reflect the new pending count %>
-<% comments = @review_comment.review_task.review_comments.by_severity %>
-<%= turbo_stream.replace "comment-submission-toolbar" do %>
-  <%= render "review_tasks/comment_submission", review_task: @review_comment.review_task, comments: comments %>
-<% end %>
