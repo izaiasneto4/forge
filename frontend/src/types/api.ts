@@ -86,6 +86,7 @@ export interface PullRequestItem {
   archived: boolean
   created_at_github: string | null
   updated_at_github: string | null
+  review_requested_for_me: boolean
   review_task: PullRequestReviewTaskSummary | null
 }
 

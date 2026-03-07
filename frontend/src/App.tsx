@@ -5,6 +5,7 @@ import { BrowserRouter, NavLink, Route, Routes, useNavigate, useParams } from 'r
 
 import { api, ApiResponseError } from './lib/api'
 import { subscribe } from './lib/cable'
+import { filterPullRequestColumns, type SortOption } from './lib/pullRequestFilters'
 import { ThemeProvider, useTheme } from './lib/theme'
 import { ToastProvider, useToasts } from './lib/toasts'
 import type {
@@ -134,6 +135,7 @@ function ThemeToggle() {
     <button
       type="button"
       className="linear-btn linear-btn-ghost linear-btn-sm"
+      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       onClick={async () => {
         try {
           await setTheme(theme === 'dark' ? 'light' : 'dark')
@@ -142,22 +144,29 @@ function ThemeToggle() {
         }
       }}
     >
-      {theme === 'dark' ? 'Light' : 'Dark'}
+      {theme === 'dark' ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      )}
     </button>
   )
 }
 
 function HeaderNav() {
   return (
-    <header className="linear-header sticky top-0 z-40">
+    <header className="linear-header">
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <img src="/icon.svg" alt="Forge" className="w-6 h-6" />
-        <span className="text-sm font-semibold">Forge</span>
-        <nav className="flex items-center gap-2 text-xs">
-          <NavLink to="/" className={({ isActive }) => classNames('linear-btn linear-btn-ghost linear-btn-sm', isActive && 'linear-btn-secondary')}>Pull Requests</NavLink>
-          <NavLink to="/review_tasks" className={({ isActive }) => classNames('linear-btn linear-btn-ghost linear-btn-sm', isActive && 'linear-btn-secondary')}>Review Tasks</NavLink>
-          <NavLink to="/repositories" className={({ isActive }) => classNames('linear-btn linear-btn-ghost linear-btn-sm', isActive && 'linear-btn-secondary')}>Repositories</NavLink>
-          <NavLink to="/settings" className={({ isActive }) => classNames('linear-btn linear-btn-ghost linear-btn-sm', isActive && 'linear-btn-secondary')}>Settings</NavLink>
+        <div className="flex items-center gap-2.5">
+          <img src="/icon.svg" alt="Forge" className="w-6 h-6" />
+          <span className="text-sm font-bold tracking-tight">Forge</span>
+        </div>
+        <div className="hidden-mobile ml-1 h-4 w-px bg-[color:var(--color-border-default)]" />
+        <nav className="hidden-mobile flex items-center gap-1">
+          <NavLink to="/" className={({ isActive }) => classNames('linear-btn linear-btn-ghost linear-btn-sm', isActive && 'text-[color:var(--color-accent)] font-semibold')}>Pull Requests</NavLink>
+          <NavLink to="/review_tasks" className={({ isActive }) => classNames('linear-btn linear-btn-ghost linear-btn-sm', isActive && 'text-[color:var(--color-accent)] font-semibold')}>Review Tasks</NavLink>
+          <NavLink to="/repositories" className={({ isActive }) => classNames('linear-btn linear-btn-ghost linear-btn-sm', isActive && 'text-[color:var(--color-accent)] font-semibold')}>Repositories</NavLink>
+          <NavLink to="/settings" className={({ isActive }) => classNames('linear-btn linear-btn-ghost linear-btn-sm', isActive && 'text-[color:var(--color-accent)] font-semibold')}>Settings</NavLink>
         </nav>
       </div>
       <ThemeToggle />
@@ -250,41 +259,68 @@ function PullRequestCard({ item, selected, onSelect, onArchive, onStartReview }:
   const task = item.review_task
 
   return (
-    <div className="linear-card">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <input checked={selected} onChange={(event) => onSelect(event.target.checked)} type="checkbox" className="rounded linear-checkbox-accent" />
-          <span className="linear-card-id">#{item.number}</span>
+    <div className="group relative flex items-center gap-3 p-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-primary)] hover:border-[color:var(--color-border-default)] transition-colors">
+      <input checked={selected} onChange={(event) => onSelect(event.target.checked)} type="checkbox" className="rounded linear-checkbox-accent flex-shrink-0" />
+      
+      <div className="flex-1 min-w-0 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
+        {/* Main Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono text-[color:var(--color-text-tertiary)]">#{item.number}</span>
+            <span className="text-xs font-medium text-[color:var(--color-text-secondary)]">{item.repo_name}</span>
+            {task ? <span className={classNames('linear-badge text-[10px] px-1.5 py-0', statusChipClass(task.state))}>{task.state.replaceAll('_', ' ')}</span> : null}
+          </div>
+          <a href={item.url} target="_blank" rel="noreferrer" className="block w-fit max-w-full">
+            <h3 className="text-sm font-medium text-[color:var(--color-text-primary)] truncate hover:text-[color:var(--color-accent)] cursor-pointer">{item.title}</h3>
+          </a>
         </div>
-        <div className="flex items-center gap-2">
-          {task ? <span className={`linear-badge ${statusChipClass(task.state)} text-[10px]`}>{task.state.replaceAll('_', ' ')}</span> : null}
-          <button type="button" className="linear-btn linear-btn-ghost linear-btn-sm" onClick={onArchive}>Archive</button>
+
+        {/* Author */}
+        <div className="w-full sm:w-32 flex-shrink-0 flex items-center justify-start sm:justify-end gap-2 text-xs text-[color:var(--color-text-secondary)] truncate">
+          <span className="truncate">{item.author}</span>
+          {item.author_avatar ? (
+            <img src={item.author_avatar} alt={item.author || 'Author'} className="w-5 h-5 rounded-full flex-shrink-0 hidden sm:block" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-[color:var(--color-bg-tertiary)] items-center justify-center flex-shrink-0 hidden sm:flex">
+              {item.author?.charAt(0)?.toUpperCase() || '?'}
+            </div>
+          )}
         </div>
-      </div>
-      <a href={item.url} target="_blank" rel="noreferrer" className="block">
-        <h3 className="linear-card-title line-clamp-2">{item.title}</h3>
-      </a>
-      <div className="linear-card-meta mt-3">
-        <span className="linear-card-label">{item.repo_name}</span>
-        <div className="flex-1" />
-        <span className="text-[11px] text-[color:var(--color-text-secondary)]">{item.author}</span>
-      </div>
-      <div className="mt-3 border-t border-[color:var(--color-border-subtle)] pt-3">
-        {task ? (
-          <NavLink to={`/review_tasks/${task.id}`} className="linear-btn linear-btn-ghost w-full text-[12px]">
-            {task.state === 'queued' || task.state === 'pending_review' || task.state === 'in_review' ? 'View Progress' : 'View Review'}
-          </NavLink>
-        ) : (
-          <button type="button" className="linear-btn linear-btn-ghost w-full text-[12px]" onClick={onStartReview}>
-            Start Review
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <button type="button" className="linear-btn linear-btn-ghost linear-btn-sm" onClick={onArchive} title="Archive">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           </button>
-        )}
+          {task ? (
+            <NavLink to={`/review_tasks/${task.id}`} className="linear-btn linear-btn-secondary linear-btn-sm w-full sm:w-auto justify-center">
+              {task.state === 'queued' || task.state === 'pending_review' || task.state === 'in_review' ? '⏳ Progress' : '📋 Review'}
+            </NavLink>
+          ) : (
+             <button type="button" className="linear-btn linear-btn-ghost text-[color:var(--color-accent)] linear-btn-sm w-full sm:w-auto justify-center" onClick={onStartReview}>
+              🚀 Start
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-function PullRequestColumn({ status, title, items, selectedIds, onSelect, onArchive, onStartReview }: {
+const columnStatusColors: Record<string, string> = {
+  pending_review: 'bg-[color:var(--color-status-todo)]',
+  in_review: 'bg-[color:var(--color-status-inprogress)]',
+  reviewed_by_me: 'bg-[color:var(--color-status-done)]',
+  waiting_implementation: 'bg-[color:var(--color-status-review)]',
+  reviewed_by_others: 'bg-[color:var(--color-status-done)]',
+  review_failed: 'bg-[color:var(--color-status-blocked)]',
+  queued: 'bg-[color:var(--color-text-tertiary)]',
+  reviewed: 'bg-[color:var(--color-status-done)]',
+  done: 'bg-[color:var(--color-status-done)]',
+  failed_review: 'bg-[color:var(--color-status-blocked)]',
+}
+
+function PullRequestSection({ status, title, items, selectedIds, onSelect, onArchive, onStartReview }: {
   status: PullRequestStatus
   title: string
   items: PullRequestItem[]
@@ -293,50 +329,50 @@ function PullRequestColumn({ status, title, items, selectedIds, onSelect, onArch
   onArchive: (item: PullRequestItem) => void
   onStartReview: (item: PullRequestItem) => void
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `pr:${status}`, data: { status } })
+  const [expanded, setExpanded] = useState(true)
 
   return (
-    <div className="linear-column min-w-[280px]">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-medium">{title}</h2>
-        <span className="linear-badge linear-badge-default">{items.length}</span>
-      </div>
-      <div ref={setNodeRef} className={classNames('min-h-[240px] space-y-3 rounded-lg border p-3', isOver && 'border-[color:var(--color-accent)]')}>
-        {items.map((item) => (
-          <PullRequestDraggableCard
-            key={item.id}
-            item={item}
-            selected={selectedIds.has(item.id)}
-            onSelect={onSelect}
-            onArchive={onArchive}
-            onStartReview={onStartReview}
-          />
-        ))}
-        {items.length === 0 ? <p className="py-6 text-center text-xs text-[color:var(--color-text-tertiary)]">No pull requests</p> : null}
-      </div>
-    </div>
-  )
-}
+    <div className="mb-4 bg-[color:var(--color-bg-primary)] border border-[color:var(--color-border-default)] rounded-xl shadow-sm overflow-hidden">
+      <button 
+        type="button" 
+        onClick={() => setExpanded(!expanded)} 
+        className={classNames("w-full flex items-center justify-between px-4 py-3 bg-[color:var(--color-bg-secondary)] hover:bg-[color:var(--color-bg-tertiary)] transition-colors text-left", expanded && "border-b border-[color:var(--color-border-subtle)]")}
+      >
+        <div className="flex items-center gap-2.5">
+          <span className={classNames('status-dot', columnStatusColors[status])} />
+          <h2 className="font-semibold text-sm text-[color:var(--color-text-primary)]">{title}</h2>
+          <span className="inline-flex items-center rounded-full bg-[color:var(--color-bg-tertiary)] px-2 py-0.5 text-xs font-medium text-[color:var(--color-text-secondary)]">
+            {items.length}
+          </span>
+        </div>
+        <svg 
+          className={classNames("w-5 h-5 text-[color:var(--color-text-tertiary)] transition-transform", expanded ? "rotate-180" : "rotate-0")} 
+          viewBox="0 0 20 20" 
+          fill="currentColor"
+        >
+          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
 
-function PullRequestDraggableCard({ item, selected, onSelect, onArchive, onStartReview }: {
-  item: PullRequestItem
-  selected: boolean
-  onSelect: (id: number, checked: boolean) => void
-  onArchive: (item: PullRequestItem) => void
-  onStartReview: (item: PullRequestItem) => void
-}) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: `pr-card:${item.id}`, data: { item } })
-  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined
 
-  return (
-    <div ref={setNodeRef} style={style} className={classNames(isDragging && 'opacity-60')} {...attributes} {...listeners}>
-      <PullRequestCard
-        item={item}
-        selected={selected}
-        onSelect={(checked) => onSelect(item.id, checked)}
-        onArchive={() => onArchive(item)}
-        onStartReview={() => onStartReview(item)}
-      />
+      {expanded && (
+        <div className="p-2 sm:p-3 space-y-2 bg-[color:var(--color-bg-secondary)]">
+          {items.length > 0 ? items.map((item) => (
+            <PullRequestCard
+              key={item.id}
+              item={item}
+              selected={selectedIds.has(item.id)}
+              onSelect={(checked) => onSelect(item.id, checked)}
+              onArchive={() => onArchive(item)}
+              onStartReview={() => onStartReview(item)}
+            />
+          )) : (
+            <div className="py-8 text-center text-sm text-[color:var(--color-text-quaternary)]">
+              No pull requests in this section
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -347,12 +383,13 @@ function PullRequestsPage() {
   const { pushToast } = useToasts()
   const [search, setSearch] = useState('')
   const [stateFilter, setStateFilter] = useState<'all' | PullRequestStatus>('all')
+  const [requestedToMeOnly, setRequestedToMeOnly] = useState(false)
   const [showOwnPrs, setShowOwnPrs] = useState(true)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [reviewModalItem, setReviewModalItem] = useState<PullRequestItem | null>(null)
+  const [sortBy, setSortBy] = useState<SortOption>('oldest')
   const [repoMenuOpen, setRepoMenuOpen] = useState(false)
   const [reviewForm, setReviewForm] = useState({ cli_client: 'claude', review_type: 'review' })
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
   const board = useQuery({
     queryKey: queryKeys.pullRequestBoard,
@@ -362,6 +399,7 @@ function PullRequestsPage() {
   useEffect(() => {
     if (board.data) {
       setReviewForm((current) => ({ ...current, cli_client: board.data.repositories.current_repo_slug ? current.cli_client : current.cli_client }))
+      setRequestedToMeOnly(board.data.settings.only_requested_reviews)
     }
   }, [board.data])
 
@@ -377,18 +415,38 @@ function PullRequestsPage() {
 
   const reviewScopeMutation = useMutation({
     mutationFn: (requested_to_me_only: boolean) => api.patch<UiMutationResponse>('/api/v1/pull_requests/review_scope', { requested_to_me_only }),
-    onSuccess: (response) => {
+    onSuccess: (response, requested_to_me_only) => {
       pushToast(response.message ?? 'Review scope updated', 'success')
-      queryClient.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
+      queryClient.setQueryData<PullRequestBoardResponse | undefined>(queryKeys.pullRequestBoard, (current) => {
+        if (!current) return current
+
+        return {
+          ...current,
+          settings: {
+            ...current.settings,
+            only_requested_reviews: requested_to_me_only,
+          },
+        }
+      })
+      queryClient.setQueryData<BootstrapResponse | undefined>(queryKeys.bootstrap, (current) => {
+        if (!current) return current
+
+        return {
+          ...current,
+          settings: {
+            ...current.settings,
+            only_requested_reviews: requested_to_me_only,
+          },
+        }
+      })
     },
-    onError: (error) => pushToast(errorMessage(error), 'error'),
+    onError: (error, requested_to_me_only) => {
+      setRequestedToMeOnly(!requested_to_me_only)
+      pushToast(errorMessage(error), 'error')
+    },
   })
 
-  const statusMutation = useMutation({
-    mutationFn: ({ id, review_status }: { id: number; review_status: PullRequestStatus }) => api.patch<UiMutationResponse>(`/api/v1/pull_requests/${id}/status`, { review_status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.pullRequestBoard }),
-    onError: (error) => pushToast(errorMessage(error), 'error'),
-  })
+
 
   const archiveMutation = useMutation({
     mutationFn: (id: number) => api.patch<UiMutationResponse>(`/api/v1/pull_requests/${id}/archive`),
@@ -439,32 +497,20 @@ function PullRequestsPage() {
 
   const filteredColumns = useMemo(() => {
     if (!board.data) return null
-    const login = board.data.settings.current_user_login?.toLowerCase()
-    const next = {} as PullRequestBoardResponse['columns']
 
-    for (const column of pullRequestColumns) {
-      next[column.key] = board.data.columns[column.key].filter((item) => {
-        const matchesSearch = !search || item.title.toLowerCase().includes(search.toLowerCase()) || item.repo_full_name.toLowerCase().includes(search.toLowerCase())
-        const matchesState = stateFilter === 'all' || item.review_status === stateFilter
-        const matchesOwnPr = showOwnPrs || !login || item.author?.toLowerCase() !== login
-        return matchesSearch && matchesState && matchesOwnPr
-      })
-    }
-
-    return next
-  }, [board.data, search, showOwnPrs, stateFilter])
+    return filterPullRequestColumns({
+      board: board.data,
+      search,
+      stateFilter,
+      showOwnPrs,
+      requestedToMeOnly,
+      sortBy,
+    })
+  }, [board.data, requestedToMeOnly, search, showOwnPrs, stateFilter, sortBy])
 
   const visibleCount = filteredColumns ? Object.values(filteredColumns).reduce((sum, items) => sum + items.length, 0) : 0
 
-  function handleDragEnd(event: DragEndEvent) {
-    const item = event.active.data.current?.item as PullRequestItem | undefined
-    const overId = event.over?.id as string | undefined
-    if (!item || !overId?.startsWith('pr:')) return
-    const status = overId.replace('pr:', '') as PullRequestStatus
-    if (status !== item.review_status) {
-      statusMutation.mutate({ id: item.id, review_status: status })
-    }
-  }
+
 
   if (board.isLoading) {
     return <LoadingScreen label="Loading pull requests..." />
@@ -477,79 +523,104 @@ function PullRequestsPage() {
   return (
     <div className="min-h-screen">
       <HeaderNav />
-      <div className="linear-filter-bar flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" className="linear-btn linear-btn-secondary" onClick={() => setRepoMenuOpen((value) => !value)}>
-            {board.data.current_repo.name ?? 'Select repo'}
-          </button>
-          {repoMenuOpen ? (
-            <div className="absolute mt-12 w-72 rounded-lg border bg-[color:var(--color-bg-secondary)] p-2 shadow-lg">
-              {board.data.repositories.items.map((repo) => (
-                <button key={repo.path} type="button" className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-[color:var(--color-bg-tertiary)]" onClick={() => repo.slug && switchRepoMutation.mutate(repo.slug)}>
-                  <span>{repo.name}</span>
-                  {repo.current ? <span className="linear-badge linear-badge-blue">Current</span> : null}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search PRs..." className="linear-input w-[220px]" />
+      <div className="linear-filter-bar">
+        <div className="flex flex-wrap items-center gap-2 flex-1">
+          <div className="relative">
+            <button type="button" className="linear-btn linear-btn-secondary" onClick={() => setRepoMenuOpen((value) => !value)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              {board.data.current_repo.name ?? 'Select repo'}
+            </button>
+            {repoMenuOpen ? (
+              <div className="linear-dropdown absolute left-0 top-full mt-1 w-72 z-50">
+                {board.data.repositories.items.map((repo) => (
+                  <button key={repo.path} type="button" className="linear-dropdown-item w-full text-left" onClick={() => repo.slug && switchRepoMutation.mutate(repo.slug)}>
+                    <span className="flex-1">{repo.name}</span>
+                    {repo.current ? <span className="linear-badge linear-badge-blue">Current</span> : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search PRs..." className="linear-input w-[200px]" />
           <select value={stateFilter} onChange={(event) => setStateFilter(event.target.value as 'all' | PullRequestStatus)} className="linear-select">
             <option value="all">All states</option>
             {pullRequestColumns.map((column) => <option key={column.key} value={column.key}>{column.title}</option>)}
           </select>
-          <label className="flex items-center gap-2 text-xs">
-            <input checked={board.data.settings.only_requested_reviews} onChange={(event) => reviewScopeMutation.mutate(event.target.checked)} type="checkbox" className="rounded linear-checkbox-accent" />
+          <div className="hidden-mobile h-4 w-px bg-[color:var(--color-border-default)]" />
+          <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+            <input
+              checked={requestedToMeOnly}
+              onChange={(event) => {
+                const nextValue = event.target.checked
+                setRequestedToMeOnly(nextValue)
+                reviewScopeMutation.mutate(nextValue)
+              }}
+              type="checkbox"
+              className="rounded linear-checkbox-accent"
+            />
             Requested to me only
           </label>
-          <label className="flex items-center gap-2 text-xs">
+          <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
             <input checked={showOwnPrs} onChange={(event) => setShowOwnPrs(event.target.checked)} type="checkbox" className="rounded linear-checkbox-accent" />
             Show my PRs
           </label>
-          <button type="button" className="linear-btn linear-btn-primary" onClick={() => syncMutation.mutate(false)}>Sync</button>
+          <div className="hidden-mobile h-4 w-px bg-[color:var(--color-border-default)] mx-1" />
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value as SortOption)} className="linear-select hidden-mobile">
+            <option value="oldest">Sort: Oldest</option>
+            <option value="newest">Sort: Newest</option>
+            <option value="recent_activity">Sort: Recent Activity</option>
+            <option value="smallest_diff">Sort: Smallest Diff</option>
+            <option value="repo">Sort: Repository</option>
+            <option value="author">Sort: Author</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" className="linear-btn linear-btn-primary" onClick={() => syncMutation.mutate(false)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Sync
+          </button>
           {!board.data.sync_status.sync_needed ? (
             <button type="button" className="linear-btn linear-btn-ghost" onClick={() => syncMutation.mutate(true)}>Force sync</button>
           ) : null}
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-xs text-[color:var(--color-text-tertiary)]">{visibleCount} PRs shown</span>
-          <div className="flex items-center gap-2">
-            {selectedIds.size > 0 ? (
-              <button type="button" className="linear-btn linear-btn-secondary" onClick={() => {
-                if (window.confirm(`Delete ${selectedIds.size} pull requests?`)) {
-                  bulkDeleteMutation.mutate([ ...selectedIds ])
-                }
-              }}>
-                Delete Selected ({selectedIds.size})
-              </button>
-            ) : null}
-            <span className="text-xs text-[color:var(--color-text-tertiary)]">Last synced: {formatDateTime(board.data.sync_status.last_synced_at)}</span>
-          </div>
+      </div>
+      <div className="flex items-center justify-between gap-3 px-5 py-2 text-[11px] text-[color:var(--color-text-tertiary)] border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-secondary)]">
+        <span>{visibleCount} PRs shown</span>
+        <div className="flex items-center gap-3">
+          {selectedIds.size > 0 ? (
+            <button type="button" className="linear-btn linear-btn-danger linear-btn-sm" onClick={() => {
+              if (window.confirm(`Delete ${selectedIds.size} pull requests?`)) {
+                bulkDeleteMutation.mutate([ ...selectedIds ])
+              }
+            }}>
+              Delete Selected ({selectedIds.size})
+            </button>
+          ) : null}
+          <span>Last synced: {formatDateTime(board.data.sync_status.last_synced_at)}</span>
         </div>
       </div>
-      <div className="flex gap-4 overflow-x-auto p-4">
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          {pullRequestColumns.map((column) => (
-            <PullRequestColumn
-              key={column.key}
-              status={column.key}
-              title={column.title}
-              items={filteredColumns[column.key]}
-              selectedIds={selectedIds}
-              onSelect={(id, checked) => setSelectedIds((current) => {
-                const next = new Set(current)
-                if (checked) next.add(id)
-                else next.delete(id)
-                return next
-              })}
-              onArchive={(item) => {
-                if (window.confirm(`Archive PR #${item.number}?`)) {
-                  archiveMutation.mutate(item.id)
-                }
-              }}
-              onStartReview={setReviewModalItem}
-            />
-          ))}
-        </DndContext>
+      <div className="max-w-5xl mx-auto p-4 md:p-6 sm:space-y-6 space-y-4">
+        {pullRequestColumns.map((column) => (
+          <PullRequestSection
+            key={column.key}
+            status={column.key}
+            title={column.title}
+            items={filteredColumns[column.key]}
+            selectedIds={selectedIds}
+            onSelect={(id, checked) => setSelectedIds((current) => {
+              const next = new Set(current)
+              if (checked) next.add(id)
+              else next.delete(id)
+              return next
+            })}
+            onArchive={(item) => {
+              if (window.confirm(`Archive PR #${item.number}?`)) {
+                archiveMutation.mutate(item.id)
+              }
+            }}
+            onStartReview={setReviewModalItem}
+          />
+        ))}
       </div>
       {reviewModalItem ? (
         <Modal title={`Start review for #${reviewModalItem.number}`} onClose={() => setReviewModalItem(null)}>
@@ -584,20 +655,23 @@ function ReviewTaskCard({ item, onArchive, onRetry, onDequeue }: {
   onDequeue: (item: ReviewTaskItem) => void
 }) {
   return (
-    <div className="kanban-card rounded-lg border bg-[color:var(--color-bg-secondary)] p-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-xs text-[color:var(--color-text-tertiary)]">#{item.pull_request?.number}</span>
-        <span className={`linear-badge ${statusChipClass(item.state)} text-[10px]`}>{item.state.replaceAll('_', ' ')}</span>
+    <div className="linear-card group">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <span className="linear-card-id">#{item.pull_request?.number}</span>
+        <span className={`linear-badge ${statusChipClass(item.state)}`}>{item.state.replaceAll('_', ' ')}</span>
       </div>
-      <h3 className="text-sm font-medium">
+      <h3 className="linear-card-title line-clamp-2">
         <NavLink to={`/review_tasks/${item.id}`}>{item.pull_request?.title}</NavLink>
       </h3>
-      <div className="mt-3 flex items-center justify-between text-xs text-[color:var(--color-text-tertiary)]">
-        <span>{item.pull_request?.repo_name}</span>
-        <span>{item.pull_request?.author}</span>
+      <div className="linear-card-meta">
+        <span className="linear-card-label">{item.pull_request?.repo_name}</span>
+        <div className="flex-1" />
+        <span className="text-[11px] text-[color:var(--color-text-tertiary)]">{item.pull_request?.author}</span>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className="linear-btn linear-btn-ghost linear-btn-sm" onClick={() => onArchive(item)}>Archive</button>
+      <div className="mt-3 pt-2.5 border-t border-[color:var(--color-border-subtle)] flex flex-wrap gap-2">
+        <button type="button" className="linear-btn linear-btn-ghost linear-btn-sm opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => onArchive(item)} title="Archive">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
         {item.state === 'queued' ? <button type="button" className="linear-btn linear-btn-ghost linear-btn-sm" onClick={() => onDequeue(item)}>Dequeue</button> : null}
         {item.state === 'failed_review' && item.can_retry ? <button type="button" className="linear-btn linear-btn-ghost linear-btn-sm" onClick={() => onRetry(item)}>Retry</button> : null}
       </div>
@@ -632,16 +706,17 @@ function ReviewTaskColumn({ state, title, items, onArchive, onRetry, onDequeue }
   const { setNodeRef, isOver } = useDroppable({ id: `task:${state}`, data: { state } })
 
   return (
-    <div className="min-w-[280px]">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-medium">{title}</h2>
-        <span className="linear-badge linear-badge-default">{items.length}</span>
+    <div className="linear-column">
+      <div className="linear-column-header">
+        <span className={classNames('status-dot', columnStatusColors[state] ?? 'bg-[color:var(--color-text-tertiary)]')} />
+        <span>{title}</span>
+        <span className="count">{items.length}</span>
       </div>
-      <div ref={setNodeRef} className={classNames('min-h-[240px] space-y-3 rounded-lg border p-3', isOver && 'border-[color:var(--color-accent)]')}>
+      <div ref={setNodeRef} className={classNames('linear-column-content', isOver && 'kanban-column--active')}>
         {items.map((item) => (
           <ReviewTaskDraggableCard key={item.id} item={item} onArchive={onArchive} onRetry={onRetry} onDequeue={onDequeue} />
         ))}
-        {items.length === 0 ? <p className="py-6 text-center text-xs text-[color:var(--color-text-tertiary)]">No review tasks</p> : null}
+        {items.length === 0 ? <p className="py-8 text-center text-xs text-[color:var(--color-text-quaternary)]">No review tasks</p> : null}
       </div>
     </div>
   )
@@ -731,14 +806,14 @@ function ReviewTasksPage() {
   return (
     <div className="min-h-screen">
       <HeaderNav />
-      <div className="linear-filter-bar flex flex-wrap items-center gap-2">
+      <div className="linear-filter-bar">
         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search review tasks..." className="linear-input w-[240px]" />
         <select value={stateFilter} onChange={(event) => setStateFilter(event.target.value as 'all' | ReviewTaskState)} className="linear-select">
           <option value="all">All states</option>
           {reviewTaskColumns.map((column) => <option key={column.key} value={column.key}>{column.title}</option>)}
         </select>
       </div>
-      <div className="flex gap-4 overflow-x-auto p-4">
+      <div className="linear-board">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           {reviewTaskColumns.map((column) => (
             <ReviewTaskColumn
@@ -1190,7 +1265,10 @@ function LoadingScreen({ label }: { label: string }) {
   return (
     <div className="min-h-screen">
       <HeaderNav />
-      <div className="p-6 text-sm text-[color:var(--color-text-tertiary)]">{label}</div>
+      <div className="flex items-center justify-center gap-3 p-12">
+        <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5"><circle cx="12" cy="12" r="10" strokeOpacity="0.2" /><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" /></svg>
+        <span className="text-sm text-[color:var(--color-text-tertiary)]">{label}</span>
+      </div>
     </div>
   )
 }
@@ -1199,7 +1277,10 @@ function ErrorScreen({ message }: { message: string }) {
   return (
     <div className="min-h-screen">
       <HeaderNav />
-      <div className="p-6 text-sm text-red-500">{message}</div>
+      <div className="flex items-center gap-3 p-6 mx-4 mt-6 rounded-xl" style={{ background: 'var(--color-surface-danger-bg)', border: '1px solid var(--color-surface-danger-border)' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-status-blocked)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <span className="text-sm" style={{ color: 'var(--color-surface-danger-text)' }}>{message}</span>
+      </div>
     </div>
   )
 }

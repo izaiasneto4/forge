@@ -38,7 +38,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed top-20 right-4 z-[9999] flex max-w-sm flex-col gap-3">
+      <div className="global-toast-stack flex max-w-sm flex-col gap-3">
         {toasts.map((toast) => (
           <div
             key={toast.id}

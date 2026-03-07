@@ -10,12 +10,17 @@
  */
 
 /* Global toast notifications */
-.global-toast {
+.global-toast-stack {
   position: fixed;
   top: 5rem;
   right: 1rem;
   z-index: 9999;
+  width: min(24rem, calc(100vw - 2rem));
+}
+
+.global-toast {
   max-width: 24rem;
+  width: 100%;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
