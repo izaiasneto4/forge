@@ -10,6 +10,38 @@
 - [ ] Remove importmap/Stimulus/Turbo/tailwindcss-rails app UI runtime and delete obsolete Rails UI views/controllers/assets
 - [ ] Run targeted Rails tests, frontend tests, and production build checks; record results and remaining gaps
 
+## 2026-03-06 Requested-To-Me Toggle Bug Plan
+
+- [x] Add a frontend regression test proving the requested-only toggle filters the loaded board immediately in memory
+- [x] Add a Rails regression test proving the review-scope toggle persists preference without forcing a GitHub resync
+- [x] Persist `review_requested_for_me` on pull requests and expose it in the UI payloads
+- [x] Update the React pull-request board to keep local requested-only state and filter instantly from loaded data
+- [x] Run targeted frontend/Rails tests plus a browser smoke check and record results
+
+## 2026-03-06 Requested-To-Me Toggle Bug Review
+
+- Stopped `PATCH /api/v1/pull_requests/review_scope` from forcing a GitHub refresh/sync; it now only persists the preference and returns the current board payload.
+- Added `pull_requests.review_requested_for_me` and carried it through sync, diffing, persistence, and UI payload serialization.
+- Changed PR syncing to always keep the full open-board dataset so the requested-only toggle can be a local filter instead of a server-scoped fetch mode.
+- Added frontend filter utility coverage and Rails controller coverage for the regression.
+- Updated the React PR board to keep local requested-only state, filter loaded columns in memory, and persist the preference in the background.
+
+### Verification
+
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+- `SKIP_COVERAGE=1 asdf exec bundle exec rails test test/controllers/api/v1/pull_requests_controller_test.rb test/services/sync/fetch_all_prs_test.rb test/services/sync/orchestrator_test.rb test/services/github_cli_service_test.rb`
+- Live browser smoke:
+  - `PATCH /api/v1/pull_requests/review_scope` to `true` returned `200`
+  - Playwright screenshot of `/` after that showed `Requested to me only` enabled and `0 PRs shown`
+  - Restored `requested_to_me_only` back to `false` after the check
+
+## 2026-03-06 Toast Overlap Bug Plan
+
+- [ ] Add a frontend regression test covering the toast stacking CSS contract
+- [ ] Move toast positioning responsibility to the stack container so multiple toasts do not share the same fixed coordinates
+- [ ] Run targeted frontend tests and build
+
 ## Notes
 
 - Existing UI behavior is concentrated in five screens: pull request board, review task board, review task detail, repositories, settings.
