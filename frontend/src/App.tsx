@@ -194,10 +194,10 @@ function UiEventSubscriptions() {
             client.invalidateQueries({ queryKey: queryKeys.reviewTaskBoard })
             client.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
             break
+          case 'sync.started':
           case 'sync.completed':
             client.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
             client.invalidateQueries({ queryKey: queryKeys.bootstrap })
-            pushToast('Sync completed', 'success')
             break
           case 'sync.failed':
             pushToast(event.error ?? 'Sync failed', 'error')
@@ -249,6 +249,16 @@ function QueryBootstrap() {
   return null
 }
 
+function getPrSizeCategory(additions: number | null, deletions: number | null): { label: string, colorClass: string, lines: number } | null {
+  if (additions == null || deletions == null) return null;
+  const total = additions + deletions;
+  if (total < 50) return { label: 'XS', colorClass: 'linear-badge-green', lines: total };
+  if (total < 200) return { label: 'S', colorClass: 'linear-badge-blue', lines: total };
+  if (total < 500) return { label: 'M', colorClass: 'linear-badge-yellow', lines: total };
+  if (total < 1000) return { label: 'L', colorClass: 'linear-badge-orange', lines: total };
+  return { label: 'XL', colorClass: 'linear-badge-red', lines: total };
+}
+
 function PullRequestCard({ item, selected, onSelect, onArchive, onStartReview }: {
   item: PullRequestItem
   selected: boolean
@@ -257,6 +267,7 @@ function PullRequestCard({ item, selected, onSelect, onArchive, onStartReview }:
   onStartReview: () => void
 }) {
   const task = item.review_task
+  const sizeCategory = getPrSizeCategory(item.additions, item.deletions)
 
   return (
     <div className="group relative flex items-center gap-3 p-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-primary)] hover:border-[color:var(--color-border-default)] transition-colors">
@@ -268,11 +279,26 @@ function PullRequestCard({ item, selected, onSelect, onArchive, onStartReview }:
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono text-[color:var(--color-text-tertiary)]">#{item.number}</span>
             <span className="text-xs font-medium text-[color:var(--color-text-secondary)]">{item.repo_name}</span>
+
+            {sizeCategory && (
+              <span className={classNames('linear-badge text-[10px] px-1.5 py-0', sizeCategory.colorClass)} title={`${sizeCategory.lines} lines changed`}>
+                {sizeCategory.label} • {sizeCategory.lines} lines
+              </span>
+            )}
+
             {task ? <span className={classNames('linear-badge text-[10px] px-1.5 py-0', statusChipClass(task.state))}>{task.state.replaceAll('_', ' ')}</span> : null}
+            {item.review_requested_for_me ? <span className="linear-badge linear-badge-blue text-[10px] px-1.5 py-0">requested</span> : null}
+            {item.analysis_status === 'stale' ? <span className="linear-badge linear-badge-yellow text-[10px] px-1.5 py-0">AI stale</span> : null}
+            {item.draft ? <span className="linear-badge linear-badge-default text-[10px] px-1.5 py-0">draft</span> : null}
           </div>
           <a href={item.url} target="_blank" rel="noreferrer" className="block w-fit max-w-full">
             <h3 className="text-sm font-medium text-[color:var(--color-text-primary)] truncate hover:text-[color:var(--color-accent)] cursor-pointer">{item.title}</h3>
           </a>
+          {item.analysis_status === 'stale' ? (
+            <p className="mt-1 text-[11px] text-[color:var(--color-text-secondary)]">
+              Remote revision changed from the reviewed snapshot. Refresh analysis before trusting prior AI output.
+            </p>
+          ) : null}
         </div>
 
         {/* Author */}
@@ -406,17 +432,17 @@ function PullRequestsPage() {
   const syncMutation = useMutation({
     mutationFn: (force: boolean) => api.post<UiMutationResponse>('/api/v1/pull_requests/sync', { force }),
     onSuccess: (response) => {
-      pushToast(response.message ?? 'Sync finished', 'success')
+      pushToast(response.message ?? 'Sync finished', 'success', { key: 'sync-status' })
       queryClient.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
       queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap })
     },
-    onError: (error) => pushToast(errorMessage(error), 'error'),
+    onError: (error) => pushToast(errorMessage(error), 'error', { key: 'sync-status' }),
   })
 
   const reviewScopeMutation = useMutation({
     mutationFn: (requested_to_me_only: boolean) => api.patch<UiMutationResponse>('/api/v1/pull_requests/review_scope', { requested_to_me_only }),
     onSuccess: (response, requested_to_me_only) => {
-      pushToast(response.message ?? 'Review scope updated', 'success')
+      pushToast(response.message ?? 'Review scope updated', 'success', { key: 'review-scope' })
       queryClient.setQueryData<PullRequestBoardResponse | undefined>(queryKeys.pullRequestBoard, (current) => {
         if (!current) return current
 
@@ -442,7 +468,7 @@ function PullRequestsPage() {
     },
     onError: (error, requested_to_me_only) => {
       setRequestedToMeOnly(!requested_to_me_only)
-      pushToast(errorMessage(error), 'error')
+      pushToast(errorMessage(error), 'error', { key: 'review-scope' })
     },
   })
 
@@ -510,6 +536,32 @@ function PullRequestsPage() {
 
   const visibleCount = filteredColumns ? Object.values(filteredColumns).reduce((sum, items) => sum + items.length, 0) : 0
 
+  useEffect(() => {
+    if (!board.data) return
+
+    const maybeSync = () => {
+      if (document.visibilityState !== 'visible') return
+      if (!board.data.sync_status.sync_needed) return
+      if (syncMutation.isPending) return
+
+      syncMutation.mutate(false)
+    }
+
+    maybeSync()
+
+    const intervalId = window.setInterval(maybeSync, 120_000)
+    const onVisibilityChange = () => {
+      maybeSync()
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      window.clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [board.data, syncMutation])
+
 
 
   if (board.isLoading) {
@@ -575,9 +627,9 @@ function PullRequestsPage() {
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" className="linear-btn linear-btn-primary" onClick={() => syncMutation.mutate(false)}>
+          <button type="button" className="linear-btn linear-btn-primary" disabled={syncMutation.isPending || board.data.sync_status.running} onClick={() => syncMutation.mutate(false)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            Sync
+            {syncMutation.isPending || board.data.sync_status.running ? 'Syncing…' : 'Sync'}
           </button>
           {!board.data.sync_status.sync_needed ? (
             <button type="button" className="linear-btn linear-btn-ghost" onClick={() => syncMutation.mutate(true)}>Force sync</button>
@@ -596,9 +648,15 @@ function PullRequestsPage() {
               Delete Selected ({selectedIds.size})
             </button>
           ) : null}
+          <span>Sync: {board.data.sync_status.status}</span>
           <span>Last synced: {formatDateTime(board.data.sync_status.last_synced_at)}</span>
         </div>
       </div>
+      {board.data.sync_status.last_error ? (
+        <div className="mx-auto mt-4 max-w-5xl rounded-lg border border-[color:var(--color-surface-danger-border)] bg-[color:var(--color-surface-danger-bg)] px-4 py-3 text-sm text-[color:var(--color-surface-danger-text)]">
+          Sync error: {board.data.sync_status.last_error}
+        </div>
+      ) : null}
       <div className="max-w-5xl mx-auto p-4 md:p-6 sm:space-y-6 space-y-4">
         {pullRequestColumns.map((column) => (
           <PullRequestSection

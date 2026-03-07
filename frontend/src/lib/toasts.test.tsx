@@ -40,4 +40,36 @@ describe('ToastProvider', () => {
     expect(screen.getByText('First toast')).toBeTruthy()
     expect(screen.getByText('Second toast')).toBeTruthy()
   })
+
+  it('replaces repeated keyed toasts instead of stacking duplicates', async () => {
+    function KeyedToastHarness() {
+      const { pushToast } = useToasts()
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            pushToast('Requested only enabled', 'success', { key: 'review-scope' })
+            pushToast('All open PRs enabled', 'success', { key: 'review-scope' })
+          }}
+        >
+          Push keyed toasts
+        </button>
+      )
+    }
+
+    const { container } = render(
+      <ToastProvider>
+        <KeyedToastHarness />
+      </ToastProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Push keyed toasts' }))
+    await screen.findByText('All open PRs enabled')
+
+    const toasts = container.querySelectorAll('.global-toast')
+
+    expect(toasts).toHaveLength(1)
+    expect(screen.queryByText('Requested only enabled')).toBeNull()
+  })
 })

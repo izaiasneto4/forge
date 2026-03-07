@@ -5,7 +5,17 @@ export interface ApiError {
 }
 
 export interface SyncStatus {
+  status: 'idle' | 'running' | 'succeeded' | 'partial' | 'failed'
+  running: boolean
   last_synced_at: string | null
+  last_started_at: string | null
+  last_finished_at: string | null
+  last_succeeded_at: string | null
+  last_error: string | null
+  fetched_count: number
+  created_count: number
+  updated_count: number
+  deactivated_count: number
   seconds_until_sync_allowed: number
   sync_needed: boolean
 }
@@ -69,6 +79,9 @@ export interface PullRequestReviewTaskSummary {
   has_review_history: boolean
   current_iteration_number: number
   swarm_review: boolean
+  pull_request_snapshot_id: number | null
+  analysis_status: 'none' | 'pending' | 'current' | 'stale'
+  snapshot_current: boolean
 }
 
 export interface PullRequestItem {
@@ -86,7 +99,22 @@ export interface PullRequestItem {
   archived: boolean
   created_at_github: string | null
   updated_at_github: string | null
+  remote_state: 'open' | 'closed' | 'merged' | 'inaccessible'
+  inactive_reason: string | null
+  snapshot_status: 'missing' | 'current' | 'stale'
+  analysis_status: 'none' | 'pending' | 'current' | 'stale'
+  head_sha: string | null
+  base_sha: string | null
+  head_ref: string | null
+  base_ref: string | null
+  latest_review_state: string | null
+  review_decision: string | null
+  check_status: string | null
+  draft: boolean
   review_requested_for_me: boolean
+  additions: number | null
+  deletions: number | null
+  changed_files: number | null
   review_task: PullRequestReviewTaskSummary | null
 }
 
@@ -113,6 +141,13 @@ export interface CompactPullRequest {
   repo_name: string
   repo_full_name: string
   review_status: PullRequestStatus
+  remote_state: 'open' | 'closed' | 'merged' | 'inaccessible'
+  inactive_reason: string | null
+  snapshot_status: 'missing' | 'current' | 'stale'
+  analysis_status: 'none' | 'pending' | 'current' | 'stale'
+  additions: number | null
+  deletions: number | null
+  changed_files: number | null
 }
 
 export interface ReviewTaskItem {
@@ -252,6 +287,8 @@ export interface BootstrapResponse {
 
 export interface UiMutationResponse {
   message?: string
+  sync?: SyncStatus
+  already_running?: boolean
   board?: PullRequestBoardResponse
   detail?: ReviewTaskDetailResponse
   review_task_board?: ReviewTaskBoardResponse
