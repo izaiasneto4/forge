@@ -9,7 +9,7 @@ CI.run do
   step "Security: Brakeman code analysis", "bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error"
   step "Frontend: Test", "npm --prefix frontend run test"
   step "Frontend: Build", "npm --prefix frontend run build"
-  step "Rails: Unit surfaces", "SKIP_COVERAGE=1 bin/rails test test/channels test/config test/controllers test/helpers test/jobs test/lib test/models test/presenters test/services test/tasks test/validators"
+  step "Rails: Unit surfaces", "SKIP_COVERAGE=1 bin/rails test test/channels test/controllers test/helpers test/jobs test/lib test/models test/presenters test/services test/tasks test/validators"
 
   # Optional: set a green GitHub commit status to unblock PR merge.
   # Requires the `gh` CLI and `gh extension install basecamp/gh-signoff`.

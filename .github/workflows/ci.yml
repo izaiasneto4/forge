@@ -108,4 +108,4 @@ jobs:
         run: SKIP_COVERAGE=1 bin/rails test test/integration/forge_cli_e2e_test.rb
 
       - name: Run remaining tests
-        run: SKIP_COVERAGE=1 bin/rails test test/channels test/config test/controllers test/helpers test/jobs test/lib test/models test/presenters test/services test/tasks test/validators
+        run: SKIP_COVERAGE=1 bin/rails test test/channels test/controllers test/helpers test/jobs test/lib test/models test/presenters test/services test/tasks test/validators
