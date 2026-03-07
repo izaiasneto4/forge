@@ -135,4 +135,28 @@ describe('filterPullRequestColumns', () => {
     expect(filtered.pending_review[0]?.number).toBe(101)
     expect(board.columns.pending_review).toHaveLength(2)
   })
+
+  it('sorts by longest waiting (oldest updated_at_github first)', () => {
+    const board = buildBoard()
+    const pr0 = board.columns.pending_review[0]
+    const pr1 = board.columns.pending_review[1]
+    if (pr0 && pr1) {
+      board.columns.pending_review = [
+        { ...pr0, id: 1, number: 101, updated_at_github: '2024-03-01T10:00:00Z' },
+        { ...pr1, id: 2, number: 102, updated_at_github: '2024-02-01T10:00:00Z' },
+      ]
+    }
+
+    const filtered = filterPullRequestColumns({
+      board,
+      search: '',
+      stateFilter: 'all',
+      showOwnPrs: true,
+      requestedToMeOnly: false,
+      sortBy: 'longest_waiting',
+    })
+
+    expect(filtered.pending_review[0]?.number).toBe(102)
+    expect(filtered.pending_review[1]?.number).toBe(101)
+  })
 })

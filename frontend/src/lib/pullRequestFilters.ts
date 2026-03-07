@@ -1,6 +1,6 @@
 import type { PullRequestBoardResponse, PullRequestStatus } from '../types/api'
 
-export type SortOption = 'oldest' | 'newest' | 'smallest_diff' | 'repo' | 'author' | 'recent_activity'
+export type SortOption = 'oldest' | 'newest' | 'smallest_diff' | 'repo' | 'author' | 'recent_activity' | 'longest_waiting'
 
 type FilterOptions = {
   board: PullRequestBoardResponse
@@ -21,10 +21,29 @@ export function filterPullRequestColumns({
 }: FilterOptions): PullRequestBoardResponse['columns'] {
   const login = board.settings.current_user_login?.toLowerCase()
   const query = search.trim().toLowerCase()
-  const next = {} as PullRequestBoardResponse['columns']
+  
+  const next: PullRequestBoardResponse['columns'] = {
+    pending_review: [],
+    in_review: [],
+    reviewed_by_me: [],
+    waiting_implementation: [],
+    reviewed_by_others: [],
+    review_failed: []
+  }
 
-  for (const [columnKey, items] of Object.entries(board.columns) as Array<[PullRequestStatus, PullRequestBoardResponse['columns'][PullRequestStatus]]>) {
+  const columnStatuses: PullRequestStatus[] = [
+    'pending_review',
+    'in_review',
+    'reviewed_by_me',
+    'waiting_implementation',
+    'reviewed_by_others',
+    'review_failed',
+  ]
+
+  for (const columnKey of columnStatuses) {
+    const items = board.columns[columnKey]
     const filtered = items.filter((item) => {
+
       const matchesSearch = !query || item.title.toLowerCase().includes(query) || item.repo_full_name.toLowerCase().includes(query)
       const matchesState = stateFilter === 'all' || item.review_status === stateFilter
       const matchesOwnPr = showOwnPrs || !login || item.author?.toLowerCase() !== login
@@ -39,6 +58,8 @@ export function filterPullRequestColumns({
           return new Date(a.created_at_github || 0).getTime() - new Date(b.created_at_github || 0).getTime()
         case 'newest':
           return new Date(b.created_at_github || 0).getTime() - new Date(a.created_at_github || 0).getTime()
+        case 'longest_waiting':
+          return new Date(a.updated_at_github || 0).getTime() - new Date(b.updated_at_github || 0).getTime()
         case 'recent_activity':
         case 'smallest_diff': // Fallback to recent activity since additions/deletions aren't available
           return new Date(b.updated_at_github || 0).getTime() - new Date(a.updated_at_github || 0).getTime()
