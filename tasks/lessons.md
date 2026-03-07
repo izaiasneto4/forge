@@ -11,3 +11,4 @@
 
 - For UI toggles over already-loaded board data, do not couple the checkbox to a server round-trip for visible behavior. Persist preference separately, but keep the screen response local and immediate.
 - For stacked overlay UIs, only the container should own fixed coordinates. Individual items using `position: fixed` will collapse into the same screen slot and ignore flex/grid stacking.
+- For repeated mutations on the same control, success toasts need a stable key so later responses replace earlier ones instead of piling up during fast toggles.

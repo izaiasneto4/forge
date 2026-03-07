@@ -1,3 +1,32 @@
+# 2026-03-07 Local-First PR Sync Engine Plan
+
+## Plan
+
+- [x] Add sync engine data model changes for remote PR truth, snapshots, review-task snapshot linkage, and repo-scoped sync status bookkeeping
+- [x] Implement a unified GitHub-backed sync engine and adapter that fetches full repo PR state, reconciles incremental changes, classifies disappearances, and prevents overlapping same-scope runs
+- [x] Derive board status from explicit remote state plus local workflow state, and mark AI artifacts stale when the reviewable revision changes
+- [x] Switch controllers/jobs/repo sync flows to the unified engine and expose expanded sync/PR metadata to the API/UI
+- [x] Add frontend polling and sync status consumption without redesigning the board
+- [x] Add regression coverage for reconciliation, snapshot invalidation, disappearance handling, sync status, and idempotency
+- [x] Run targeted Rails/frontend tests and record results
+
+## Review
+
+- Added repo-scoped sync persistence via `sync_states`, explicit remote PR fields on `pull_requests`, revision snapshots in `pull_request_snapshots`, and snapshot linkage on `review_tasks`.
+- Implemented `Sync::GithubAdapter` + `Sync::Engine` as the single sync path, including same-scope overlap protection, disappearance classification, snapshot activation, and stale-analysis invalidation.
+- Preserved local workflow state while deriving board placement from explicit remote state plus local review-task state through `PullRequestStatusClassifier`.
+- Switched sync entrypoints (`/api/v1/sync`, `/api/v1/pull_requests/sync`, repo switch, review sync lookup, sync job) to the new engine and expanded API payloads with sync/remote/snapshot metadata.
+- Updated the React board to poll every 2 minutes while visible, show sync health inline, and mark stale AI analysis on PR cards.
+- Added regression coverage for engine reconciliation, controller/job delegation, presenter sync payloads, and the updated frontend filtering contract.
+
+### Verification
+
+- `SKIP_COVERAGE=1 asdf exec bundle exec rails test test/services/sync/engine_test.rb test/services/sync/orchestrator_test.rb test/controllers/api/v1/syncs_controller_test.rb test/jobs/sync_pull_requests_job_test.rb`
+- `SKIP_COVERAGE=1 asdf exec bundle exec rails test test/presenters/pull_request_index_presenter_test.rb test/controllers/api/v1/pull_requests_controller_test.rb`
+- `SKIP_COVERAGE=1 asdf exec bundle exec rails test test/controllers/api/v1/status_controller_test.rb test/controllers/api/v1/repositories_controller_test.rb test/controllers/api/v1/reviews_controller_test.rb`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+
 # 2026-03-06 React/Vite Frontend + API-Only Rails
 
 ## Plan
@@ -38,9 +67,41 @@
 
 ## 2026-03-06 Toast Overlap Bug Plan
 
-- [ ] Add a frontend regression test covering the toast stacking CSS contract
-- [ ] Move toast positioning responsibility to the stack container so multiple toasts do not share the same fixed coordinates
-- [ ] Run targeted frontend tests and build
+- [x] Add a frontend regression test covering the toast stacking CSS contract
+- [x] Move toast positioning responsibility to the stack container so multiple toasts do not share the same fixed coordinates
+- [x] Run targeted frontend tests and build
+
+## 2026-03-06 Toast Overlap Bug Review
+
+- Moved fixed positioning from individual `.global-toast` items to a shared `.global-toast-stack` wrapper.
+- Left each toast as a normal child card so the flex column gap now stacks concurrent toasts instead of collapsing them into one screen position.
+- Added a frontend regression test that renders two toasts and asserts they share the same stack container.
+
+### Verification
+
+- `npm --prefix frontend run test -- toasts.test.tsx`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+
+## 2026-03-06 Toast Churn Bug Plan
+
+- [x] Add a frontend regression test proving repeated keyed toasts replace each other instead of stacking
+- [x] Update the toast store to support keyed replacement and timeout reset
+- [x] Use a stable key for the review-scope toggle success toast
+- [x] Run frontend tests and build
+
+## 2026-03-06 Toast Churn Bug Review
+
+- Added keyed toast replacement in the shared toast provider so repeated updates for the same UI action rewrite the existing toast instead of adding another card.
+- Reset toast dismiss timers when a keyed toast is replaced, so the latest message stays visible for the full timeout.
+- Bound the review-scope toggle success/error toast to a stable `review-scope` key in the PR board.
+- Added a frontend regression proving two rapid `review-scope` pushes collapse to a single toast.
+
+### Verification
+
+- `npm --prefix frontend run test -- toasts.test.tsx`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
 
 ## Notes
 
