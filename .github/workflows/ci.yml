@@ -31,13 +31,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          bundler-cache: true
+          node-version: 22.12.0
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci
 
       - name: Scan for security vulnerabilities in JavaScript dependencies
-        run: bin/importmap audit
+        run: npm --prefix frontend audit --omit=dev --audit-level=high
 
   lint:
     runs-on: ubuntu-latest
@@ -77,8 +82,21 @@ jobs:
         with:
           bundler-cache: true
 
-      - name: Build CSS
-        run: bin/rails tailwindcss:build
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci
+
+      - name: Run frontend tests
+        run: npm --prefix frontend run test
+
+      - name: Build frontend
+        run: npm --prefix frontend run build
 
       - name: Prepare database
         run: bin/rails db:prepare

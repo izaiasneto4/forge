@@ -1,3 +1,25 @@
+# 2026-03-07 CI Drift Fix Plan
+
+## Plan
+
+- [x] Remove the RuboCop offense causing the `lint` job failure
+- [x] Update GitHub Actions to use the current Vite/frontend workflow instead of removed `importmap` and `tailwindcss:build` commands
+- [x] Run the affected local verification commands and record results
+
+## Review
+
+- Replaced the stale `scan_js` importmap audit step with Node setup, `npm --prefix frontend ci`, and `npm --prefix frontend audit --omit=dev --audit-level=high`.
+- Replaced the stale Rails `tailwindcss:build` step with Node setup, frontend dependency install, `npm --prefix frontend run test`, and `npm --prefix frontend run build`.
+- Removed the trailing blank line in `PullRequestsController` that was breaking RuboCop.
+- Aligned `bin/ci` with the workflow by adding a frontend test step before the frontend build.
+
+### Verification
+
+- `bin/rubocop app/controllers/api/v1/pull_requests_controller.rb`
+- `npm --prefix frontend audit --omit=dev --audit-level=high`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+
 # 2026-03-07 Claude Review Detail Refresh Bug Plan
 
 ## Plan

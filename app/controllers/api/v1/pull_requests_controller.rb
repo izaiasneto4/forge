@@ -196,5 +196,4 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
     ReviewTask.process_queue_if_idle!
     Rails.cache.write("review_task_queue_processed", true, expires_in: QUEUE_PROCESS_INTERVAL)
   end
-
 end
