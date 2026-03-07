@@ -11,7 +11,10 @@ module Sync
     end
 
     def call
-      fetch_pending_review + fetch_reviewed_by_me
+      requested = fetch_pending_review
+      requested_ids = requested.map { |pr| pr[:github_id] }.to_set
+
+      requested + annotate_review_requests(fetch_reviewed_by_me, requested_ids)
     end
 
     def call_with_open_prs
@@ -21,13 +24,13 @@ module Sync
       requested_ids = pending.map { |pr| pr[:github_id] }.to_set
       reviewed_ids = reviewed.map { |pr| pr[:github_id] }.to_set
 
-      open_prs = fetch_open_prs.reject do |pr|
+      open_prs = annotate_review_requests(fetch_open_prs, requested_ids).reject do |pr|
         reviewed_ids.include?(pr[:github_id]) && !requested_ids.include?(pr[:github_id])
       end
 
       {
         pending_review: open_prs,
-        reviewed_by_me: reviewed.reject { |pr| open_prs.any? { |o| o[:github_id] == pr[:github_id] } }
+        reviewed_by_me: annotate_review_requests(reviewed, requested_ids).reject { |pr| open_prs.any? { |o| o[:github_id] == pr[:github_id] } }
       }
     end
 
@@ -88,8 +91,15 @@ module Sync
         author: pr.dig("author", "login"),
         author_avatar: pr.dig("author", "avatarUrl"),
         created_at_github: pr["createdAt"],
-        updated_at_github: pr["updatedAt"]
+        updated_at_github: pr["updatedAt"],
+        review_requested_for_me: false
       }
+    end
+
+    def annotate_review_requests(prs, requested_ids)
+      prs.map do |pr|
+        pr.merge(review_requested_for_me: requested_ids.include?(pr[:github_id]))
+      end
     end
 
     def pr_fields

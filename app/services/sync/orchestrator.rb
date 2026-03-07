@@ -13,14 +13,8 @@ module Sync
     private
 
     def perform_sync
-      fetch_result = fetch_all_prs.call
-
-      if Setting.only_requested_reviews?
-        fetched_prs = fetch_result
-      else
-        fetched_prs = fetch_all_prs.call_with_open_prs
-        fetched_prs = fetched_prs[:pending_review] + fetched_prs[:reviewed_by_me]
-      end
+      fetched_prs = fetch_all_prs.call_with_open_prs
+      fetched_prs = fetched_prs[:pending_review] + fetched_prs[:reviewed_by_me]
 
       diff_result = DiffEngine.new(fetched_prs: fetched_prs, repo_path: @repo_path).call
 

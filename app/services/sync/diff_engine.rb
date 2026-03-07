@@ -78,7 +78,7 @@ module Sync
       @repo_info = nil
     end
 
-    SYNCED_FIELDS = %w[title description url author author_avatar created_at_github updated_at_github review_status].freeze
+    SYNCED_FIELDS = %w[title description url author author_avatar created_at_github updated_at_github review_status review_requested_for_me].freeze
 
     def pr_changed?(existing, fetched)
       SYNCED_FIELDS.any? do |field|
