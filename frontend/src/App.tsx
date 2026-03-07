@@ -5,6 +5,7 @@ import { BrowserRouter, NavLink, Route, Routes, useNavigate, useParams } from 'r
 
 import { api, ApiResponseError } from './lib/api'
 import { subscribe } from './lib/cable'
+import { getWaitingInfo } from './lib/dateUtils'
 import { filterPullRequestColumns, type SortOption } from './lib/pullRequestFilters'
 import { queryKeys } from './lib/queryKeys'
 import { ThemeProvider, useTheme } from './lib/theme'
@@ -28,6 +29,30 @@ import type {
 } from './types/api'
 
 const queryClient = new QueryClient()
+
+function isPullRequestStatus(value: string): value is PullRequestStatus {
+  return pullRequestColumns.some((column) => column.key === value)
+}
+
+function isSortOption(value: string): value is SortOption {
+  return ['oldest', 'newest', 'smallest_diff', 'repo', 'author', 'recent_activity', 'longest_waiting'].includes(value)
+}
+
+function isUiEventPayload(data: unknown): data is { event?: string; error?: string } {
+  return typeof data === 'object' && data !== null
+}
+
+function isReviewNotificationPayload(data: unknown): data is { type?: string; pr_number?: number; reason?: string } {
+  return typeof data === 'object' && data !== null
+}
+
+function isReviewTaskItem(item: unknown): item is ReviewTaskItem {
+  return typeof item === 'object' && item !== null && 'id' in item && 'state' in item
+}
+
+function isReviewTaskState(value: string): value is ReviewTaskState {
+  return reviewTaskColumns.some((column) => column.key === value)
+}
 
 const pullRequestColumns: Array<{ key: PullRequestStatus; title: string }> = [
   { key: 'pending_review', title: 'Pending Review' },
@@ -175,7 +200,9 @@ function UiEventSubscriptions() {
     { channel: 'UiEventsChannel' },
     {
       received: (raw) => {
-        handleUiEvent(raw as { event?: string; error?: string }, client, pushToast)
+        if (isUiEventPayload(raw)) {
+          handleUiEvent(raw, client, pushToast)
+        }
       },
     },
   ), [client, pushToast])
@@ -184,7 +211,9 @@ function UiEventSubscriptions() {
     { channel: 'ReviewNotificationsChannel' },
     {
       received: (raw) => {
-        handleReviewNotification(raw as { type?: string; pr_number?: number; reason?: string }, client, pushToast)
+        if (isReviewNotificationPayload(raw)) {
+          handleReviewNotification(raw, client, pushToast)
+        }
       },
     },
   ), [client, pushToast])
@@ -227,6 +256,7 @@ function PullRequestCard({ item, selected, onSelect, onArchive, onStartReview }:
 }) {
   const task = item.review_task
   const sizeCategory = getPrSizeCategory(item.additions, item.deletions)
+  const waitingInfo = getWaitingInfo(item.updated_at_github)
 
   return (
     <div className="group relative flex items-center gap-3 p-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-primary)] hover:border-[color:var(--color-border-default)] transition-colors">
@@ -238,6 +268,12 @@ function PullRequestCard({ item, selected, onSelect, onArchive, onStartReview }:
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono text-[color:var(--color-text-tertiary)]">#{item.number}</span>
             <span className="text-xs font-medium text-[color:var(--color-text-secondary)]">{item.repo_name}</span>
+
+            {waitingInfo && (
+              <span className={classNames('linear-badge text-[10px] px-1.5 py-0', waitingInfo.colorClass)}>
+                {waitingInfo.label}
+              </span>
+            )}
 
             {sizeCategory && (
               <span className={classNames('linear-badge text-[10px] px-1.5 py-0', sizeCategory.colorClass)} title={`${sizeCategory.lines} lines changed`}>
@@ -553,7 +589,16 @@ function PullRequestsPage() {
             ) : null}
           </div>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search PRs..." className="linear-input w-[200px]" />
-          <select value={stateFilter} onChange={(event) => setStateFilter(event.target.value as 'all' | PullRequestStatus)} className="linear-select">
+          <select 
+            value={stateFilter} 
+            onChange={(event) => {
+              const value = event.target.value
+              if (value === 'all' || isPullRequestStatus(value)) {
+                setStateFilter(value)
+              }
+            }} 
+            className="linear-select"
+          >
             <option value="all">All states</option>
             {pullRequestColumns.map((column) => <option key={column.key} value={column.key}>{column.title}</option>)}
           </select>
@@ -576,7 +621,17 @@ function PullRequestsPage() {
             Show my PRs
           </label>
           <div className="hidden-mobile h-4 w-px bg-[color:var(--color-border-default)] mx-1" />
-          <select value={sortBy} onChange={(event) => setSortBy(event.target.value as SortOption)} className="linear-select hidden-mobile">
+          <select 
+            value={sortBy} 
+            onChange={(event) => {
+              const value = event.target.value
+              if (isSortOption(value)) {
+                setSortBy(value)
+              }
+            }} 
+            className="linear-select hidden-mobile"
+          >
+            <option value="longest_waiting">Sort: Longest Waiting</option>
             <option value="oldest">Sort: Oldest</option>
             <option value="newest">Sort: Newest</option>
             <option value="recent_activity">Sort: Recent Activity</option>
@@ -785,7 +840,16 @@ function ReviewTasksPage() {
 
   const filteredColumns = useMemo(() => {
     if (!board.data) return null
-    const next = {} as ReviewTaskBoardResponse['columns']
+    
+    const next: ReviewTaskBoardResponse['columns'] = {
+      queued: [],
+      pending_review: [],
+      in_review: [],
+      reviewed: [],
+      waiting_implementation: [],
+      done: [],
+      failed_review: []
+    }
 
     for (const column of reviewTaskColumns) {
       next[column.key] = board.data.columns[column.key].filter((item) => {
@@ -802,10 +866,15 @@ function ReviewTasksPage() {
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    const item = event.active.data.current?.item as ReviewTaskItem | undefined
-    const overId = event.over?.id as string | undefined
-    if (!item || !overId?.startsWith('task:')) return
-    const nextState = overId.replace('task:', '') as ReviewTaskState
+    const item = event.active.data.current?.item
+    if (!isReviewTaskItem(item)) return
+    
+    const overId = event.over?.id
+    if (typeof overId !== 'string' || !overId.startsWith('task:')) return
+    
+    const nextState = overId.replace('task:', '')
+    if (!isReviewTaskState(nextState)) return
+    
     if (nextState === item.state) return
     const backward_move = isBackwardMove(item.state, nextState)
     if (backward_move && !window.confirm(`Move review task back from ${item.state} to ${nextState}?`)) return
@@ -825,7 +894,16 @@ function ReviewTasksPage() {
       <HeaderNav />
       <div className="linear-filter-bar">
         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search review tasks..." className="linear-input w-[240px]" />
-        <select value={stateFilter} onChange={(event) => setStateFilter(event.target.value as 'all' | ReviewTaskState)} className="linear-select">
+        <select 
+          value={stateFilter} 
+          onChange={(event) => {
+            const value = event.target.value
+            if (value === 'all' || isReviewTaskState(value)) {
+              setStateFilter(value)
+            }
+          }} 
+          className="linear-select"
+        >
           <option value="all">All states</option>
           {reviewTaskColumns.map((column) => <option key={column.key} value={column.key}>{column.title}</option>)}
         </select>
@@ -862,22 +940,30 @@ function ReviewLogStream({ taskId, initialLogs }: { taskId: string; initialLogs:
   useEffect(() => subscribe(
     { channel: 'ReviewTaskLogsChannel', review_task_id: taskId },
     {
-      received: (raw) => {
-        const event = raw as Record<string, unknown>
-        if (event.type === 'completed' || event.type === 'failed' || event.type === 'retry_scheduled' || event.type === 'preparing') {
+      received: (data) => {
+        if (!data || typeof data !== 'object' || Array.isArray(data)) return
+
+        if ('type' in data && (data.type === 'completed' || data.type === 'failed' || data.type === 'retry_scheduled' || data.type === 'preparing')) {
           queryClient.invalidateQueries({ queryKey: queryKeys.reviewTaskDetail(taskId) })
           queryClient.invalidateQueries({ queryKey: queryKeys.reviewTaskBoard })
           queryClient.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
           return
         }
 
-        if (typeof event.id === 'number' && typeof event.message === 'string' && typeof event.log_type === 'string' && typeof event.created_at === 'string') {
-          setLogs((current) => current.concat({
-            id: event.id as number,
-            message: event.message as string,
-            log_type: event.log_type as AgentLogItem['log_type'],
-            created_at: event.created_at as string,
-          }))
+        if (
+          'id' in data && typeof data.id === 'number' &&
+          'message' in data && typeof data.message === 'string' &&
+          'log_type' in data && typeof data.log_type === 'string' &&
+          (data.log_type === 'output' || data.log_type === 'error' || data.log_type === 'status') &&
+          'created_at' in data && typeof data.created_at === 'string'
+        ) {
+          const newLog: AgentLogItem = {
+            id: data.id,
+            message: data.message,
+            log_type: data.log_type,
+            created_at: data.created_at,
+          }
+          setLogs((current) => current.concat(newLog))
         }
       },
     },
@@ -933,10 +1019,6 @@ function ReviewCommentsChecklist({ detail }: { detail: ReviewTaskDetailResponse 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [event, setEvent] = useState('COMMENT')
   const [summary, setSummary] = useState('')
-
-  useEffect(() => {
-    setSelectedIds(new Set())
-  }, [detail.task.id])
 
   const toggleCommentMutation = useMutation({
     mutationFn: (id: number) => api.patch<UiMutationResponse>(`/api/v1/review_comments/${id}/toggle`),
@@ -1092,7 +1174,7 @@ function ReviewTaskDetailPage() {
         ) : null}
 
         {detail.data.content_mode === 'comments' ? (
-          <ReviewCommentsChecklist detail={detail.data} />
+          <ReviewCommentsChecklist key={detail.data.task.id} detail={detail.data} />
         ) : null}
 
         {detail.data.content_mode === 'parsed_review_items' ? (
