@@ -1,5 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query'
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -8,6 +10,8 @@ import {
 } from 'react'
 
 import { api } from './api'
+import { queryKeys } from './queryKeys'
+import type { BootstrapResponse } from './types/api'
 
 type Theme = 'light' | 'dark'
 
@@ -34,28 +38,43 @@ function applyTheme(theme: Theme) {
 
 export function ThemeProvider({ children }: PropsWithChildren) {
   const [theme, setThemeState] = useState<Theme>(() => preferredTheme())
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     applyTheme(theme)
   }, [theme])
 
+  const applyServerPreference = useCallback((preference: Theme | null) => {
+    setThemeState(preference ?? preferredTheme())
+  }, [])
+
+  const setTheme = useCallback(async (nextTheme: Theme) => {
+    const previous = theme
+    setThemeState(nextTheme)
+
+    try {
+      const response = await api.patch<{ settings: { theme_preference: Theme | null } }>('/api/v1/settings/theme', { theme_preference: nextTheme })
+      queryClient.setQueryData<BootstrapResponse>(queryKeys.bootstrap, (current) => {
+        if (!current) return current
+        return {
+          ...current,
+          settings: {
+            ...current.settings,
+            theme_preference: response.data.settings.theme_preference,
+          },
+        }
+      })
+    } catch (error) {
+      setThemeState(previous)
+      throw error
+    }
+  }, [queryClient, theme])
+
   const value = useMemo<ThemeContextValue>(() => ({
     theme,
-    async setTheme(nextTheme) {
-      const previous = theme
-      setThemeState(nextTheme)
-
-      try {
-        await api.patch('/api/v1/settings/theme', { theme_preference: nextTheme })
-      } catch (error) {
-        setThemeState(previous)
-        throw error
-      }
-    },
-    applyServerPreference(preference) {
-      setThemeState(preference ?? preferredTheme())
-    },
-  }), [theme])
+    setTheme,
+    applyServerPreference,
+  }), [theme, setTheme, applyServerPreference])
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
