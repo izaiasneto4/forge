@@ -4,12 +4,8 @@ class Api::V1::RepositoriesControllerTest < ActionDispatch::IntegrationTest
   test "switches repository when resolver finds path" do
     Setting.stubs(:repos_folder).returns("/tmp")
     Setting.stubs(:current_repo=).returns(nil)
-    Setting.stubs(:touch_last_synced!)
     RepoSwitchResolver.any_instance.stubs(:resolve).returns({ status: :ok, path: "/tmp/repo" })
-    GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
-    service = mock
-    service.stubs(:sync_to_database!).returns(nil)
-    GithubCliService.stubs(:new).returns(service)
+    Sync::Engine.any_instance.stubs(:call).returns(sync: { status: "succeeded" })
 
     post "/api/v1/repositories/switch", params: { repo: "acme/api" }, as: :json
 
@@ -56,10 +52,7 @@ class Api::V1::RepositoriesControllerTest < ActionDispatch::IntegrationTest
     Setting.stubs(:repos_folder).returns("/tmp")
     Setting.stubs(:current_repo=).returns(nil)
     RepoSwitchResolver.any_instance.stubs(:resolve).returns({ status: :ok, path: "/tmp/repo" })
-    GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
-    service = mock
-    service.stubs(:sync_to_database!).raises(GithubCliService::Error, "boom")
-    GithubCliService.stubs(:new).returns(service)
+    Sync::Engine.any_instance.stubs(:call).raises(Sync::GithubAdapter::Error, "boom")
 
     post "/api/v1/repositories/switch", params: { repo: "acme/api" }, as: :json
 

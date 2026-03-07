@@ -13,7 +13,7 @@ class Api::V1::StatusControllerTest < ActionDispatch::IntegrationTest
 
   test "returns status payload" do
     Setting.stubs(:current_repo).returns(nil)
-    Setting.stubs(:last_synced_at).returns(nil)
+    SyncState.stubs(:for_repo_path).with(nil).returns(nil)
 
     get "/api/v1/status", as: :json
 
@@ -35,16 +35,19 @@ class Api::V1::StatusControllerTest < ActionDispatch::IntegrationTest
     )
     task = pr.create_review_task!(state: "in_review")
     pr.update_column(:review_status, "in_review")
-    time = Time.current
-
     Setting.stubs(:current_repo).returns(nil)
-    Setting.stubs(:last_synced_at).returns(time)
+    SyncState.stubs(:for_repo_path).with(nil).returns(
+      stub(
+        last_succeeded_at: Time.zone.parse("2026-03-07T02:37:53Z"),
+        payload: { status: "succeeded" }
+      )
+    )
 
     get "/api/v1/status", as: :json
 
     assert_response :success
     json = JSON.parse(response.body)
     assert_equal task.id, json["running_task_id"]
-    assert_equal time.iso8601, json["last_synced_at"]
+    assert_equal "2026-03-07T02:37:53Z", json["last_synced_at"]
   end
 end

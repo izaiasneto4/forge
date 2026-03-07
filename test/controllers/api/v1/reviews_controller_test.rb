@@ -63,10 +63,7 @@ class Api::V1::ReviewsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "returns not_found when missing after sync" do
-    service = mock
-    service.stubs(:sync_to_database!).returns(nil)
-    GithubCliService.stubs(:new).returns(service)
-    GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
+    Sync::Engine.any_instance.stubs(:call).returns(sync: { status: "succeeded" })
 
     post "/api/v1/reviews", params: { pr_url: "https://github.com/acme/api/pull/99999" }, as: :json
 
@@ -110,10 +107,7 @@ class Api::V1::ReviewsControllerTest < ActionDispatch::IntegrationTest
     @pr.destroy!
     Setting.stubs(:current_repo).returns("/tmp/repo")
     RepoSlugResolver.stubs(:from_path).returns(nil)
-    GithubCliService.stubs(:fetch_latest_for_repo).returns(nil)
-    service = mock
-    service.stubs(:sync_to_database!).raises(GithubCliService::Error, "sync failed")
-    GithubCliService.stubs(:new).returns(service)
+    Sync::Engine.any_instance.stubs(:call).raises(Sync::GithubAdapter::Error, "sync failed")
 
     post "/api/v1/reviews", params: { pr_url: "https://github.com/acme/api/pull/9" }, as: :json
 
@@ -122,14 +116,11 @@ class Api::V1::ReviewsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "sync_failed", json.dig("error", "code")
   end
 
-  test "calls fetch latest when current repo present on sync path" do
+  test "calls focused sync engine when current repo present on sync path" do
     @pr.destroy!
     Setting.stubs(:current_repo).returns("/tmp/repo")
     RepoSlugResolver.stubs(:from_path).returns(nil)
-    GithubCliService.expects(:fetch_latest_for_repo).with("/tmp/repo")
-    service = mock
-    service.stubs(:sync_to_database!).returns(nil)
-    GithubCliService.stubs(:new).returns(service)
+    Sync::Engine.any_instance.expects(:call).with(trigger: "focused_pr", pull_request_number: 9).returns(sync: { status: "succeeded" })
 
     post "/api/v1/reviews", params: { pr_url: "https://github.com/acme/api/pull/9" }, as: :json
 
