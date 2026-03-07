@@ -113,4 +113,17 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
     json = JSON.parse(response.body)
     assert_equal [ 1 ], json["items"].map { |item| item["number"] }
   end
+
+  test "review_scope persists preference without syncing github" do
+    GithubCliService.expects(:fetch_latest_for_repo).never
+    GithubCliService.any_instance.expects(:sync_to_database!).never
+
+    patch "/api/v1/pull_requests/review_scope", params: { requested_to_me_only: true }, as: :json
+
+    assert_response :success
+    assert Setting.only_requested_reviews?
+    json = JSON.parse(response.body)
+    assert_equal true, json["ok"]
+    assert_equal true, json.dig("board", "settings", "only_requested_reviews")
+  end
 end

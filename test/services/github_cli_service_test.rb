@@ -148,22 +148,25 @@ class GithubCliServiceTest < ActiveSupport::TestCase
   end
 
   test "fetch_all_prs_needing_attention prioritizes review requests over reviewed_by_me" do
-    Setting.stubs(:only_requested_reviews?).returns(true)
-
     review_requested_pr = {
       github_id: 123,
       number: 123,
       title: "Requested again",
-      review_status: "pending_review"
+      review_status: "pending_review",
+      review_requested_for_me: true
     }
     reviewed_pr = {
       github_id: 123,
       number: 123,
       title: "Previously reviewed",
-      review_status: "reviewed_by_me"
+      review_status: "reviewed_by_me",
+      review_requested_for_me: false
     }
 
     @service.stubs(:fetch_review_requests).returns([ review_requested_pr ])
+    @service.stubs(:fetch_open_pull_requests_with_metadata).returns(
+      { prs: [ review_requested_pr ], complete: true }
+    )
     @service.stubs(:fetch_reviewed_by_me).returns([ reviewed_pr ])
 
     result = @service.fetch_all_prs_needing_attention
@@ -196,13 +199,11 @@ class GithubCliServiceTest < ActiveSupport::TestCase
   end
 
   test "fetch_all_prs_needing_attention includes all open PRs when requested-only is disabled" do
-    Setting.stubs(:only_requested_reviews?).returns(false)
-
-    requested_pr = { github_id: 10, number: 10, title: "Requested", review_status: "pending_review" }
-    open_unrequested = { github_id: 20, number: 20, title: "Open and unrequested", review_status: "pending_review" }
-    reviewed_pr = { github_id: 30, number: 30, title: "Reviewed", review_status: "reviewed_by_me" }
-    rerequested_pr = { github_id: 40, number: 40, title: "Re-requested", review_status: "pending_review" }
-    reviewed_and_rerequested = { github_id: 40, number: 40, title: "Re-requested", review_status: "reviewed_by_me" }
+    requested_pr = { github_id: 10, number: 10, title: "Requested", review_status: "pending_review", review_requested_for_me: true }
+    open_unrequested = { github_id: 20, number: 20, title: "Open and unrequested", review_status: "pending_review", review_requested_for_me: false }
+    reviewed_pr = { github_id: 30, number: 30, title: "Reviewed", review_status: "reviewed_by_me", review_requested_for_me: false }
+    rerequested_pr = { github_id: 40, number: 40, title: "Re-requested", review_status: "pending_review", review_requested_for_me: true }
+    reviewed_and_rerequested = { github_id: 40, number: 40, title: "Re-requested", review_status: "reviewed_by_me", review_requested_for_me: false }
 
     @service.stubs(:fetch_review_requests).returns([ requested_pr, rerequested_pr ])
     @service.stubs(:fetch_open_pull_requests_with_metadata).returns(
@@ -262,12 +263,12 @@ class GithubCliServiceTest < ActiveSupport::TestCase
     assert_equal "pending_review", stored_reviewed.review_status
   end
 
-  test "sync_to_database skips stale removal when requested-only scope is enabled" do
-    Setting.stubs(:only_requested_reviews?).returns(true)
-    @service.expects(:remove_stale_prs).never
+  test "sync_to_database reconciles stale pull requests when open PR fetch is complete" do
+    @service.expects(:remove_stale_prs).once
     @service.stubs(:mark_reviewed_by_others)
     @service.stubs(:fetch_review_requests).returns([])
     @service.stubs(:fetch_reviewed_by_me).returns([])
+    @service.stubs(:fetch_open_pull_requests_with_metadata).returns({ prs: [], complete: true })
 
     assert_nothing_raised { @service.sync_to_database! }
   end
