@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { ToastProvider, useToasts } from './toasts'
@@ -27,7 +27,9 @@ describe('ToastProvider', () => {
       </ToastProvider>,
     )
 
-    screen.getByRole('button', { name: 'Push toasts' }).click()
+    fireEvent.click(screen.getByRole('button', { name: 'Push toasts' }))
+    await screen.findByText('First toast')
+    await screen.findByText('Second toast')
 
     const stack = container.querySelector('.global-toast-stack')
     const toasts = container.querySelectorAll('.global-toast')
