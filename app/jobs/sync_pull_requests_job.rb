@@ -19,24 +19,11 @@ class SyncPullRequestsJob < ApplicationJob
   private
 
   def broadcast_sync_completed
-    ActionCable.server.broadcast(
-      "pull_requests_sync",
-      {
-        type: "completed",
-        timestamp: Time.current.iso8601
-      }
-    )
+    UiEventBroadcaster.sync_completed(Setting.current_repo)
   end
 
   def broadcast_sync_failed(error_message)
-    ActionCable.server.broadcast(
-      "pull_requests_sync",
-      {
-        type: "failed",
-        error: error_message,
-        timestamp: Time.current.iso8601
-      }
-    )
+    UiEventBroadcaster.sync_failed(Setting.current_repo, error: error_message)
   end
 
   def safely_broadcast_sync_failed(error_message)

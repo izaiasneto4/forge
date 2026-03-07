@@ -101,6 +101,27 @@ class GithubCliService
     requested_reviewers.any? { |reviewer| reviewer["login"] == @username }
   end
 
+  def fetch_pr_comments(pull_request)
+    json = run_gh_command(
+      "api",
+      "/repos/#{pull_request.repo_full_name}/pulls/#{pull_request.number}/comments"
+    )
+    return [] if json.strip.empty?
+
+    comments = JSON.parse(json)
+    comments.map do |c|
+      {
+        body: c["body"],
+        author: c.dig("user", "login"),
+        created_at: c["created_at"],
+        path: c["path"],
+        line: c["line"]
+      }
+    end
+  rescue JSON::ParserError
+    []
+  end
+
   def self.fetch_latest_for_repo(repo_path)
     return unless repo_path.present? && Dir.exist?(repo_path)
 

@@ -9,7 +9,7 @@ class CodeReviewService
     "opencode" => { command: "opencode", args: [ "run" ], skill: nil }
   }.freeze
 
-  attr_reader :cli_client
+  attr_reader :cli_client, :previous_comments
 
   def self.for(cli_client:, worktree_path:, pull_request:, review_type: "review")
     config = CLIENTS[cli_client] || CLIENTS["claude"]
@@ -32,6 +32,7 @@ class CodeReviewService
     @worktree_path = worktree_path
     @pull_request = pull_request
     @review_type = review_type
+    @previous_comments = fetch_previous_comments
   end
 
   def detect_model
@@ -89,6 +90,27 @@ class CodeReviewService
     @review_type == "swarm" ? swarm_review_prompt : standard_review_prompt
   end
 
+  def fetch_previous_comments
+    return [] unless @pull_request.present?
+
+    service = GithubCliService.new(repo_path: @worktree_path)
+    service.fetch_pr_comments(@pull_request)
+  rescue => e
+    Rails.logger.warn "Failed to fetch previous comments: #{e.message}"
+    []
+  end
+
+  def previous_comments_context
+    return "" if previous_comments.empty?
+
+    lines = previous_comments.map do |c|
+      location = c[:path] ? "#{c[:path]}:#{c[:line]}" : ""
+      "- **#{c[:author]}** #{location}: #{c[:body][0..500]}"
+    end.join("\n")
+
+    "\n## Previous PR Comments\n\nThe following comments exist on this PR from previous reviews:\n\n#{lines}\n\n"
+  end
+
   def cmd_args_for_review
     base_args = [ @command ] + @args
     return base_args + [ review_prompt ] unless codex_client?
@@ -129,6 +151,7 @@ class CodeReviewService
 
       #{@pull_request.description}
 
+      #{previous_comments_context}
       IMPORTANT SCOPE CONSTRAINT: You must ONLY review code that was actually changed in this PR.
       - Use `gh pr diff` or `git diff` to identify exactly which files and lines were modified
       - Do NOT flag issues in pre-existing code that wasn't touched by this PR
@@ -199,6 +222,7 @@ class CodeReviewService
 
       #{@pull_request.description}
 
+      #{previous_comments_context}
       Review the changes in this PR. Use `gh pr diff` or `git diff` to identify exactly which files and lines were modified.
 
       ## Step 1: Invoke Specialized Reviewers

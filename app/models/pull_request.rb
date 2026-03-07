@@ -174,13 +174,7 @@ class PullRequest < ApplicationRecord
     previous_status = review_status_before_last_save
     Rails.logger.info "[PullRequest##{id}] Broadcasting status change: #{previous_status} -> #{review_status}"
 
-    Turbo::StreamsChannel.broadcast_stream_to(
-      "pull_requests_board",
-      content: ApplicationController.render(
-        partial: "pull_requests/status_change_broadcast",
-        locals: { pull_request: self, previous_status: previous_status }
-      )
-    )
+    UiEventBroadcaster.pull_request_updated(self, previous_status: previous_status)
   rescue => e
     Rails.logger.error "[PullRequest##{id}] Broadcast failed: #{e.message}"
   end

@@ -1,4 +1,8 @@
 class Api::V1::RepositoriesController < Api::V1::BaseController
+  def index
+    render_ok(Api::V1::UiPayloads::Repositories.new.as_json)
+  end
+
   def create
     slug = params.require(:repo)
     unless slug.match?(/\A[^\/]+\/[^\/]+\z/)
@@ -22,7 +26,17 @@ class Api::V1::RepositoriesController < Api::V1::BaseController
     GithubCliService.new(repo_path: repo_path).sync_to_database!
     Setting.touch_last_synced!
 
-    render_ok({ repo_path: repo_path, repo: slug, synced: true }, :created)
+    render_ok(
+      {
+        message: "Switched to #{File.basename(repo_path)} and synced",
+        repo_path: repo_path,
+        repo: slug,
+        synced: true,
+        repositories: Api::V1::UiPayloads::Repositories.new.as_json,
+        board: Api::V1::UiPayloads::PullRequestBoard.new.as_json
+      },
+      :created
+    )
   rescue GithubCliService::Error => e
     render_error("sync_failed", "Switched repo but sync failed: #{e.message}")
   end

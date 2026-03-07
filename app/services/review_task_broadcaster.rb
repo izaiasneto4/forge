@@ -6,13 +6,7 @@ class ReviewTaskBroadcaster
   def broadcast_state_change
     Rails.logger.info "[ReviewTask##{@review_task.id}] Broadcasting state change to '#{@review_task.state}' (previous: #{@review_task.state_before_last_save}, new: #{@review_task.state})"
 
-    Turbo::StreamsChannel.broadcast_stream_to(
-      "review_tasks_board",
-      content: ApplicationController.render(
-        partial: "review_tasks/state_change_broadcast",
-        locals: { review_task: @review_task }
-      )
-    )
+    UiEventBroadcaster.review_task_updated(@review_task, previous_state: @review_task.state_before_last_save)
 
     Rails.logger.info "[ReviewTask##{@review_task.id}] Broadcast completed"
   rescue => e
