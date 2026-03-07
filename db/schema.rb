@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_07_030000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_07_110003) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -22,18 +22,47 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_030000) do
     t.index ["review_task_id"], name: "index_agent_logs_on_review_task_id"
   end
 
+  create_table "pull_request_snapshots", force: :cascade do |t|
+    t.string "base_sha", null: false
+    t.datetime "created_at", null: false
+    t.string "head_sha", null: false
+    t.integer "pull_request_id", null: false
+    t.string "stale_reason"
+    t.string "status", default: "current", null: false
+    t.datetime "synced_at"
+    t.datetime "updated_at", null: false
+    t.index ["pull_request_id", "head_sha", "base_sha"], name: "index_pr_snapshots_on_pull_request_and_revision", unique: true
+    t.index ["pull_request_id", "status"], name: "index_pr_snapshots_on_pull_request_and_status"
+    t.index ["pull_request_id"], name: "index_pull_request_snapshots_on_pull_request_id"
+  end
+
   create_table "pull_requests", force: :cascade do |t|
+    t.integer "additions"
     t.boolean "archived", default: false, null: false
     t.string "author"
     t.string "author_avatar"
+    t.string "base_ref"
+    t.string "base_sha"
+    t.integer "changed_files"
+    t.string "check_status"
+    t.datetime "closed_at_github"
     t.datetime "created_at", null: false
     t.datetime "created_at_github"
     t.datetime "deleted_at"
+    t.integer "deletions"
     t.text "description"
+    t.boolean "draft", default: false, null: false
     t.integer "github_id"
+    t.string "head_ref"
+    t.string "head_sha"
+    t.string "inactive_reason"
+    t.string "latest_review_state"
+    t.datetime "merged_at_github"
     t.integer "number"
+    t.string "remote_state", default: "open", null: false
     t.string "repo_name"
     t.string "repo_owner"
+    t.string "review_decision"
     t.boolean "review_requested_for_me", default: false, null: false
     t.string "review_status"
     t.integer "review_tasks_count", default: 0
@@ -43,8 +72,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_030000) do
     t.string "url"
     t.index ["deleted_at"], name: "index_pull_requests_on_deleted_at"
     t.index ["github_id"], name: "index_pull_requests_on_github_id"
+    t.index ["head_sha"], name: "index_pull_requests_on_head_sha"
+    t.index ["inactive_reason"], name: "index_pull_requests_on_inactive_reason"
+    t.index ["remote_state"], name: "index_pull_requests_on_remote_state"
     t.index ["repo_owner", "repo_name", "archived", "deleted_at", "review_status"], name: "index_pull_requests_repo_filter"
     t.index ["repo_owner", "repo_name", "number"], name: "index_pull_requests_on_repo_and_number_unique", unique: true
+    t.index ["repo_owner", "repo_name", "remote_state", "inactive_reason"], name: "index_pull_requests_on_repo_active_state"
     t.index ["repo_owner", "repo_name"], name: "index_pull_requests_on_repo_owner_and_name"
     t.index ["review_requested_for_me"], name: "index_pull_requests_on_review_requested_for_me"
     t.index ["review_status"], name: "index_pull_requests_on_review_status"
@@ -97,6 +130,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_030000) do
     t.text "failure_reason"
     t.datetime "last_retry_at"
     t.integer "pull_request_id", null: false
+    t.integer "pull_request_snapshot_id"
     t.datetime "queued_at"
     t.integer "retry_count", default: 0, null: false
     t.text "retry_history"
@@ -112,6 +146,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_030000) do
     t.index ["ai_model"], name: "index_review_tasks_on_ai_model"
     t.index ["pull_request_id", "state"], name: "index_review_tasks_on_pull_request_id_and_state"
     t.index ["pull_request_id"], name: "index_review_tasks_on_pull_request_id"
+    t.index ["pull_request_snapshot_id"], name: "index_review_tasks_on_pull_request_snapshot_id"
     t.index ["retry_count"], name: "index_review_tasks_on_retry_count"
     t.index ["state", "archived"], name: "index_review_tasks_state_archived"
     t.index ["state", "queued_at"], name: "index_review_tasks_on_state_and_queued_at"
@@ -128,6 +163,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_030000) do
     t.index ["key"], name: "index_settings_on_key", unique: true
   end
 
+  create_table "sync_states", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "created_count", default: 0, null: false
+    t.integer "deactivated_count", default: 0, null: false
+    t.integer "fetched_count", default: 0, null: false
+    t.text "last_error"
+    t.datetime "last_finished_at"
+    t.datetime "last_started_at"
+    t.datetime "last_succeeded_at"
+    t.string "repo_name"
+    t.string "repo_owner"
+    t.string "scope_key", null: false
+    t.string "status", default: "idle", null: false
+    t.datetime "updated_at", null: false
+    t.integer "updated_count", default: 0, null: false
+    t.index ["scope_key"], name: "index_sync_states_on_scope_key", unique: true
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
@@ -142,7 +195,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_030000) do
   end
 
   add_foreign_key "agent_logs", "review_tasks"
+  add_foreign_key "pull_request_snapshots", "pull_requests"
   add_foreign_key "review_comments", "review_tasks"
   add_foreign_key "review_iterations", "review_tasks"
+  add_foreign_key "review_tasks", "pull_request_snapshots"
   add_foreign_key "review_tasks", "pull_requests"
 end
