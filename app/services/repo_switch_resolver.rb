@@ -11,8 +11,21 @@ class RepoSwitchResolver
     end
 
     return { status: :not_found, paths: [] } if matches.empty?
-    return { status: :ambiguous, paths: matches } if matches.size > 1
+    return { status: :ok, path: matches.first } if matches.size == 1
 
-    { status: :ok, path: matches.first }
+    preferred = prefer_exact_repo_dir(matches, slug)
+    return { status: :ok, path: preferred } if preferred.present?
+
+    { status: :ambiguous, paths: matches }
+  end
+
+  private
+
+  def prefer_exact_repo_dir(paths, slug)
+    repo_name = slug.split("/", 2).last
+    exact_matches = paths.select { |path| File.basename(path) == repo_name }
+    return nil unless exact_matches.size == 1
+
+    exact_matches.first
   end
 end

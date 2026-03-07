@@ -8,6 +8,9 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
+    SyncState.delete_all
+    Setting.delete_all
     PullRequest.unscoped.delete_all
 
     PullRequest.create!(
@@ -20,6 +23,17 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
       review_status: "pending_review",
       updated_at_github: Time.current
     )
+  end
+
+  teardown do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
+    SyncState.delete_all
+    Setting.delete_all
+    PullRequest.unscoped.delete_all
   end
 
   test "lists pull requests" do
@@ -125,5 +139,30 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
     json = JSON.parse(response.body)
     assert_equal true, json["ok"]
     assert_equal true, json.dig("board", "settings", "only_requested_reviews")
+  end
+
+  test "board recovers current repo from repos folder when exactly one repo slug matches stored pull requests" do
+    Setting.repos_folder = "/tmp/repos"
+    Setting.current_repo = nil
+    RepoSwitchResolver.any_instance.stubs(:resolve).with("acme/api").returns({ status: :ok, path: "/tmp/repos/api" })
+    RepoSlugResolver.stubs(:from_path).with("/tmp/repos/api").returns("acme/api")
+
+    sync_state = SyncState.create!(
+      scope_key: "repo:acme/api",
+      repo_owner: "acme",
+      repo_name: "api",
+      status: "succeeded",
+      last_succeeded_at: Time.zone.parse("2026-03-07T12:00:00Z")
+    )
+
+    get "/api/v1/pull_requests/board", as: :json
+
+    assert_response :success
+    json = JSON.parse(response.body)
+    assert_equal "/tmp/repos/api", json.dig("current_repo", "path")
+    assert_equal "api", json.dig("current_repo", "name")
+    assert_equal "succeeded", json.dig("sync_status", "status")
+    assert_equal sync_state.last_succeeded_at.iso8601, json.dig("sync_status", "last_synced_at")
+    assert_equal "/tmp/repos/api", Setting.current_repo
   end
 end

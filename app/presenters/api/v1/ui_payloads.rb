@@ -9,11 +9,12 @@ module Api
         end
 
         def sync_status
+          CurrentRepoRecoveryService.call
           PullRequestIndexPresenter.new.sync_status
         end
 
         def current_repo_payload
-          repo_path = Setting.current_repo
+          repo_path = CurrentRepoRecoveryService.call || Setting.current_repo
           repo_slug = RepoSlugResolver.from_path(repo_path)
 
           {
@@ -24,6 +25,7 @@ module Api
         end
 
         def repositories_payload
+          CurrentRepoRecoveryService.call
           repos_folder = Setting.repos_folder
           repositories = repos_folder.present? ? RepoScannerService.new(repos_folder).scan : []
 
@@ -76,8 +78,24 @@ module Api
             additions: pull_request.additions,
             deletions: pull_request.deletions,
             changed_files: pull_request.changed_files,
+            ai_summary: ai_summary_payload(pull_request.ai_summary_for_display),
             review_requested_for_me: pull_request.review_requested_for_me?,
             review_task: pull_request.review_task.present? ? review_task_payload(pull_request.review_task, include_pull_request: false) : nil
+          }
+        end
+
+        def ai_summary_payload(summary)
+          {
+            status: summary[:status],
+            generated_at: summary[:generated_at]&.iso8601,
+            failure_reason: summary[:failure_reason],
+            snapshot_id: summary[:snapshot_id],
+            stale: summary[:stale],
+            files_changed: summary[:files_changed],
+            lines_added: summary[:lines_added],
+            lines_removed: summary[:lines_removed],
+            main_changes: Array(summary[:main_changes]),
+            risk_areas: Array(summary[:risk_areas])
           }
         end
 

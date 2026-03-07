@@ -8,6 +8,7 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
     Setting.delete_all
 
@@ -20,7 +21,26 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
       repo_name: "api",
       review_status: "pending_review",
       author: "izaias",
-      updated_at_github: Time.current
+      updated_at_github: Time.current,
+      head_sha: "head-1",
+      base_sha: "base-1",
+      additions: 210,
+      deletions: 34,
+      changed_files: 6
+    )
+
+    @snapshot = PullRequestSnapshot.create!(
+      pull_request: @pull_request,
+      head_sha: "head-1",
+      base_sha: "base-1",
+      status: "current",
+      ai_summary_status: "current",
+      ai_summary_generated_at: Time.current,
+      ai_summary_files_changed: 6,
+      ai_summary_lines_added: 210,
+      ai_summary_lines_removed: 34,
+      ai_summary_main_changes: [ "Caching layer added", "Auth middleware refactor" ],
+      ai_summary_risk_areas: [ "Billing calculation", "Authentication logic" ]
     )
 
     @review_task = @pull_request.create_review_task!(
@@ -59,6 +79,7 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
     Setting.delete_all
   end
@@ -86,6 +107,9 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     assert_equal true, json["ok"]
     assert_equal 1, json.dig("columns", "pending_review").size
     assert_equal "api", json.dig("repositories", "items", 0, "name")
+    assert_equal "current", json.dig("columns", "pending_review", 0, "ai_summary", "status")
+    assert_equal 6, json.dig("columns", "pending_review", 0, "ai_summary", "files_changed")
+    assert_equal [ "Caching layer added", "Auth middleware refactor" ], json.dig("columns", "pending_review", 0, "ai_summary", "main_changes")
   end
 
   test "review task board and detail return structured payloads" do
@@ -138,5 +162,18 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     json = JSON.parse(response.body)
     assert_equal true, json["ok"]
     assert_equal "codex", json.dig("settings", "default_cli_client")
+  end
+
+  test "theme mutation updates setting" do
+    patch "/api/v1/settings/theme", params: { theme_preference: "light" }, as: :json
+
+    assert_response :success
+    json = JSON.parse(response.body)
+    assert_equal "Theme updated", json["message"]
+    assert_equal "light", Setting.theme_preference
+    assert_equal "light", json.dig("settings", "theme_preference")
+
+    patch "/api/v1/settings/theme", params: { theme_preference: "invalid" }, as: :json
+    assert_response :unprocessable_entity
   end
 end

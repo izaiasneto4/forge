@@ -30,6 +30,19 @@ class RepoSwitchResolverTest < ActiveSupport::TestCase
     assert_equal 2, result[:paths].size
   end
 
+  test "prefers exact repo directory name over suffixed worktree-style matches" do
+    resolver = RepoSwitchResolver.new(repos_folder: "/tmp")
+    RepoScannerService.any_instance.stubs(:scan).returns([
+      { path: "/tmp/api", remote_url: "git@github.com:acme/api.git" },
+      { path: "/tmp/api-pr1790", remote_url: "https://github.com/acme/api.git" }
+    ])
+
+    result = resolver.resolve("acme/api")
+
+    assert_equal :ok, result[:status]
+    assert_equal "/tmp/api", result[:path]
+  end
+
   test "returns path when exactly one match" do
     resolver = RepoSwitchResolver.new(repos_folder: "/tmp")
     RepoScannerService.any_instance.stubs(:scan).returns([

@@ -11,6 +11,9 @@ import { queryKeys } from './lib/queryKeys'
 import { ThemeProvider, useTheme } from './lib/theme'
 import { ToastProvider, useToasts } from './lib/toasts'
 import { handleReviewNotification, handleUiEvent } from './lib/uiEvents'
+import { PullRequestSummaryPanel } from './components/PullRequestSummaryPanel'
+import { ReviewLoadIndicator } from './components/ReviewLoadIndicator'
+import { RepoSwitcher } from './components/RepoSwitcher'
 import type {
   AgentLogItem,
   BootstrapResponse,
@@ -572,22 +575,21 @@ function PullRequestsPage() {
       <HeaderNav />
       <div className="linear-filter-bar">
         <div className="flex flex-wrap items-center gap-2 flex-1">
-          <div className="relative">
-            <button type="button" className="linear-btn linear-btn-secondary" onClick={() => setRepoMenuOpen((value) => !value)}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              {board.data.current_repo.name ?? 'Select repo'}
-            </button>
-            {repoMenuOpen ? (
-              <div className="linear-dropdown absolute left-0 top-full mt-1 w-72 z-50">
-                {board.data.repositories.items.map((repo) => (
-                  <button key={repo.path} type="button" className="linear-dropdown-item w-full text-left" onClick={() => repo.slug && switchRepoMutation.mutate(repo.slug)}>
-                    <span className="flex-1">{repo.name}</span>
-                    {repo.current ? <span className="linear-badge linear-badge-blue">Current</span> : null}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          <RepoSwitcher
+            currentRepoName={board.data.current_repo.name}
+            menuOpen={repoMenuOpen}
+            repositories={board.data.repositories}
+            onToggle={() => setRepoMenuOpen((value) => !value)}
+            onSelectRepo={(slug) => switchRepoMutation.mutate(slug)}
+            onOpenSettings={() => {
+              setRepoMenuOpen(false)
+              navigate('/settings')
+            }}
+            onOpenRepositories={() => {
+              setRepoMenuOpen(false)
+              navigate('/repositories')
+            }}
+          />
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search PRs..." className="linear-input w-[200px]" />
           <select 
             value={stateFilter} 
@@ -697,6 +699,7 @@ function PullRequestsPage() {
       {reviewModalItem ? (
         <Modal title={`Start review for #${reviewModalItem.number}`} onClose={() => setReviewModalItem(null)}>
           <div className="space-y-4">
+            <PullRequestSummaryPanel summary={reviewModalItem.ai_summary} />
             <div>
               <label className="mb-2 block text-sm font-medium">Agent</label>
               <select className="linear-select w-full" value={reviewForm.cli_client} onChange={(event) => setReviewForm((current) => ({ ...current, cli_client: event.target.value }))}>

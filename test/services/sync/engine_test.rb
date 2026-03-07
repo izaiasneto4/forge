@@ -1,9 +1,14 @@
 require "test_helper"
 
 class Sync::EngineTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
+
   self.use_transactional_tests = false
 
   setup do
+    clear_enqueued_jobs
+    clear_performed_jobs
+    ActiveJob::Base.queue_adapter = :test
     ReviewComment.delete_all
     ReviewIteration.delete_all
     AgentLog.delete_all
@@ -16,6 +21,8 @@ class Sync::EngineTest < ActiveSupport::TestCase
   end
 
   teardown do
+    clear_enqueued_jobs
+    clear_performed_jobs
     ReviewComment.delete_all
     ReviewIteration.delete_all
     AgentLog.delete_all
@@ -65,7 +72,11 @@ class Sync::EngineTest < ActiveSupport::TestCase
       fetch_open_pull_requests: { prs: [ remote_pr(number: 101, head_sha: "head-1", requested: true) ], complete: true }
     )
 
-    result = Sync::Engine.new(repo_path: "/tmp/repo", adapter: adapter).call
+    result = nil
+
+    assert_enqueued_with(job: PullRequestSummaryJob) do
+      result = Sync::Engine.new(repo_path: "/tmp/repo", adapter: adapter).call
+    end
 
     assert_equal false, result[:already_running]
     pull_request = PullRequest.find_by!(number: 101)

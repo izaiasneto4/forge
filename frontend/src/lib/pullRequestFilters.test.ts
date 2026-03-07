@@ -4,6 +4,19 @@ import type { PullRequestBoardResponse } from '../types/api'
 import { filterPullRequestColumns } from './pullRequestFilters'
 
 function buildBoard(): PullRequestBoardResponse {
+  const summary = {
+    status: 'current' as const,
+    generated_at: '2026-03-07T10:00:00Z',
+    failure_reason: null,
+    snapshot_id: 1,
+    stale: false,
+    files_changed: 2,
+    lines_added: 10,
+    lines_removed: 5,
+    main_changes: ['Caching layer added'],
+    risk_areas: ['Authentication logic'],
+  }
+
   return {
     current_repo: { path: '/tmp/repo', slug: 'acme/api', name: 'api' },
     repositories: {
@@ -73,6 +86,7 @@ function buildBoard(): PullRequestBoardResponse {
           additions: 10,
           deletions: 5,
           changed_files: 2,
+          ai_summary: summary,
           review_task: null,
         },
         {
@@ -106,6 +120,7 @@ function buildBoard(): PullRequestBoardResponse {
           additions: 2,
           deletions: 2,
           changed_files: 1,
+          ai_summary: { ...summary, files_changed: 1, lines_added: 2, lines_removed: 2 },
           review_task: null,
         },
       ],

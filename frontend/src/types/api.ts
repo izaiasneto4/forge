@@ -84,6 +84,19 @@ export interface PullRequestReviewTaskSummary {
   snapshot_current: boolean
 }
 
+export interface PullRequestAiSummary {
+  status: 'none' | 'pending' | 'current' | 'failed'
+  generated_at: string | null
+  failure_reason: string | null
+  snapshot_id: number | null
+  stale: boolean
+  files_changed: number | null
+  lines_added: number | null
+  lines_removed: number | null
+  main_changes: string[]
+  risk_areas: string[]
+}
+
 export interface PullRequestItem {
   id: number
   number: number
@@ -115,6 +128,7 @@ export interface PullRequestItem {
   additions: number | null
   deletions: number | null
   changed_files: number | null
+  ai_summary: PullRequestAiSummary
   review_task: PullRequestReviewTaskSummary | null
 }
 

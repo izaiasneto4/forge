@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_07_110003) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_07_120000) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -23,6 +23,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_110003) do
   end
 
   create_table "pull_request_snapshots", force: :cascade do |t|
+    t.text "ai_summary_failure_reason"
+    t.integer "ai_summary_files_changed"
+    t.datetime "ai_summary_generated_at"
+    t.integer "ai_summary_lines_added"
+    t.integer "ai_summary_lines_removed"
+    t.text "ai_summary_main_changes"
+    t.text "ai_summary_risk_areas"
+    t.string "ai_summary_status", default: "none", null: false
     t.string "base_sha", null: false
     t.datetime "created_at", null: false
     t.string "head_sha", null: false
@@ -31,6 +39,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_110003) do
     t.string "status", default: "current", null: false
     t.datetime "synced_at"
     t.datetime "updated_at", null: false
+    t.index ["ai_summary_status"], name: "index_pull_request_snapshots_on_ai_summary_status"
     t.index ["pull_request_id", "head_sha", "base_sha"], name: "index_pr_snapshots_on_pull_request_and_revision", unique: true
     t.index ["pull_request_id", "status"], name: "index_pr_snapshots_on_pull_request_and_status"
     t.index ["pull_request_id"], name: "index_pull_request_snapshots_on_pull_request_id"

@@ -98,6 +98,32 @@ class PullRequest < ApplicationRecord
     pull_request_snapshots.find_by(status: "current")
   end
 
+  def ai_summary_for_display
+    snapshot = current_snapshot
+    fallback_snapshot = pull_request_snapshots.stale.where(ai_summary_status: "current").order(updated_at: :desc).first
+
+    if snapshot&.ai_summary_current?
+      snapshot.ai_summary_payload(stale: false)
+    elsif fallback_snapshot.present?
+      fallback_snapshot.ai_summary_payload(stale: true)
+    elsif snapshot.present?
+      snapshot.ai_summary_payload(stale: false)
+    else
+      {
+        status: "none",
+        generated_at: nil,
+        failure_reason: nil,
+        snapshot_id: nil,
+        stale: false,
+        files_changed: changed_files,
+        lines_added: additions,
+        lines_removed: deletions,
+        main_changes: [],
+        risk_areas: []
+      }
+    end
+  end
+
   def current_snapshot_or_create!
     return if head_sha.blank? || base_sha.blank?
 

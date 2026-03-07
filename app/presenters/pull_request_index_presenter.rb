@@ -2,7 +2,7 @@ class PullRequestIndexPresenter
   attr_reader :current_repo
 
   def initialize
-    @current_repo = Setting.current_repo
+    @current_repo = CurrentRepoRecoveryService.call || Setting.current_repo
   end
 
   def columns
