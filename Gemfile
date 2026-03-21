@@ -20,7 +20,7 @@ group :development, :test do
   gem "bundler-audit", require: false
   gem "brakeman", require: false
   gem "rubocop-rails-omakase", require: false
-  gem "mocha", "~> 3.0", groups: [ :development, :test ]
+  gem "mocha", "~> 3.1", groups: [ :development, :test ]
   gem "simplecov", require: false
   gem "webrick", require: false
 end
