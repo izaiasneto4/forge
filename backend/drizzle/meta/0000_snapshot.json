@@ -1,0 +1,1514 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "prevId": "",
+  "version": "6",
+  "dialect": "sqlite",
+  "tables": {
+    "pull_requests": {
+      "name": "pull_requests",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "additions": {
+          "autoincrement": false,
+          "name": "additions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived": {
+          "default": "(FALSE)",
+          "autoincrement": false,
+          "name": "archived",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author": {
+          "autoincrement": false,
+          "name": "author",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "author_avatar": {
+          "autoincrement": false,
+          "name": "author_avatar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "base_ref": {
+          "autoincrement": false,
+          "name": "base_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "base_sha": {
+          "autoincrement": false,
+          "name": "base_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "changed_files": {
+          "autoincrement": false,
+          "name": "changed_files",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "check_status": {
+          "autoincrement": false,
+          "name": "check_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_at_github": {
+          "autoincrement": false,
+          "name": "closed_at_github",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at_github": {
+          "autoincrement": false,
+          "name": "created_at_github",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "autoincrement": false,
+          "name": "deleted_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deletions": {
+          "autoincrement": false,
+          "name": "deletions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "autoincrement": false,
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "draft": {
+          "default": "(FALSE)",
+          "autoincrement": false,
+          "name": "draft",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "github_id": {
+          "autoincrement": false,
+          "name": "github_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "head_ref": {
+          "autoincrement": false,
+          "name": "head_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "head_sha": {
+          "autoincrement": false,
+          "name": "head_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "inactive_reason": {
+          "autoincrement": false,
+          "name": "inactive_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latest_review_state": {
+          "autoincrement": false,
+          "name": "latest_review_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "merged_at_github": {
+          "autoincrement": false,
+          "name": "merged_at_github",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "number": {
+          "autoincrement": false,
+          "name": "number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "remote_state": {
+          "default": "'open'",
+          "autoincrement": false,
+          "name": "remote_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "repo_name": {
+          "autoincrement": false,
+          "name": "repo_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "repo_owner": {
+          "autoincrement": false,
+          "name": "repo_owner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_decision": {
+          "autoincrement": false,
+          "name": "review_decision",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_requested_for_me": {
+          "default": "(FALSE)",
+          "autoincrement": false,
+          "name": "review_requested_for_me",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "review_status": {
+          "autoincrement": false,
+          "name": "review_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_tasks_count": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "review_tasks_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title": {
+          "autoincrement": false,
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at_github": {
+          "autoincrement": false,
+          "name": "updated_at_github",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "autoincrement": false,
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "index_pull_requests_on_updated_at_github": {
+          "name": "index_pull_requests_on_updated_at_github",
+          "columns": [
+            "updated_at_github"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_review_tasks_count": {
+          "name": "index_pull_requests_on_review_tasks_count",
+          "columns": [
+            "review_tasks_count"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_review_status": {
+          "name": "index_pull_requests_on_review_status",
+          "columns": [
+            "review_status"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_review_requested_for_me": {
+          "name": "index_pull_requests_on_review_requested_for_me",
+          "columns": [
+            "review_requested_for_me"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_repo_owner_and_name": {
+          "name": "index_pull_requests_on_repo_owner_and_name",
+          "columns": [
+            "repo_owner",
+            "repo_name"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_repo_active_state": {
+          "name": "index_pull_requests_on_repo_active_state",
+          "columns": [
+            "repo_owner",
+            "repo_name",
+            "remote_state",
+            "inactive_reason"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_repo_and_number_unique": {
+          "name": "index_pull_requests_on_repo_and_number_unique",
+          "columns": [
+            "repo_owner",
+            "repo_name",
+            "number"
+          ],
+          "isUnique": true
+        },
+        "index_pull_requests_repo_filter": {
+          "name": "index_pull_requests_repo_filter",
+          "columns": [
+            "repo_owner",
+            "repo_name",
+            "archived",
+            "deleted_at",
+            "review_status"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_remote_state": {
+          "name": "index_pull_requests_on_remote_state",
+          "columns": [
+            "remote_state"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_inactive_reason": {
+          "name": "index_pull_requests_on_inactive_reason",
+          "columns": [
+            "inactive_reason"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_head_sha": {
+          "name": "index_pull_requests_on_head_sha",
+          "columns": [
+            "head_sha"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_github_id": {
+          "name": "index_pull_requests_on_github_id",
+          "columns": [
+            "github_id"
+          ],
+          "isUnique": false
+        },
+        "index_pull_requests_on_deleted_at": {
+          "name": "index_pull_requests_on_deleted_at",
+          "columns": [
+            "deleted_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "settings": {
+      "name": "settings",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "autoincrement": false,
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "autoincrement": false,
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "index_settings_on_key": {
+          "name": "index_settings_on_key",
+          "columns": [
+            "key"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "sync_states": {
+      "name": "sync_states",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_count": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "created_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deactivated_count": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "deactivated_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fetched_count": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "fetched_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_error": {
+          "autoincrement": false,
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_finished_at": {
+          "autoincrement": false,
+          "name": "last_finished_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_started_at": {
+          "autoincrement": false,
+          "name": "last_started_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_succeeded_at": {
+          "autoincrement": false,
+          "name": "last_succeeded_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "repo_name": {
+          "autoincrement": false,
+          "name": "repo_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "repo_owner": {
+          "autoincrement": false,
+          "name": "repo_owner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope_key": {
+          "autoincrement": false,
+          "name": "scope_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "default": "'idle'",
+          "autoincrement": false,
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_count": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "updated_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "index_sync_states_on_scope_key": {
+          "name": "index_sync_states_on_scope_key",
+          "columns": [
+            "scope_key"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "users": {
+      "name": "users",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "default": "''",
+          "autoincrement": false,
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "encrypted_password": {
+          "default": "''",
+          "autoincrement": false,
+          "name": "encrypted_password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "remember_created_at": {
+          "autoincrement": false,
+          "name": "remember_created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reset_password_sent_at": {
+          "autoincrement": false,
+          "name": "reset_password_sent_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reset_password_token": {
+          "autoincrement": false,
+          "name": "reset_password_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "default": "'user'",
+          "autoincrement": false,
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "index_users_on_reset_password_token": {
+          "name": "index_users_on_reset_password_token",
+          "columns": [
+            "reset_password_token"
+          ],
+          "isUnique": true
+        },
+        "index_users_on_email": {
+          "name": "index_users_on_email",
+          "columns": [
+            "email"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "agent_logs": {
+      "name": "agent_logs",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "log_type": {
+          "default": "'output'",
+          "autoincrement": false,
+          "name": "log_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "autoincrement": false,
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_task_id": {
+          "autoincrement": false,
+          "name": "review_task_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "index_agent_logs_on_review_task_id": {
+          "name": "index_agent_logs_on_review_task_id",
+          "columns": [
+            "review_task_id"
+          ],
+          "isUnique": false
+        },
+        "index_agent_logs_on_log_type": {
+          "name": "index_agent_logs_on_log_type",
+          "columns": [
+            "log_type"
+          ],
+          "isUnique": false
+        },
+        "index_agent_logs_on_created_at": {
+          "name": "index_agent_logs_on_created_at",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "agent_logs_review_task_id_review_tasks_id_fk": {
+          "name": "agent_logs_review_task_id_review_tasks_id_fk",
+          "tableFrom": "agent_logs",
+          "tableTo": "review_tasks",
+          "columnsFrom": [
+            "review_task_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pull_request_snapshots": {
+      "name": "pull_request_snapshots",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ai_summary_failure_reason": {
+          "autoincrement": false,
+          "name": "ai_summary_failure_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_summary_files_changed": {
+          "autoincrement": false,
+          "name": "ai_summary_files_changed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_summary_generated_at": {
+          "autoincrement": false,
+          "name": "ai_summary_generated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_summary_lines_added": {
+          "autoincrement": false,
+          "name": "ai_summary_lines_added",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_summary_lines_removed": {
+          "autoincrement": false,
+          "name": "ai_summary_lines_removed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_summary_main_changes": {
+          "autoincrement": false,
+          "name": "ai_summary_main_changes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_summary_risk_areas": {
+          "autoincrement": false,
+          "name": "ai_summary_risk_areas",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_summary_status": {
+          "default": "'none'",
+          "autoincrement": false,
+          "name": "ai_summary_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_sha": {
+          "autoincrement": false,
+          "name": "base_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "head_sha": {
+          "autoincrement": false,
+          "name": "head_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pull_request_id": {
+          "autoincrement": false,
+          "name": "pull_request_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stale_reason": {
+          "autoincrement": false,
+          "name": "stale_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "default": "'current'",
+          "autoincrement": false,
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "synced_at": {
+          "autoincrement": false,
+          "name": "synced_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "index_pull_request_snapshots_on_pull_request_id": {
+          "name": "index_pull_request_snapshots_on_pull_request_id",
+          "columns": [
+            "pull_request_id"
+          ],
+          "isUnique": false
+        },
+        "index_pr_snapshots_on_pull_request_and_status": {
+          "name": "index_pr_snapshots_on_pull_request_and_status",
+          "columns": [
+            "pull_request_id",
+            "status"
+          ],
+          "isUnique": false
+        },
+        "index_pr_snapshots_on_pull_request_and_revision": {
+          "name": "index_pr_snapshots_on_pull_request_and_revision",
+          "columns": [
+            "pull_request_id",
+            "head_sha",
+            "base_sha"
+          ],
+          "isUnique": true
+        },
+        "index_pull_request_snapshots_on_ai_summary_status": {
+          "name": "index_pull_request_snapshots_on_ai_summary_status",
+          "columns": [
+            "ai_summary_status"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pull_request_snapshots_pull_request_id_pull_requests_id_fk": {
+          "name": "pull_request_snapshots_pull_request_id_pull_requests_id_fk",
+          "tableFrom": "pull_request_snapshots",
+          "tableTo": "pull_requests",
+          "columnsFrom": [
+            "pull_request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "review_comments": {
+      "name": "review_comments",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "body": {
+          "autoincrement": false,
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_path": {
+          "autoincrement": false,
+          "name": "file_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "line_number": {
+          "autoincrement": false,
+          "name": "line_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolution_note": {
+          "autoincrement": false,
+          "name": "resolution_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_task_id": {
+          "autoincrement": false,
+          "name": "review_task_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "severity": {
+          "default": "'suggestion'",
+          "autoincrement": false,
+          "name": "severity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "default": "'pending'",
+          "autoincrement": false,
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "autoincrement": false,
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "index_review_comments_on_status": {
+          "name": "index_review_comments_on_status",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "index_review_comments_on_severity": {
+          "name": "index_review_comments_on_severity",
+          "columns": [
+            "severity"
+          ],
+          "isUnique": false
+        },
+        "index_review_comments_on_review_task_id": {
+          "name": "index_review_comments_on_review_task_id",
+          "columns": [
+            "review_task_id"
+          ],
+          "isUnique": false
+        },
+        "index_review_comments_on_review_task_id_and_file_path": {
+          "name": "index_review_comments_on_review_task_id_and_file_path",
+          "columns": [
+            "review_task_id",
+            "file_path"
+          ],
+          "isUnique": false
+        },
+        "index_review_comments_on_file_path": {
+          "name": "index_review_comments_on_file_path",
+          "columns": [
+            "file_path"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "review_comments_review_task_id_review_tasks_id_fk": {
+          "name": "review_comments_review_task_id_review_tasks_id_fk",
+          "tableFrom": "review_comments",
+          "tableTo": "review_tasks",
+          "columnsFrom": [
+            "review_task_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "review_iterations": {
+      "name": "review_iterations",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ai_model": {
+          "autoincrement": false,
+          "name": "ai_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cli_client": {
+          "autoincrement": false,
+          "name": "cli_client",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_at": {
+          "autoincrement": false,
+          "name": "completed_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_state": {
+          "autoincrement": false,
+          "name": "from_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "iteration_number": {
+          "default": 1,
+          "autoincrement": false,
+          "name": "iteration_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "review_output": {
+          "autoincrement": false,
+          "name": "review_output",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_task_id": {
+          "autoincrement": false,
+          "name": "review_task_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "review_type": {
+          "default": "'review'",
+          "autoincrement": false,
+          "name": "review_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "started_at": {
+          "autoincrement": false,
+          "name": "started_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_state": {
+          "autoincrement": false,
+          "name": "to_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "index_review_iterations_on_review_task_id": {
+          "name": "index_review_iterations_on_review_task_id",
+          "columns": [
+            "review_task_id"
+          ],
+          "isUnique": false
+        },
+        "index_review_iterations_on_review_task_id_and_iteration_number": {
+          "name": "index_review_iterations_on_review_task_id_and_iteration_number",
+          "columns": [
+            "review_task_id",
+            "iteration_number"
+          ],
+          "isUnique": true
+        },
+        "index_review_iterations_on_ai_model": {
+          "name": "index_review_iterations_on_ai_model",
+          "columns": [
+            "ai_model"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "review_iterations_review_task_id_review_tasks_id_fk": {
+          "name": "review_iterations_review_task_id_review_tasks_id_fk",
+          "tableFrom": "review_iterations",
+          "tableTo": "review_tasks",
+          "columnsFrom": [
+            "review_task_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "review_tasks": {
+      "name": "review_tasks",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ai_model": {
+          "autoincrement": false,
+          "name": "ai_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived": {
+          "default": "(FALSE)",
+          "autoincrement": false,
+          "name": "archived",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cli_client": {
+          "default": "'claude'",
+          "autoincrement": false,
+          "name": "cli_client",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_at": {
+          "autoincrement": false,
+          "name": "completed_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "failure_reason": {
+          "autoincrement": false,
+          "name": "failure_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_retry_at": {
+          "autoincrement": false,
+          "name": "last_retry_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pull_request_id": {
+          "autoincrement": false,
+          "name": "pull_request_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pull_request_snapshot_id": {
+          "autoincrement": false,
+          "name": "pull_request_snapshot_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "queued_at": {
+          "autoincrement": false,
+          "name": "queued_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "retry_count": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "retry_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "retry_history": {
+          "autoincrement": false,
+          "name": "retry_history",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_output": {
+          "autoincrement": false,
+          "name": "review_output",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_type": {
+          "default": "'review'",
+          "autoincrement": false,
+          "name": "review_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "started_at": {
+          "autoincrement": false,
+          "name": "started_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "default": "'pending_review'",
+          "autoincrement": false,
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submission_status": {
+          "default": "'pending_submission'",
+          "autoincrement": false,
+          "name": "submission_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submitted_at": {
+          "autoincrement": false,
+          "name": "submitted_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submitted_event": {
+          "autoincrement": false,
+          "name": "submitted_event",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "worktree_path": {
+          "autoincrement": false,
+          "name": "worktree_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "index_review_tasks_on_submitted_event": {
+          "name": "index_review_tasks_on_submitted_event",
+          "columns": [
+            "submitted_event"
+          ],
+          "isUnique": false
+        },
+        "index_review_tasks_on_submission_status": {
+          "name": "index_review_tasks_on_submission_status",
+          "columns": [
+            "submission_status"
+          ],
+          "isUnique": false
+        },
+        "index_review_tasks_on_state": {
+          "name": "index_review_tasks_on_state",
+          "columns": [
+            "state"
+          ],
+          "isUnique": false
+        },
+        "index_review_tasks_on_state_and_queued_at": {
+          "name": "index_review_tasks_on_state_and_queued_at",
+          "columns": [
+            "state",
+            "queued_at"
+          ],
+          "isUnique": false
+        },
+        "index_review_tasks_state_archived": {
+          "name": "index_review_tasks_state_archived",
+          "columns": [
+            "state",
+            "archived"
+          ],
+          "isUnique": false
+        },
+        "index_review_tasks_on_retry_count": {
+          "name": "index_review_tasks_on_retry_count",
+          "columns": [
+            "retry_count"
+          ],
+          "isUnique": false
+        },
+        "index_review_tasks_on_pull_request_snapshot_id": {
+          "name": "index_review_tasks_on_pull_request_snapshot_id",
+          "columns": [
+            "pull_request_snapshot_id"
+          ],
+          "isUnique": false
+        },
+        "index_review_tasks_on_pull_request_id": {
+          "name": "index_review_tasks_on_pull_request_id",
+          "columns": [
+            "pull_request_id"
+          ],
+          "isUnique": false
+        },
+        "index_review_tasks_on_pull_request_id_and_state": {
+          "name": "index_review_tasks_on_pull_request_id_and_state",
+          "columns": [
+            "pull_request_id",
+            "state"
+          ],
+          "isUnique": false
+        },
+        "index_review_tasks_on_ai_model": {
+          "name": "index_review_tasks_on_ai_model",
+          "columns": [
+            "ai_model"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "review_tasks_pull_request_id_pull_requests_id_fk": {
+          "name": "review_tasks_pull_request_id_pull_requests_id_fk",
+          "tableFrom": "review_tasks",
+          "tableTo": "pull_requests",
+          "columnsFrom": [
+            "pull_request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "review_tasks_pull_request_snapshot_id_pull_request_snapshots_id_fk": {
+          "name": "review_tasks_pull_request_snapshot_id_pull_request_snapshots_id_fk",
+          "tableFrom": "review_tasks",
+          "tableTo": "pull_request_snapshots",
+          "columnsFrom": [
+            "pull_request_snapshot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "schema_migrations": {
+      "name": "schema_migrations",
+      "columns": {
+        "version": {
+          "autoincrement": false,
+          "name": "version",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "ar_internal_metadata": {
+      "name": "ar_internal_metadata",
+      "columns": {
+        "key": {
+          "autoincrement": false,
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "value": {
+          "autoincrement": false,
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  }
+}

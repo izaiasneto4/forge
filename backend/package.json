@@ -1,0 +1,23 @@
+{
+  "name": "forge-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "test": "bun test",
+    "typecheck": "bun --bun tsc --noEmit",
+    "db:pull": "bun --bun drizzle-kit pull --dialect sqlite --url ../storage/development.sqlite3 --out .drizzle-pull",
+    "db:generate": "bun --bun drizzle-kit generate"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.3",
+    "elysia": "^1.4.30"
+  },
+  "devDependencies": {
+    "@elysiajs/eden": "^1.4.9",
+    "@types/bun": "latest",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "~5.9.3"
+  }
+}
