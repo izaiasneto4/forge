@@ -5,7 +5,7 @@ gem "image_processing", "~> 1.2"
 gem "kamal", require: false
 gem "propshaft"
 gem "puma", ">= 5.0"
-gem "rails", "~> 8.1.2"
+gem "rails", "~> 8.1.3"
 gem "redcarpet"
 gem "rouge"
 gem "solid_cable"
