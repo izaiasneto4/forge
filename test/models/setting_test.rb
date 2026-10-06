@@ -66,6 +66,18 @@ class SettingTest < ActiveSupport::TestCase
     assert_equal "/path/to/repo", Setting.current_repo
   end
 
+  test "current_repo reflects writes made outside this process, even with a real cache store" do
+    original_path = "/repos/original"
+    externally_written_path = "/repos/written-by-bun"
+    Rails.stubs(:cache).returns(ActiveSupport::Cache::MemoryStore.new)
+    Setting.current_repo = original_path
+    assert_equal original_path, Setting.current_repo
+
+    Setting.where(key: Setting::CURRENT_REPO_KEY).update_all(value: externally_written_path)
+
+    assert_equal externally_written_path, Setting.current_repo
+  end
+
   test "current_repo= creates new setting when not exists" do
     Setting.current_repo = "/new/repo"
     assert_equal "/new/repo", Setting.current_repo

@@ -20,58 +20,36 @@ class Setting < ApplicationRecord
   DEFAULT_AUTO_REVIEW_DELAY_MIN = 5
   DEFAULT_AUTO_REVIEW_DELAY_MAX = 30
 
-  CACHE_TTL = 30.seconds
-
-  cattr_accessor :cache_enabled, default: true
-
+  # Reads go straight to the DB: the Bun backend writes this table too, and a
+  # per-process cache served stale values for up to 30s after those writes.
   def self.fetch(key)
-    return yield unless cache_enabled
-
-    cache_key = "setting/#{key}"
-    Rails.cache.fetch(cache_key, expires_in: CACHE_TTL) do
-      find_by(key: key)&.value
-    end
-  end
-
-  def self.write(key, value)
-    Rails.cache.write("setting/#{key}", value, expires_in: CACHE_TTL)
-  end
-
-  def self.invalidate_cache!(key = nil)
-    if key
-      Rails.cache.delete("setting/#{key}")
-    else
-      Rails.cache.delete_matched("setting/*")
-    end
+    find_by(key: key)&.value
   end
 
   def self.repos_folder
-    fetch(REPOS_FOLDER_KEY) { super }
+    fetch(REPOS_FOLDER_KEY)
   end
 
   def self.repos_folder=(path)
-    invalidate_cache!(REPOS_FOLDER_KEY)
     setting = find_or_initialize_by(key: REPOS_FOLDER_KEY)
     setting.update!(value: path)
   end
 
   def self.current_repo
-    fetch(CURRENT_REPO_KEY) { super }
+    fetch(CURRENT_REPO_KEY)
   end
 
   def self.current_repo=(path)
-    invalidate_cache!(CURRENT_REPO_KEY)
     setting = find_or_initialize_by(key: CURRENT_REPO_KEY)
     setting.update!(value: path)
   end
 
   def self.default_cli_client
-    fetch(DEFAULT_CLI_CLIENT_KEY) { super } || DEFAULT_CLI_CLIENT
+    fetch(DEFAULT_CLI_CLIENT_KEY) || DEFAULT_CLI_CLIENT
   end
 
   def self.default_cli_client=(client)
     return unless CLI_CLIENTS.include?(client)
-    invalidate_cache!(DEFAULT_CLI_CLIENT_KEY)
     setting = find_or_initialize_by(key: DEFAULT_CLI_CLIENT_KEY)
     setting.update!(value: client)
   end
@@ -84,7 +62,6 @@ class Setting < ApplicationRecord
   end
 
   def self.last_synced_at=(time)
-    invalidate_cache!(LAST_SYNCED_AT_KEY)
     setting = find_or_initialize_by(key: LAST_SYNCED_AT_KEY)
     setting.update!(value: time&.iso8601)
   end
@@ -101,17 +78,15 @@ class Setting < ApplicationRecord
   end
 
   def self.only_requested_reviews=(enabled)
-    invalidate_cache!(ONLY_REQUESTED_REVIEWS_KEY)
     setting = find_or_initialize_by(key: ONLY_REQUESTED_REVIEWS_KEY)
     setting.update!(value: enabled.to_s)
   end
 
   def self.github_login
-    fetch(GITHUB_LOGIN_KEY) { super }
+    fetch(GITHUB_LOGIN_KEY)
   end
 
   def self.github_login=(login)
-    invalidate_cache!(GITHUB_LOGIN_KEY)
     setting = find_or_initialize_by(key: GITHUB_LOGIN_KEY)
     setting.update!(value: login)
   end
@@ -130,11 +105,10 @@ class Setting < ApplicationRecord
   end
 
   def self.auto_review_mode?
-    fetch(AUTO_REVIEW_MODE_KEY) { super } == "true"
+    fetch(AUTO_REVIEW_MODE_KEY) == "true"
   end
 
   def self.auto_review_mode=(enabled)
-    invalidate_cache!(AUTO_REVIEW_MODE_KEY)
     setting = find_or_initialize_by(key: AUTO_REVIEW_MODE_KEY)
     setting.update!(value: enabled.to_s)
   end
@@ -144,7 +118,6 @@ class Setting < ApplicationRecord
   end
 
   def self.auto_review_delay_min=(seconds)
-    invalidate_cache!(AUTO_REVIEW_DELAY_MIN_KEY)
     setting = find_or_initialize_by(key: AUTO_REVIEW_DELAY_MIN_KEY)
     setting.update!(value: seconds.to_s)
   end
@@ -154,7 +127,6 @@ class Setting < ApplicationRecord
   end
 
   def self.auto_review_delay_max=(seconds)
-    invalidate_cache!(AUTO_REVIEW_DELAY_MAX_KEY)
     setting = find_or_initialize_by(key: AUTO_REVIEW_DELAY_MAX_KEY)
     setting.update!(value: seconds.to_s)
   end
@@ -165,17 +137,16 @@ class Setting < ApplicationRecord
   end
 
   def self.auto_submit_enabled?
-    fetch(AUTO_SUBMIT_ENABLED_KEY) { super } == "true"
+    fetch(AUTO_SUBMIT_ENABLED_KEY) == "true"
   end
 
   def self.auto_submit_enabled=(enabled)
-    invalidate_cache!(AUTO_SUBMIT_ENABLED_KEY)
     setting = find_or_initialize_by(key: AUTO_SUBMIT_ENABLED_KEY)
     setting.update!(value: enabled.to_s)
   end
 
   def self.theme_preference
-    value = fetch(THEME_PREFERENCE_KEY) { super }
+    value = fetch(THEME_PREFERENCE_KEY)
     return nil if value.blank?
     return value if VALID_THEME_PREFERENCES.include?(value)
 
@@ -185,7 +156,6 @@ class Setting < ApplicationRecord
   def self.theme_preference=(value)
     return if value.present? && !VALID_THEME_PREFERENCES.include?(value)
 
-    invalidate_cache!(THEME_PREFERENCE_KEY)
     setting = find_or_initialize_by(key: THEME_PREFERENCE_KEY)
     setting.update!(value: value.presence)
   end
