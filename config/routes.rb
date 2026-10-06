@@ -70,4 +70,6 @@ Rails.application.routes.draw do
   get "/review_tasks/:id", to: "frontend#index"
   get "/repositories", to: "frontend#index"
   get "/settings", to: "frontend#index"
+  get "/new", to: "frontend#index"
+  get "/:mailbox(/:id)", to: "frontend#index", constraints: { mailbox: /inbox|reviewing|waiting|mine|settled/, id: /\d+/ }
 end
