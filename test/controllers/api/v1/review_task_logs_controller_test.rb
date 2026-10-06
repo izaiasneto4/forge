@@ -24,6 +24,14 @@ class Api::V1::ReviewTaskLogsControllerTest < ActionDispatch::IntegrationTest
     @log2 = @task.agent_logs.create!(log_type: "error", message: "two")
   end
 
+  teardown do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
+    ReviewTask.delete_all
+    PullRequest.unscoped.delete_all
+  end
+
   test "shows logs" do
     get "/api/v1/review_tasks/#{@task.id}/logs", as: :json
 
