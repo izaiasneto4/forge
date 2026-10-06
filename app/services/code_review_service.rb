@@ -11,7 +11,7 @@ class CodeReviewService
 
   attr_reader :cli_client, :previous_comments
 
-  def self.for(cli_client:, worktree_path:, pull_request:, review_type: "review")
+  def self.for(cli_client:, worktree_path:, pull_request:, review_type: "review", focus: nil)
     config = CLIENTS[cli_client] || CLIENTS["claude"]
     new(
       cli_client: cli_client,
@@ -20,11 +20,12 @@ class CodeReviewService
       skill: config[:skill],
       worktree_path: worktree_path,
       pull_request: pull_request,
-      review_type: review_type
+      review_type: review_type,
+      focus: focus
     )
   end
 
-  def initialize(cli_client:, command:, args:, skill:, worktree_path:, pull_request:, review_type: "review")
+  def initialize(cli_client:, command:, args:, skill:, worktree_path:, pull_request:, review_type: "review", focus: nil)
     @cli_client = cli_client
     @command = command
     @args = args
@@ -32,6 +33,7 @@ class CodeReviewService
     @worktree_path = worktree_path
     @pull_request = pull_request
     @review_type = review_type
+    @focus = focus
     @previous_comments = fetch_previous_comments
   end
 
@@ -111,6 +113,12 @@ class CodeReviewService
     "\n## Previous PR Comments\n\nThe following comments exist on this PR from previous reviews:\n\n#{lines}\n\n"
   end
 
+  def focus_context
+    return "" if @focus.blank?
+
+    "\n## Reviewer Focus\n\nThe reviewer asked you to pay special attention to:\n\n#{@focus}\n\nStill report any other significant issues you find.\n\n"
+  end
+
   def cmd_args_for_review
     base_args = [ @command ] + @args
     return base_args + [ review_prompt ] unless codex_client?
@@ -152,6 +160,7 @@ class CodeReviewService
       #{@pull_request.description}
 
       #{previous_comments_context}
+      #{focus_context}
       IMPORTANT SCOPE CONSTRAINT: You must ONLY review code that was actually changed in this PR.
       - Use `gh pr diff` or `git diff` to identify exactly which files and lines were modified
       - Do NOT flag issues in pre-existing code that wasn't touched by this PR
@@ -223,6 +232,7 @@ class CodeReviewService
       #{@pull_request.description}
 
       #{previous_comments_context}
+      #{focus_context}
       Review the changes in this PR. Use `gh pr diff` or `git diff` to identify exactly which files and lines were modified.
 
       ## Step 1: Invoke Specialized Reviewers

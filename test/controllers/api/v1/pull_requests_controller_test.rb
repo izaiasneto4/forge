@@ -165,4 +165,30 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_equal sync_state.last_succeeded_at.iso8601, json.dig("sync_status", "last_synced_at")
     assert_equal "/tmp/repos/api", Setting.current_repo
   end
+
+  test "create_review_task stores the reviewer focus" do
+    focus = "Check the migration is safe to run online"
+    pull_request = PullRequest.find_by!(number: 1)
+    ReviewTask.stubs(:any_review_running?).returns(false)
+    ReviewTaskJob.stubs(:perform_later)
+
+    post "/api/v1/pull_requests/#{pull_request.id}/review_task", params: { cli_client: "codex", review_type: "swarm", focus: "  #{focus}  " }, as: :json
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal focus, pull_request.reload.review_task.review_focus
+    assert_equal focus, json.dig("detail", "task", "review_focus")
+  end
+
+  test "create_review_task clears a previous focus when none is given" do
+    pull_request = PullRequest.find_by!(number: 1)
+    pull_request.create_review_task!(state: "reviewed", review_focus: "Old focus")
+    ReviewTask.stubs(:any_review_running?).returns(false)
+    ReviewTaskJob.stubs(:perform_later)
+
+    post "/api/v1/pull_requests/#{pull_request.id}/review_task", as: :json
+
+    assert_response :created
+    assert_nil pull_request.reload.review_task.review_focus
+  end
 end

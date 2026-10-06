@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_07_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_06_120000) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -143,6 +143,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_120000) do
     t.datetime "queued_at"
     t.integer "retry_count", default: 0, null: false
     t.text "retry_history"
+    t.text "review_focus"
     t.text "review_output"
     t.string "review_type", default: "review", null: false
     t.datetime "started_at"

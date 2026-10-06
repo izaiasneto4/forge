@@ -31,7 +31,8 @@ class ReviewTaskJob < ApplicationJob
         cli_client: review_task.cli_client,
         worktree_path: worktree_path,
         pull_request: pull_request,
-        review_type: review_task.review_type
+        review_type: review_task.review_type,
+        focus: review_task.review_focus
       )
 
       # Capture model information before starting the review

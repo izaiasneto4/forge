@@ -160,6 +160,7 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
 
     review_task.cli_client = cli_client
     review_task.review_type = review_type
+    review_task.review_focus = params[:focus].to_s.strip.presence
     review_task.pull_request_snapshot = pull_request.current_snapshot_or_create!
 
     if ReviewTask.any_review_running?

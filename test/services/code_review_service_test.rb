@@ -216,6 +216,36 @@ class CodeReviewServiceTest < ActiveSupport::TestCase
     assert_includes prompt, "Run /code-review to analyze"
   end
 
+  test "review prompts include the reviewer focus when provided" do
+    focus = "Check the migration is safe to run online"
+
+    %w[review swarm].each do |review_type|
+      service = CodeReviewService.for(
+        cli_client: "claude",
+        worktree_path: @worktree_path,
+        pull_request: @pr,
+        review_type: review_type,
+        focus: focus
+      )
+
+      prompt = service.send(:review_prompt)
+
+      assert_includes prompt, "## Reviewer Focus", review_type
+      assert_includes prompt, focus, review_type
+    end
+  end
+
+  test "review prompts omit the reviewer focus section when blank" do
+    service = CodeReviewService.for(
+      cli_client: "claude",
+      worktree_path: @worktree_path,
+      pull_request: @pr,
+      focus: " "
+    )
+
+    assert_not_includes service.send(:review_prompt), "## Reviewer Focus"
+  end
+
   test "review_prompt uses swarm review prompt for swarm type" do
     service = CodeReviewService.for(
       cli_client: "claude",

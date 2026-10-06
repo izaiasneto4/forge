@@ -894,4 +894,38 @@ class ReviewTaskJobTest < ActiveJob::TestCase
     starting_log = @review_task.agent_logs.find { |log| log.message.include?("Starting review") }
     assert starting_log, "Should log starting info"
   end
+
+  test "passes the review focus to the review service" do
+    focus = "Look closely at the retry logic"
+    @review_task.update!(review_focus: focus)
+
+    mock_worktree = Class.new do
+      def initialize(*)
+      end
+
+      def create_for_pr(pr)
+        "/tmp/worktree-pr-123"
+      end
+
+      def cleanup_worktree(path)
+      end
+    end.new
+
+    mock_review = Class.new do
+      def detect_model
+        "unknown"
+      end
+
+      def run_review_streaming
+        "No issues"
+      end
+    end.new
+
+    WorktreeService.stubs(:new).returns(mock_worktree)
+    CodeReviewService.expects(:for).with(has_entry(:focus, focus)).returns(mock_review)
+    ReviewCommentBuilder.stubs(:persist_for_review_task).returns([])
+    ActionCable.server.stubs(:broadcast)
+
+    ReviewTaskJob.perform_now(@review_task.id)
+  end
 end
