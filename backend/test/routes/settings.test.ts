@@ -1,5 +1,6 @@
 import { treaty } from '@elysiajs/eden'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { createApp } from '../../src/app'
 import type { Db } from '../../src/db/client'
@@ -97,6 +98,27 @@ describe('GET /api/v1/settings', () => {
 
     expect(body?.current_repo).toEqual({ path: recoveredPath, slug: repoSlug, name: repoName })
     expect(settingStore.currentRepo()).toBe(recoveredPath)
+  })
+
+  test('resolves relative stored paths from the working directory and returns them as stored', async () => {
+    const relativeReposFolder = 'repos'
+    const repoName = 'api'
+    const repoSlug = `acme/${repoName}`
+    const relativeRepoPath = join(relativeReposFolder, repoName)
+    mkdirSync(join(reposFolder.path, relativeReposFolder))
+    await createGitRepository(join(reposFolder.path, relativeReposFolder), repoName, repoSlug)
+    settingStore.write(SETTING_KEYS.reposFolder, relativeReposFolder)
+    settingStore.write(SETTING_KEYS.currentRepo, relativeRepoPath)
+    const originalWorkingDirectory = process.cwd()
+    process.chdir(reposFolder.path)
+
+    try {
+      const { body } = await getSettings()
+
+      expect(body?.current_repo).toEqual({ path: relativeRepoPath, slug: repoSlug, name: repoName })
+    } finally {
+      process.chdir(originalWorkingDirectory)
+    }
   })
 
   test('keeps a missing current repo when open pull requests span several repos', async () => {

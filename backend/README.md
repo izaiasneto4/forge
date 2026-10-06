@@ -15,7 +15,8 @@ Point the Vite dev proxy at it with `FORGE_API_URL=http://localhost:3100`. `/cab
 |---|---|
 | `PORT` | `3100` |
 | `RAILS_URL` | `http://localhost:3000` |
-| `DATABASE_PATH` | `../storage/development.sqlite3` (shared with Rails) |
+| `RAILS_ROOT` | repo root; the server runs from here so relative repo paths resolve like in Rails |
+| `DATABASE_PATH` | `storage/development.sqlite3`, relative to `RAILS_ROOT` (shared with Rails) |
 
 ## Contract rules
 

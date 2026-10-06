@@ -1,10 +1,14 @@
 import { createApp } from './app'
+import { runtimeConfig } from './config'
 import { openDatabase } from './db/client'
 
-const port = Number(process.env.PORT ?? 3100)
-const railsUrl = process.env.RAILS_URL ?? 'http://localhost:3000'
-const databasePath = process.env.DATABASE_PATH ?? new URL('../../storage/development.sqlite3', import.meta.url).pathname
+const config = runtimeConfig(process.env)
 
-const app = createApp({ db: openDatabase(databasePath), railsUrl }).listen(port)
+// Run where Rails runs, so relative repo paths stored by Rails resolve identically.
+process.chdir(config.railsRoot)
 
-console.log(`Forge backend on http://localhost:${app.server?.port} (db: ${databasePath}, fallback: ${railsUrl})`)
+const app = createApp({ db: openDatabase(config.databasePath), railsUrl: config.railsUrl }).listen(config.port)
+
+console.log(
+  `Forge backend on http://localhost:${app.server?.port} (rails root: ${config.railsRoot}, db: ${config.databasePath}, fallback: ${config.railsUrl})`,
+)
