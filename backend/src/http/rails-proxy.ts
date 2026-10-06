@@ -11,6 +11,8 @@ async function forwardToRails(request: Request, railsUrl: string) {
   const targetUrl = new URL(`${incomingUrl.pathname}${incomingUrl.search}`, railsUrl)
   const headers = new Headers(request.headers)
   headers.delete('host')
+  headers.set('x-forwarded-host', incomingUrl.host)
+  headers.set('x-forwarded-proto', incomingUrl.protocol.replace(':', ''))
 
   let railsResponse: Response
   try {
