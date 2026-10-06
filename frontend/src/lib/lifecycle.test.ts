@@ -1,0 +1,127 @@
+import { describe, expect, it } from 'vitest'
+
+import { buildBoard, buildComment, buildPullRequest, buildTask } from '../test/factories'
+import {
+  belongsToMailbox,
+  defaultSelection,
+  flattenBoard,
+  groupBySeverity,
+  mailboxFor,
+  orderedIds,
+  sectionsFor,
+  sortPullRequests,
+  suggestedEvent,
+} from './lifecycle'
+
+const login = 'me'
+
+describe('mailboxes', () => {
+  it('routes each lifecycle to its mailbox', () => {
+    const expectations = [
+      { item: buildPullRequest({ lifecycle: 'needs_review' }), mailbox: 'inbox' },
+      { item: buildPullRequest({ lifecycle: 'ready' }), mailbox: 'inbox' },
+      { item: buildPullRequest({ lifecycle: 'failed' }), mailbox: 'inbox' },
+      { item: buildPullRequest({ lifecycle: 'queued' }), mailbox: 'reviewing' },
+      { item: buildPullRequest({ lifecycle: 'reviewing' }), mailbox: 'reviewing' },
+      { item: buildPullRequest({ lifecycle: 'waiting' }), mailbox: 'waiting' },
+      { item: buildPullRequest({ lifecycle: 'authored', author: login }), mailbox: 'mine' },
+      { item: buildPullRequest({ lifecycle: 'settled' }), mailbox: 'settled' },
+    ]
+
+    for (const { item, mailbox } of expectations) {
+      expect(mailboxFor(item, login)).toBe(mailbox)
+    }
+  })
+
+  it('keeps your own pull requests out of the inbox', () => {
+    const ownWithFindings = buildPullRequest({ lifecycle: 'ready', author: login.toUpperCase() })
+
+    expect(belongsToMailbox(ownWithFindings, 'inbox', login)).toBe(false)
+    expect(belongsToMailbox(ownWithFindings, 'mine', login)).toBe(true)
+  })
+})
+
+describe('flattenBoard', () => {
+  it('merges board columns without duplicates', () => {
+    const shared = buildPullRequest()
+    const other = buildPullRequest()
+    const board = buildBoard({ pending_review: [shared], reviewed_by_me: [shared, other] })
+
+    expect(flattenBoard(board).map((item) => item.id)).toEqual([shared.id, other.id])
+  })
+})
+
+describe('sectionsFor', () => {
+  it('orders the inbox by what needs a decision first', () => {
+    const open = buildPullRequest({ lifecycle: 'needs_review' })
+    const requested = buildPullRequest({ lifecycle: 'needs_review', review_requested_for_me: true })
+    const reReview = buildPullRequest({ lifecycle: 'needs_review', has_new_commits: true })
+    const failed = buildPullRequest({ lifecycle: 'failed' })
+    const ready = buildPullRequest({ lifecycle: 'ready' })
+    const expectedOrder = [ready, failed, reReview, requested, open].map((item) => item.id)
+
+    const sections = sectionsFor('inbox', [open, requested, reReview, failed, ready], 'longest_waiting')
+
+    expect(orderedIds(sections)).toEqual(expectedOrder)
+    expect(sections.every((section) => section.items.length > 0)).toBe(true)
+  })
+
+  it('lists running reviews before the queue in queue order', () => {
+    const second = buildPullRequest({ lifecycle: 'queued', review_task: buildTask({ state: 'queued', queue_position: 2 }) })
+    const first = buildPullRequest({ lifecycle: 'queued', review_task: buildTask({ state: 'queued', queue_position: 1 }) })
+    const running = buildPullRequest({ lifecycle: 'reviewing' })
+
+    const sections = sectionsFor('reviewing', [second, first, running], 'longest_waiting')
+
+    expect(orderedIds(sections)).toEqual([running.id, first.id, second.id])
+  })
+
+  it('surfaces waiting pull requests with new commits first', () => {
+    const quiet = buildPullRequest({ lifecycle: 'waiting' })
+    const updated = buildPullRequest({ lifecycle: 'waiting', has_new_commits: true })
+
+    expect(orderedIds(sectionsFor('waiting', [quiet, updated], 'longest_waiting'))).toEqual([updated.id, quiet.id])
+  })
+})
+
+describe('sortPullRequests', () => {
+  it('sorts by waiting time and diff size', () => {
+    const older = buildPullRequest({ updated_at_github: '2026-09-01T00:00:00Z', additions: 500, deletions: 10 })
+    const newer = buildPullRequest({ updated_at_github: '2026-10-01T00:00:00Z', additions: 5, deletions: 1 })
+
+    expect(sortPullRequests([newer, older], 'longest_waiting').map((item) => item.id)).toEqual([older.id, newer.id])
+    expect(sortPullRequests([older, newer], 'recent_activity').map((item) => item.id)).toEqual([newer.id, older.id])
+    expect(sortPullRequests([older, newer], 'smallest_diff').map((item) => item.id)).toEqual([newer.id, older.id])
+  })
+})
+
+describe('review suggestions', () => {
+  it('suggests requesting changes when a blocker is pending', () => {
+    const comments = [buildComment({ severity: 'major' }), buildComment({ severity: 'nitpick' })]
+    expect(suggestedEvent(comments)).toBe('REQUEST_CHANGES')
+  })
+
+  it('suggests commenting for minor notes and approving when nothing is pending', () => {
+    const minorOnly = [buildComment({ severity: 'minor' })]
+    const allSent = [buildComment({ severity: 'critical', status: 'addressed' })]
+
+    expect(suggestedEvent(minorOnly)).toBe('COMMENT')
+    expect(suggestedEvent(allSent)).toBe('APPROVE')
+  })
+
+  it('pre-selects pending findings that matter and skips nits', () => {
+    const critical = buildComment({ severity: 'critical' })
+    const minor = buildComment({ severity: 'minor' })
+    const nit = buildComment({ severity: 'nitpick' })
+    const sent = buildComment({ severity: 'major', status: 'addressed' })
+
+    expect([...defaultSelection([critical, minor, nit, sent])]).toEqual([critical.id, minor.id])
+  })
+
+  it('groups findings by severity in priority order', () => {
+    const nit = buildComment({ severity: 'nitpick' })
+    const critical = buildComment({ severity: 'critical' })
+
+    expect(groupBySeverity([nit, critical]).map((group) => group.severity)).toEqual(['critical', 'nitpick'])
+  })
+})
