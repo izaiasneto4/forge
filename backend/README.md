@@ -9,7 +9,7 @@ bun test
 bun run typecheck
 ```
 
-Point the Vite dev proxy at it with `FORGE_API_URL=http://localhost:3100`. `/cable` still goes straight to Rails.
+Open the app through it at `http://localhost:3100` (pages, assets, and the `/cable` websocket are relayed to Rails), or point the Vite dev proxy at it with `FORGE_API_URL=http://localhost:3100`.
 
 | Env | Default |
 |---|---|
