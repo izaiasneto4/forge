@@ -49,6 +49,16 @@ class Api::V1::ReviewsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "pending_review", json["state"]
   end
 
+  test "stores the reviewer focus" do
+    focus = "Check the webhook retry path"
+    ReviewTask.stubs(:any_review_running?).returns(false)
+
+    post "/api/v1/reviews", params: { pr_url: @pr.url, focus: focus }, as: :json
+
+    assert_response :created
+    assert_equal focus, @pr.reload.review_task.review_focus
+  end
+
   test "queues review when another review running" do
     ReviewTask.stubs(:any_review_running?).returns(true)
 
