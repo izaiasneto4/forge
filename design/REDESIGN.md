@@ -64,6 +64,19 @@ Expose this as `lifecycle` on the PR payload so the UI and `bin/forge` share one
 - Status is a glyph, not a text badge: ring, spinner, filled send, red alert, half-moon, check.
 - Motion: 120–300ms ease-out, spring on toggles and sheets, shimmer on the live agent step. Respects `prefers-reduced-motion`.
 
+## Status
+
+Shipped in the app (dark appearance only for now):
+
+- 3-pane shell with mailboxes, repository switcher, sync chip, inspector (activity, agent log, history).
+- Server-derived `lifecycle` + `has_new_commits` on PR payloads; the task board and drag-and-drop are gone.
+- State-aware composer: start (agent, depth, focus lens + free text sent as `focus`), re-review, retry, live run, submit with include/exclude per finding and a suggested event.
+- `⌘K` palette, `J/K`, `X`, `E`, `I`, `N`, `R`, `⌘↵`, `⌘\`, `⌘,`; auto-advance after submit/archive.
+- macOS-style notifications (in-app banners + optional desktop notifications), confirm sheet, settings sheet (accent color, agents, repositories, GitHub, shortcuts).
+- Mailbox URLs: `/inbox`, `/reviewing/:id`, `/waiting/:id`, `/mine`, `/settled`, `/new`. Old `/review_tasks/:id` links redirect to the PR.
+
+Still open: light appearance, multi-repo sync, file list per PR (no API yet), AI-drafted submission summary, editing finding text before submit, Tauri shell.
+
 ## Roadmap
 
 1. **Shell + IA:** tokens, 3-pane shell, mailboxes, list, `lifecycle` in the API. Remove top nav and the task board.
