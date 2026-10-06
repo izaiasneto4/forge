@@ -4,6 +4,9 @@ class PullRequestSummaryServiceTest < ActiveSupport::TestCase
   self.use_transactional_tests = false
 
   setup do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
     ReviewTask.delete_all
     PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
@@ -33,6 +36,9 @@ class PullRequestSummaryServiceTest < ActiveSupport::TestCase
   end
 
   teardown do
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
     ReviewTask.delete_all
     PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
