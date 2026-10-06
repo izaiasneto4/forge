@@ -47,7 +47,15 @@ module Api
           }
         end
 
+        def github_login
+          return @github_login if defined?(@github_login)
+
+          @github_login = Setting.github_login
+        end
+
         def pull_request_payload(pull_request)
+          lifecycle = PullRequestLifecycle.new(pull_request, github_login: github_login)
+
           {
             id: pull_request.id,
             number: pull_request.number,
@@ -80,6 +88,8 @@ module Api
             changed_files: pull_request.changed_files,
             ai_summary: ai_summary_payload(pull_request.ai_summary_for_display),
             review_requested_for_me: pull_request.review_requested_for_me?,
+            lifecycle: lifecycle.call,
+            has_new_commits: lifecycle.new_commits?,
             review_task: pull_request.review_task.present? ? review_task_payload(pull_request.review_task, include_pull_request: false) : nil
           }
         end
@@ -121,6 +131,7 @@ module Api
             has_review_history: review_task.has_review_history?,
             current_iteration_number: review_task.current_iteration_number,
             swarm_review: review_task.swarm_review?,
+            review_focus: review_task.review_focus,
             pull_request_snapshot_id: review_task.pull_request_snapshot_id,
             analysis_status: review_task.analysis_stale? ? "stale" : review_task.pull_request.analysis_status,
             snapshot_current: review_task.snapshot_current?,

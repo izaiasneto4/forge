@@ -110,6 +110,8 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     assert_equal "current", json.dig("columns", "pending_review", 0, "ai_summary", "status")
     assert_equal 6, json.dig("columns", "pending_review", 0, "ai_summary", "files_changed")
     assert_equal [ "Caching layer added", "Auth middleware refactor" ], json.dig("columns", "pending_review", 0, "ai_summary", "main_changes")
+    assert_equal PullRequestLifecycle.call(@pull_request), json.dig("columns", "pending_review", 0, "lifecycle")
+    assert_equal false, json.dig("columns", "pending_review", 0, "has_new_commits")
   end
 
   test "review task board and detail return structured payloads" do
