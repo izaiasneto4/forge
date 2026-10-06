@@ -29,7 +29,7 @@ export const LENSES: Record<ReviewLens, { label: string; icon: IconName; focus: 
 }
 
 export const EVENTS: Record<ReviewEvent, { label: string; color: string; past: string }> = {
-  COMMENT: { label: 'Comment', color: 'var(--blue)', past: 'commented' },
+  COMMENT: { label: 'Comment', color: 'var(--t3)', past: 'commented' },
   APPROVE: { label: 'Approve', color: 'var(--green)', past: 'approved' },
   REQUEST_CHANGES: { label: 'Request changes', color: 'var(--orange)', past: 'requested changes' },
 }

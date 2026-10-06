@@ -16,7 +16,6 @@ const TABS: Array<[InspectorTab, string]> = [
 
 type TimelineEntry = {
   icon: IconName
-  color: string
   what: ReactNode
   at: string
 }
@@ -24,17 +23,17 @@ type TimelineEntry = {
 function timeline(item: PullRequestItem, detail: ReviewTaskDetailResponse | undefined, lastSyncedAt: string | null) {
   const task = detail?.task ?? item.review_task
   const entries: Array<TimelineEntry | null> = [
-    item.created_at_github ? { icon: 'branch', color: 'var(--t2)', what: <><b>{item.author ?? 'Someone'}</b> opened this pull request</>, at: item.created_at_github } : null,
-    item.updated_at_github && item.updated_at_github !== item.created_at_github ? { icon: 'branch', color: 'var(--t2)', what: 'Last updated on GitHub', at: item.updated_at_github } : null,
-    lastSyncedAt ? { icon: 'refresh', color: 'var(--t2)', what: 'Synced from GitHub', at: lastSyncedAt } : null,
-    task?.queued_at ? { icon: 'hourglass', color: 'var(--t2)', what: 'Review queued', at: task.queued_at } : null,
-    task?.started_at ? { icon: 'sparkles', color: 'var(--accent)', what: `${agentLabel(task.cli_client)} started reviewing`, at: task.started_at } : null,
+    item.created_at_github ? { icon: 'branch', what: <><b>{item.author ?? 'Someone'}</b> opened this pull request</>, at: item.created_at_github } : null,
+    item.updated_at_github && item.updated_at_github !== item.created_at_github ? { icon: 'branch', what: 'Last updated on GitHub', at: item.updated_at_github } : null,
+    lastSyncedAt ? { icon: 'refresh', what: 'Synced from GitHub', at: lastSyncedAt } : null,
+    task?.queued_at ? { icon: 'hourglass', what: 'Review queued', at: task.queued_at } : null,
+    task?.started_at ? { icon: 'sparkles', what: `${agentLabel(task.cli_client)} started reviewing`, at: task.started_at } : null,
     task?.completed_at && task.state !== 'failed_review'
-      ? { icon: 'sparkles', color: 'var(--accent)', what: `${agentLabel(task.cli_client)} finished${detail ? ` · ${pluralize(detail.comments.length, 'finding')}` : ''}`, at: task.completed_at }
+      ? { icon: 'sparkles', what: `${agentLabel(task.cli_client)} finished${detail ? ` · ${pluralize(detail.comments.length, 'finding')}` : ''}`, at: task.completed_at }
       : null,
-    task?.state === 'failed_review' && task.completed_at ? { icon: 'warn', color: 'var(--red)', what: 'Review failed', at: task.completed_at } : null,
+    task?.state === 'failed_review' && task.completed_at ? { icon: 'warn', what: 'Review failed', at: task.completed_at } : null,
     task?.submitted_at && isReviewEvent(task.submitted_event)
-      ? { icon: 'github', color: 'var(--purple)', what: `You ${EVENTS[task.submitted_event].past} on GitHub`, at: task.submitted_at }
+      ? { icon: 'github', what: `You ${EVENTS[task.submitted_event].past} on GitHub`, at: task.submitted_at }
       : null,
   ]
 
@@ -53,7 +52,7 @@ function Activity({ item, detail }: { item: PullRequestItem; detail: ReviewTaskD
     <div className="tl">
       {entries.map((entry, index) => (
         <div key={`${entry.at}:${index}`} className="tl-item">
-          <span className="tl-dot" style={{ '--c': entry.color }}><Icon name={entry.icon} size={12} /></span>
+          <span className="tl-dot"><Icon name={entry.icon} size={12} /></span>
           <div><div className="what">{entry.what}</div><div className="when">{relativeAgo(entry.at)}</div></div>
         </div>
       ))}

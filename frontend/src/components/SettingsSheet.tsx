@@ -177,7 +177,7 @@ function Repositories({ settings }: { settings: SettingsResponse }) {
         {repositories.data?.items.length === 0 ? <Row label="No Git repositories found in this folder." /> : null}
         {repositories.data?.items.map((repo) => (
           <div key={repo.path} className={repo.current ? 'grow' : 'grow clickable'} onClick={() => { if (!repo.current && repo.slug) void actions.switchRepo(repo.slug) }}>
-            <span className="repo-dot" style={{ background: repo.current ? 'var(--accent)' : 'var(--t4)' }} />
+            <span className="repo-dot" style={{ background: repo.current ? 'var(--t1)' : 'var(--t4)' }} />
             <div className="l">{repo.slug ?? repo.name}<small className="mono">{repo.path}{repo.branch ? ` · ${repo.branch}` : ''}</small></div>
             {repo.current ? <span className="repo-current">Current</span> : null}
           </div>

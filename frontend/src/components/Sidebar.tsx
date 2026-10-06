@@ -102,7 +102,7 @@ export function Sidebar() {
                 if (!current && repo.slug) void actions.switchRepo(repo.slug)
               }}
             >
-              <span className="repo-dot" style={{ background: current ? 'var(--accent)' : 'var(--t4)' }} />
+              <span className="repo-dot" style={{ background: current ? 'var(--t1)' : 'var(--t4)' }} />
               <span className="label">{repo.name}</span>
               {repo.branch ? <span className="sb-repo-branch">{repo.branch}</span> : null}
             </button>

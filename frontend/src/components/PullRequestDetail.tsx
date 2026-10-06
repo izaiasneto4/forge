@@ -14,7 +14,6 @@ import {
 import { useNow } from '../lib/useNow'
 import type {
   AgentLogItem,
-  Lifecycle,
   ParsedReviewItem,
   PullRequestItem,
   ReviewCommentItem,
@@ -27,23 +26,16 @@ import { AgentIcon, Avatar, CheckBadge, Spinner, StatusGlyph } from './Glyphs'
 import { Icon, type IconName } from './Icon'
 import { MenuButton, type MenuItem } from './Menu'
 
-const LIFECYCLE_COLORS: Record<Lifecycle, string> = {
-  needs_review: 'var(--t2)',
-  queued: 'var(--t2)',
-  reviewing: 'var(--accent)',
-  ready: 'var(--accent)',
-  failed: 'var(--red)',
-  waiting: 'var(--purple)',
-  settled: 'var(--green)',
-  authored: 'var(--blue)',
-}
-
 const SEVERITY_COLORS: Record<ReviewCommentItem['severity'], string> = {
   critical: 'var(--red)',
   major: 'var(--orange)',
-  minor: 'var(--blue)',
-  suggestion: 'var(--teal)',
-  nitpick: 'var(--gray)',
+  minor: 'var(--t3)',
+  suggestion: 'var(--t3)',
+  nitpick: 'var(--t4)',
+}
+
+function SeverityChip({ severity, children }: { severity: ReviewCommentItem['severity']; children: ReactNode }) {
+  return <span className="chip"><i className="dot" style={{ '--c': SEVERITY_COLORS[severity] }} />{children}</span>
 }
 
 const RUN_STEPS = ['Prepare worktree', 'Run the review', 'Write findings']
@@ -67,9 +59,9 @@ function Block({ title, aside, children, delay = 0 }: { title: string; aside?: R
   )
 }
 
-function Callout({ icon, color, title, children, actions }: { icon: IconName; color: string; title: string; children?: ReactNode; actions?: ReactNode }) {
+function Callout({ icon, color, title, children, actions }: { icon: IconName; color?: string; title: string; children?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="card callout" style={{ '--c': color }}>
+    <div className="card callout" style={color ? { '--c': color } : undefined}>
       <div className="ico"><Icon name={icon} size={18} /></div>
       <div>
         <div className="what">{title}</div>
@@ -85,13 +77,12 @@ function Header({ item }: { item: PullRequestItem }) {
   const authored = isAuthoredBy(item, login)
   const checks = item.check_status
   const checkIcon: IconName = checks === 'success' ? 'checkCircle' : checks === 'failure' ? 'warn' : 'hourglass'
-  const checkColor = checks === 'success' ? 'var(--green)' : checks === 'failure' ? 'var(--red)' : 'var(--orange)'
   const checkLabel = checks === 'success' ? 'Checks passing' : checks === 'failure' ? 'Checks failing' : 'Checks running'
 
   return (
     <>
       <div className="kicker" style={{ '--d': 0 }}>
-        <span className="state" style={{ '--c': LIFECYCLE_COLORS[item.lifecycle] }}>
+        <span className="state" style={item.lifecycle === 'failed' ? { '--c': 'var(--red)' } : undefined}>
           <StatusGlyph lifecycle={item.lifecycle} requested={item.review_requested_for_me} size={14} />
           {LIFECYCLE_LABELS[item.lifecycle]}
         </span>
@@ -112,8 +103,8 @@ function Header({ item }: { item: PullRequestItem }) {
           <span className="stat"><span className="diffstat"><span className="a">+{formatCount(item.additions)}</span><span className="d">−{formatCount(item.deletions)}</span></span></span>
         ) : null}
         {item.changed_files != null ? <span className="stat"><Icon name="files" size={14} />{pluralize(item.changed_files, 'file')}</span> : null}
-        {checks ? <span className="stat" style={{ '--c': checkColor }}><Icon name={checkIcon} size={14} />{checkLabel}</span> : null}
-        {item.review_requested_for_me ? <span className="stat" style={{ '--c': 'var(--accent)' }}><Icon name="user" size={14} />Requested you</span> : null}
+        {checks ? <span className={checks === 'failure' ? 'stat danger' : 'stat'} style={checks === 'failure' ? { '--c': 'var(--red)' } : undefined}><Icon name={checkIcon} size={14} />{checkLabel}</span> : null}
+        {item.review_requested_for_me ? <span className="stat"><Icon name="user" size={14} />Requested you</span> : null}
         {item.updated_at_github ? <span className="stat"><Icon name="clock" size={14} />Updated {relativeAgo(item.updated_at_github)}</span> : null}
       </div>
     </>
@@ -148,7 +139,7 @@ function Brief({ item }: { item: PullRequestItem }) {
         {summary.risk_areas.length > 0 ? (
           <div className="risks">
             <span className="lbl">Watch for</span>
-            {summary.risk_areas.map((risk) => <span key={risk} className="chip" style={{ '--c': 'var(--orange)' }}>{risk}</span>)}
+            {summary.risk_areas.map((risk) => <span key={risk} className="chip">{risk}</span>)}
           </div>
         ) : null}
       </div>
@@ -228,7 +219,7 @@ function Verdict({ item, detail }: { item: PullRequestItem; detail: ReviewTaskDe
     const event = suggestedEvent(comments)
     const blocker = pendingComments(comments).find((comment) => comment.severity === 'critical' || comment.severity === 'major')
     const pendingCount = pendingComments(comments).length
-    headline = <>{agentLabel(task.cli_client)} suggests <em style={{ '--c': EVENTS[event].color }}>{EVENTS[event].label.toLowerCase()}</em></>
+    headline = <>{agentLabel(task.cli_client)} suggests <em>{EVENTS[event].label.toLowerCase()}</em></>
     reason = blocker
       ? `${blocker.title ?? 'A blocking issue'}${pendingCount > 1 ? ', plus a few smaller things.' : '.'}`
       : pendingCount > 0 ? 'No blockers — a few things worth mentioning.' : detail.content_mode === 'comments' || detail.content_mode === 'empty' ? 'No issues found in the changed code.' : 'See the agent output below.'
@@ -256,7 +247,7 @@ function Verdict({ item, detail }: { item: PullRequestItem; detail: ReviewTaskDe
         </div>
         {counts.length > 0 ? (
           <div className="sev-summary">
-            {counts.map(({ severity, count }) => <span key={severity} className="chip" style={{ '--c': SEVERITY_COLORS[severity] }}>{count} {SEVERITY_LABELS[severity].toLowerCase()}</span>)}
+            {counts.map(({ severity, count }) => <SeverityChip key={severity} severity={severity}>{count} {SEVERITY_LABELS[severity].toLowerCase()}</SeverityChip>)}
           </div>
         ) : null}
       </div>
@@ -367,7 +358,7 @@ function Findings({ item, detail }: { item: PullRequestItem; detail: ReviewTaskD
       {groups.map((group) => (
         <div key={group.severity}>
           <div className="finding-group">
-            <span className="chip" style={{ '--c': SEVERITY_COLORS[group.severity] }}>{SEVERITY_LABELS[group.severity]}</span>
+            <SeverityChip severity={group.severity}>{SEVERITY_LABELS[group.severity]}</SeverityChip>
             <span>{group.comments.length}</span>
           </div>
           {group.comments.map((comment) => (
@@ -439,7 +430,7 @@ function StatusCallouts({ item }: { item: PullRequestItem }) {
 
   if (item.has_new_commits && (item.lifecycle === 'waiting' || item.lifecycle === 'needs_review')) {
     return (
-      <Callout icon="branch" color="var(--purple)" title="New commits since your review">
+      <Callout icon="branch" title="New commits since your review">
         {item.author ?? 'The author'} pushed changes {relativeAgo(item.updated_at_github)}. Re-review to check what changed and which findings were addressed.
       </Callout>
     )
@@ -447,7 +438,7 @@ function StatusCallouts({ item }: { item: PullRequestItem }) {
 
   if (item.has_new_commits && item.lifecycle === 'ready') {
     return (
-      <Callout icon="warn" color="var(--orange)" title="These findings are for an older commit">
+      <Callout icon="warn" title="These findings are for an older commit">
         New commits landed after this review ran. Re-run it from the ⋯ menu before sending, or send as-is.
       </Callout>
     )
@@ -455,7 +446,7 @@ function StatusCallouts({ item }: { item: PullRequestItem }) {
 
   if (item.lifecycle === 'authored') {
     return (
-      <Callout icon="user" color="var(--blue)" title="Your pull request">
+      <Callout icon="user" title="Your pull request">
         Run a self-review before your reviewers get to it. Findings stay in Forge until you decide what to do with them.
       </Callout>
     )
@@ -463,7 +454,7 @@ function StatusCallouts({ item }: { item: PullRequestItem }) {
 
   if (item.lifecycle === 'settled' && !task) {
     const reason = item.remote_state === 'merged' ? 'Merged' : item.remote_state === 'closed' ? 'Closed' : 'You already reviewed this on GitHub'
-    return <Callout icon="checkCircle" color="var(--green)" title={reason}>Nothing left to do here.</Callout>
+    return <Callout icon="checkCircle" title={reason}>Nothing left to do here.</Callout>
   }
 
   return null

@@ -31,16 +31,16 @@ export function Spinner({ size = 16, stroke = 1.8 }: { size?: number; stroke?: n
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true">
       <circle cx="8" cy="8" r="6" fill="none" stroke="var(--t4)" strokeWidth={stroke - 0.2} />
-      <path className="spin" d="M8 2a6 6 0 0 1 6 6" stroke="var(--accent)" strokeWidth={stroke} fill="none" strokeLinecap="round" />
+      <path className="spin" d="M8 2a6 6 0 0 1 6 6" stroke="var(--t1)" strokeWidth={stroke} fill="none" strokeLinecap="round" />
     </svg>
   )
 }
 
-export function CheckBadge({ size = 16, color = 'var(--green)' }: { size?: number; color?: string }) {
+export function CheckBadge({ size = 16, color = 'var(--t3)' }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true">
       <circle cx="8" cy="8" r="7" fill={color} />
-      <path d="m5.2 8.2 1.9 1.9 3.8-4" stroke="#fff" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m5.2 8.2 1.9 1.9 3.8-4" stroke="#161618" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -51,7 +51,7 @@ export function StatusGlyph({ lifecycle, requested = false, size = 16 }: { lifec
   switch (lifecycle) {
     case 'needs_review':
       return requested ? (
-        <svg {...box}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" strokeWidth="1.6" /><circle cx="8" cy="8" r="2.4" fill="var(--accent)" /></svg>
+        <svg {...box}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t1)" strokeWidth="1.6" /><circle cx="8" cy="8" r="2.4" fill="var(--t1)" /></svg>
       ) : (
         <svg {...box}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t3)" strokeWidth="1.6" strokeDasharray="2.6 2.1" /></svg>
       )
@@ -64,22 +64,13 @@ export function StatusGlyph({ lifecycle, requested = false, size = 16 }: { lifec
     case 'failed':
       return <svg {...box}><circle cx="8" cy="8" r="7" fill="var(--red)" /><path d="M8 4.6v4.1" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" /><circle cx="8" cy="11.2" r="1" fill="#fff" /></svg>
     case 'waiting':
-      return <svg {...box}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--purple)" strokeWidth="1.6" /><path d="M8 4a4 4 0 0 1 0 8z" fill="var(--purple)" /></svg>
+      return <svg {...box}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t3)" strokeWidth="1.6" /><path d="M8 4a4 4 0 0 1 0 8z" fill="var(--t3)" /></svg>
     case 'settled':
       return <CheckBadge size={size} />
     case 'authored':
-      return <svg {...box}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--blue)" strokeWidth="1.6" /><circle cx="8" cy="8" r="2.4" fill="none" stroke="var(--blue)" strokeWidth="1.4" /></svg>
+      return <svg {...box}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t3)" strokeWidth="1.6" /><circle cx="8" cy="8" r="2.4" fill="none" stroke="var(--t3)" strokeWidth="1.4" /></svg>
   }
 }
-
-const AVATAR_GRADIENTS = [
-  ['#ff9a62', '#e2533b'],
-  ['#7aa7ff', '#4c5bd4'],
-  ['#5fd6a4', '#1f9c74'],
-  ['#d58cff', '#8a46d8'],
-  ['#ffd36b', '#e09a1c'],
-  ['#7fe3ef', '#2f9fb8'],
-]
 
 export function Avatar({ name, url, size = 20 }: { name: string | null; url?: string | null; size?: number }) {
   const label = name ?? '?'
@@ -89,11 +80,8 @@ export function Avatar({ name, url, size = 20 }: { name: string | null; url?: st
     return <img className="avatar" src={url} alt={label} style={style} />
   }
 
-  const index = [...label].reduce((sum, char) => sum + char.charCodeAt(0), 0) % AVATAR_GRADIENTS.length
-  const [from, to] = AVATAR_GRADIENTS[index]
-
   return (
-    <span className="avatar" style={{ ...style, background: `linear-gradient(160deg, ${from}, ${to})` }}>
+    <span className="avatar" style={style}>
       {label.charAt(0).toUpperCase()}
     </span>
   )

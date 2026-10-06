@@ -12,7 +12,7 @@ import { MenuButton } from './Menu'
 
 function LiveClock({ since }: { since: string | null }) {
   const now = useNow(1000)
-  return <span className="chip ghost mono" style={{ '--c': 'var(--accent)' }}>{since ? elapsedClock(since, now) : 'Starting'}</span>
+  return <span className="chip ghost mono">{since ? elapsedClock(since, now) : 'Starting'}</span>
 }
 
 function DiffStat({ item }: { item: PullRequestItem }) {
@@ -32,17 +32,17 @@ function RowTag({ item }: { item: PullRequestItem }) {
   switch (item.lifecycle) {
     case 'ready':
       return task && task.pending_comment_count > 0
-        ? <span className="chip" style={{ '--c': 'var(--accent)' }}>{pluralize(task.pending_comment_count, 'finding')}</span>
-        : <span className="chip" style={{ '--c': 'var(--green)' }}>No findings</span>
+        ? <span className="chip strong">{pluralize(task.pending_comment_count, 'finding')}</span>
+        : <span className="chip">No findings</span>
     case 'reviewing':
       return <LiveClock since={task?.started_at ?? null} />
     case 'queued':
       return <span className="chip">Queued{task?.queue_position ? ` · ${task.queue_position}` : ''}</span>
     case 'failed':
-      return <span className="chip" style={{ '--c': 'var(--red)' }}>Failed</span>
+      return <span className="chip"><i className="dot" style={{ '--c': 'var(--red)' }} />Failed</span>
     case 'waiting':
       return item.has_new_commits
-        ? <span className="chip" style={{ '--c': 'var(--purple)' }}>New commits</span>
+        ? <span className="chip">New commits</span>
         : <span className="chip ghost">{task ? `${task.pending_comment_count} open` : 'Waiting'}</span>
     case 'settled': {
       const event = task?.submitted_event
@@ -51,7 +51,7 @@ function RowTag({ item }: { item: PullRequestItem }) {
     case 'authored':
       return item.draft ? <span className="chip ghost">Draft</span> : <DiffStat item={item} />
     case 'needs_review':
-      return item.has_new_commits ? <span className="chip" style={{ '--c': 'var(--purple)' }}>New commits</span> : <DiffStat item={item} />
+      return item.has_new_commits ? <span className="chip">New commits</span> : <DiffStat item={item} />
   }
 }
 
