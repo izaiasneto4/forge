@@ -9,6 +9,9 @@ class PullRequestSnapshotTest < ActiveSupport::TestCase
     clear_enqueued_jobs
     clear_performed_jobs
     ActiveJob::Base.queue_adapter = :test
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
     ReviewTask.delete_all
     PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
@@ -32,6 +35,9 @@ class PullRequestSnapshotTest < ActiveSupport::TestCase
   teardown do
     clear_enqueued_jobs
     clear_performed_jobs
+    ReviewComment.delete_all
+    ReviewIteration.delete_all
+    AgentLog.delete_all
     ReviewTask.delete_all
     PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
