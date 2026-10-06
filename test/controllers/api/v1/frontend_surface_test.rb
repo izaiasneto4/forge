@@ -121,6 +121,8 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     board = JSON.parse(response.body)
     assert_equal 1, board.dig("columns", "reviewed").size
 
+    assert_equal @review_task.review_comments.count(&:pending?), board.dig("columns", "reviewed", 0, "pending_comment_count")
+
     get "/api/v1/review_tasks/#{@review_task.id}", as: :json
 
     assert_response :success

@@ -132,6 +132,7 @@ module Api
             current_iteration_number: review_task.current_iteration_number,
             swarm_review: review_task.swarm_review?,
             review_focus: review_task.review_focus,
+            pending_comment_count: review_task.review_comments.count(&:pending?),
             pull_request_snapshot_id: review_task.pull_request_snapshot_id,
             analysis_status: review_task.analysis_stale? ? "stale" : review_task.pull_request.analysis_status,
             snapshot_current: review_task.snapshot_current?,
