@@ -1,4 +1,7 @@
 import { Elysia, t, type TSchema } from 'elysia'
+import { ParameterMissingError, RecordNotFoundError } from '../lib/errors'
+import { logger } from '../lib/logger'
+import { InvalidParamError } from './params'
 
 // Mirrors Api::V1::BaseController#render_ok / #render_error.
 export function ok<Payload extends object>(payload: Payload) {
@@ -39,6 +42,19 @@ export class ApiError extends Error {
   }
 }
 
+// Domain errors raised by models and param helpers, rendered like BaseController's rescue_from.
+function domainErrorResponse(error: unknown, set: { status?: number | string }) {
+  if (error instanceof RecordNotFoundError) {
+    set.status = 404
+    return errorBody(ERROR_CODES.notFound, 'Resource not found')
+  }
+  if (error instanceof ParameterMissingError || error instanceof InvalidParamError) {
+    set.status = 422
+    return errorBody(ERROR_CODES.invalidInput, error.message)
+  }
+  return undefined
+}
+
 function errorBody(code: string, message: string, details?: unknown) {
   return { ok: false as const, error: details === undefined ? { code, message } : { code, message, details } }
 }
@@ -58,14 +74,19 @@ export const errorHandling = new Elysia({ name: 'error-handling' })
 
         set.status = 422
         return errorBody(ERROR_CODES.invalidInput, error.message)
+      // Rails answers malformed request bodies with 400 Bad Request.
       case 'PARSE':
-        set.status = 422
+        set.status = 400
         return errorBody(ERROR_CODES.invalidInput, error.message)
       case 'NOT_FOUND':
         set.status = 404
         return errorBody(ERROR_CODES.notFound, 'Resource not found')
-      default:
+      default: {
+        const domainResponse = domainErrorResponse(error, set)
+        if (domainResponse) return domainResponse
+        logger.error(`[http] unhandled ${error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)}`)
         set.status = 500
         return errorBody(ERROR_CODES.internal, INTERNAL_ERROR_MESSAGE)
+      }
     }
   })
