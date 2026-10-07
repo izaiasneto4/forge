@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { CommandNotFoundError } from '../../src/commands/runner'
 import { slugFromPath, slugFromRemote } from '../../src/services/repo-slug-resolver'
 import { createCheckoutFolder, createGitRepository, createTempFolder } from '../support/git'
 import { FakeCommandRunner } from '../support/context'
@@ -42,6 +43,16 @@ describe('slugFromPath', () => {
     const commands = new FakeCommandRunner()
     const repoPath = createCheckoutFolder(tempFolder.path, name)
     commands.on(['git', '-C', repoPath], { exitCode: 128 })
+
+    expect(await slugFromPath(commands, repoPath)).toBeNull()
+  })
+
+  test('returns null when git cannot run', async () => {
+    const commands = new FakeCommandRunner()
+    const repoPath = createCheckoutFolder(tempFolder.path, name)
+    commands.on(['git', '-C', repoPath], () => {
+      throw new CommandNotFoundError(['git', '-C', repoPath])
+    })
 
     expect(await slugFromPath(commands, repoPath)).toBeNull()
   })

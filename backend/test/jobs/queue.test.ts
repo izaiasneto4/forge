@@ -96,11 +96,14 @@ describe('JobQueue', () => {
     const currentClaim = queue.claimNext(new Date(), nextWorker.id)
     if (!staleClaim || !currentClaim) throw new Error('expected both claims')
 
+    const staleError = 'stale handler failed'
+
     queue.finish(staleClaim)
-    const stateAfterStaleFinish = queue.all()[0]?.state
+    queue.fail(staleClaim, staleError)
+    const afterStaleOutcomes = queue.all()[0]
     queue.finish(currentClaim)
 
-    expect(stateAfterStaleFinish).toBe(JOB_STATES.claimed)
+    expect(afterStaleOutcomes).toMatchObject({ state: JOB_STATES.claimed, claimedBy: nextWorker.id, error: null })
     expect(queue.all()[0]?.state).toBe(JOB_STATES.finished)
   })
 
