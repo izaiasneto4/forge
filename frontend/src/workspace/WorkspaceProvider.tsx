@@ -79,9 +79,11 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     queryFn: () => api.get<BootstrapResponse>('/api/v1/bootstrap'),
   })
 
+  // Refetching on the sync interval keeps sync_status.sync_needed current, so auto-sync keeps firing.
   const boardQuery = useQuery({
     queryKey: queryKeys.pullRequestBoard,
     queryFn: () => api.get<PullRequestBoardResponse>('/api/v1/pull_requests/board'),
+    refetchInterval: AUTO_SYNC_INTERVAL_MS,
   })
 
   const board = boardQuery.data

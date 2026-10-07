@@ -11,6 +11,7 @@ import {
   severityCounts,
   suggestedEvent,
 } from '../lib/lifecycle'
+import { overlayOpen } from '../lib/overlay'
 import { useNow } from '../lib/useNow'
 import type {
   AgentLogItem,
@@ -339,7 +340,7 @@ function Findings({ item, detail }: { item: PullRequestItem; detail: ReviewTaskD
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (event.metaKey || event.ctrlKey || event.altKey || overlayOpen()) return
       const target = event.target
       if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return
       const key = event.key.toLowerCase()

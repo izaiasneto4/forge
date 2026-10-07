@@ -13,6 +13,7 @@ import {
 } from '../lib/agents'
 import { pluralize } from '../lib/format'
 import { suggestedEvent } from '../lib/lifecycle'
+import { overlayOpen } from '../lib/overlay'
 import type { PullRequestItem, ReviewEvent } from '../types/api'
 import { useWorkspace } from '../workspace/context'
 import { useTaskDetail } from '../workspace/useTaskDetail'
@@ -63,7 +64,7 @@ function isTypingElsewhere(target: EventTarget | null) {
 function usePrimaryShortcut(action: () => void, enabled: boolean) {
   const onShortcut = useEffectEvent((event: KeyboardEvent) => {
     if (!enabled || event.key !== 'Enter' || !(event.metaKey || event.ctrlKey)) return
-    if (isTypingElsewhere(event.target)) return
+    if (isTypingElsewhere(event.target) || overlayOpen()) return
     event.preventDefault()
     action()
   })
