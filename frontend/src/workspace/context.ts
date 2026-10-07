@@ -92,7 +92,7 @@ export type WorkspaceValue = {
   draftFor: (id: number) => Draft
   updateDraft: (id: number, patch: Partial<Draft>) => void
   selectionFor: (taskId: number, comments: ReviewCommentItem[]) => Set<number>
-  setSelection: (taskId: number, ids: Set<number>) => void
+  setSelection: (taskId: number, comments: ReviewCommentItem[], ids: Set<number>) => void
   focusedFinding: number | null
   setFocusedFinding: (id: number | null) => void
   actions: WorkspaceActions

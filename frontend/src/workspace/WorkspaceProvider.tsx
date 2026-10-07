@@ -7,16 +7,17 @@ import { api } from '../lib/api'
 import { errorMessage } from '../lib/errors'
 import {
   belongsToMailbox,
-  defaultSelection,
   flattenBoard,
   inReviewScope,
   isAuthoredBy,
   MAILBOX_IDS,
   mailboxFor,
   orderedIds,
+  resolveSelection,
   sectionsFor,
   type MailboxId,
   type SortOption,
+  type StoredSelection,
 } from '../lib/lifecycle'
 import { queryKeys } from '../lib/queryKeys'
 import { useToasts } from '../lib/toastContext'
@@ -68,7 +69,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState<SettingsTab | null>(null)
   const [drafts, setDrafts] = useState<Record<number, Draft>>({})
-  const [selections, setSelections] = useState<Record<number, Set<number>>>({})
+  const [selections, setSelections] = useState<Record<number, StoredSelection>>({})
   const [focusedFinding, setFocusedFinding] = useState<number | null>(null)
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null)
   const [pending, setPending] = useState({ sync: false, start: false, submit: false })
@@ -391,14 +392,11 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
   }, [])
 
   const selectionFor = useCallback((taskId: number, comments: ReviewCommentItem[]) => {
-    const pendingIds = new Set(comments.filter((comment) => comment.status === 'pending').map((comment) => comment.id))
-    const stored = selections[taskId]
-    const base = stored ?? defaultSelection(comments)
-    return new Set([...base].filter((id) => pendingIds.has(id)))
+    return resolveSelection(selections[taskId], comments)
   }, [selections])
 
-  const setSelection = useCallback((taskId: number, ids: Set<number>) => {
-    setSelections((current) => ({ ...current, [taskId]: ids }))
+  const setSelection = useCallback((taskId: number, comments: ReviewCommentItem[], ids: Set<number>) => {
+    setSelections((current) => ({ ...current, [taskId]: { selected: ids, known: new Set(comments.map((comment) => comment.id)) } }))
   }, [])
 
   const toggleSection = useCallback((id: string) => {

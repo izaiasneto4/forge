@@ -48,6 +48,8 @@ export function useLiveLogs(taskId: number | null | undefined, initialLogs: Agen
         received: (data) => {
           const event = lifecycleEvent(data)
           if (event && REFRESH_EVENTS.has(event)) {
+            // The server clears the log when a new run starts; drop what was streamed for the old one.
+            if (event === 'preparing') setStreamed({ taskId, logs: [] })
             queryClient.invalidateQueries({ queryKey: queryKeys.reviewTaskDetail(String(taskId)) })
             queryClient.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
             return

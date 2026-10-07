@@ -9,6 +9,7 @@ import {
   inReviewScope,
   mailboxFor,
   orderedIds,
+  resolveSelection,
   sectionsFor,
   sortPullRequests,
   suggestedEvent,
@@ -139,6 +140,17 @@ describe('review suggestions', () => {
     const sent = buildComment({ severity: 'major', status: 'addressed' })
 
     expect([...defaultSelection([critical, minor, nit, sent])]).toEqual([critical.id, minor.id])
+  })
+
+  it('keeps a stored selection for the same run and drops it after a re-run', () => {
+    const critical = buildComment({ severity: 'critical' })
+    const minor = buildComment({ severity: 'minor' })
+    const excludedEverything = { selected: new Set<number>(), known: new Set([critical.id, minor.id]) }
+    const nextRunCritical = buildComment({ severity: 'critical' })
+
+    expect([...resolveSelection(excludedEverything, [critical, minor])]).toEqual([])
+    expect([...resolveSelection(excludedEverything, [nextRunCritical])]).toEqual([nextRunCritical.id])
+    expect([...resolveSelection(undefined, [critical, minor])]).toEqual([...defaultSelection([critical, minor])])
   })
 
   it('groups findings by severity in priority order', () => {

@@ -206,6 +206,15 @@ export function defaultSelection(comments: ReviewCommentItem[]) {
   )
 }
 
+export type StoredSelection = { selected: Set<number>; known: Set<number> }
+
+// A re-run replaces every finding, so a selection made for an earlier run no longer applies.
+export function resolveSelection(stored: StoredSelection | undefined, comments: ReviewCommentItem[]) {
+  const pendingIds = new Set(comments.filter((comment) => comment.status === 'pending').map((comment) => comment.id))
+  const base = stored && comments.some((comment) => stored.known.has(comment.id)) ? stored.selected : defaultSelection(comments)
+  return new Set([...base].filter((id) => pendingIds.has(id)))
+}
+
 export function groupBySeverity(comments: ReviewCommentItem[]) {
   return SEVERITY_ORDER
     .map((severity) => ({ severity, comments: comments.filter((comment) => comment.severity === severity) }))

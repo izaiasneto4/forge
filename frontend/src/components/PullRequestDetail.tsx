@@ -333,7 +333,7 @@ function Findings({ item, detail }: { item: PullRequestItem; detail: ReviewTaskD
     const next = new Set(selection)
     if (next.has(id)) next.delete(id)
     else next.add(id)
-    setSelection(taskId, next)
+    setSelection(taskId, comments, next)
   }
 
   const setStatus = (id: number, status: ReviewCommentItem['status']) => void actions.setFindingStatus(taskId, id, status)
@@ -352,7 +352,7 @@ function Findings({ item, detail }: { item: PullRequestItem; detail: ReviewTaskD
         const next = new Set(selection)
         if (next.has(id)) next.delete(id)
         else next.add(id)
-        setSelection(taskId, next)
+        setSelection(taskId, comments, next)
       }
 
       if (key === 'd') {
@@ -378,7 +378,7 @@ function Findings({ item, detail }: { item: PullRequestItem; detail: ReviewTaskD
       aside={editable ? (
         <>
           <span>{selection.size} of {pending.length} included</span>
-          <button type="button" className="link" onClick={() => setSelection(taskId, allIncluded ? new Set() : new Set(pending.map((comment) => comment.id)))}>
+          <button type="button" className="link" onClick={() => setSelection(taskId, comments, allIncluded ? new Set() : new Set(pending.map((comment) => comment.id)))}>
             {allIncluded ? 'Exclude all' : 'Include all'}
           </button>
         </>
