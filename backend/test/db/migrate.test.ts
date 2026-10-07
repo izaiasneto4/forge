@@ -47,6 +47,15 @@ describe('migrateDatabase', () => {
     expect(tableNames(db).filter((name) => name === 'jobs')).toHaveLength(1)
   })
 
+  test('adopts a Rails database whose earlier adoption stopped before recording the baseline', () => {
+    const db = createRailsDatabase(RAILS_BASELINE_VERSION)
+    db.run(sql`CREATE TABLE "__drizzle_migrations" (id INTEGER PRIMARY KEY AUTOINCREMENT, hash text NOT NULL, created_at numeric)`)
+
+    migrateDatabase(db)
+
+    expect(tableNames(db)).toContain('jobs')
+  })
+
   test('refuses a Rails database that is behind the baseline schema', () => {
     const olderVersion = '20250101000000'
     const db = createRailsDatabase(olderVersion)

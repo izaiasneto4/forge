@@ -33,12 +33,23 @@ function adoptRailsDatabase(db: Db) {
   const [baseline] = readMigrationFiles({ migrationsFolder })
   if (!baseline) throw new Error(`No migrations found in ${migrationsFolder}`)
 
-  db.run(sql`CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (id INTEGER PRIMARY KEY AUTOINCREMENT, hash text NOT NULL, created_at numeric)`)
-  db.run(sql`INSERT INTO "__drizzle_migrations" ("hash", "created_at") VALUES (${baseline.hash}, ${baseline.folderMillis})`)
+  // One transaction: a start interrupted mid-adoption leaves no half-made tracking table behind.
+  db.transaction((tx) => {
+    tx.run(sql`CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (id INTEGER PRIMARY KEY AUTOINCREMENT, hash text NOT NULL, created_at numeric)`)
+    tx.run(sql`INSERT INTO "__drizzle_migrations" ("hash", "created_at") VALUES (${baseline.hash}, ${baseline.folderMillis})`)
+  })
+}
+
+// An empty tracking table counts as not adopted, which also recovers databases
+// where an older build stopped between creating the table and recording the baseline.
+function hasRecordedMigrations(db: Db) {
+  if (!tableExists(db, '__drizzle_migrations')) return false
+  const row = firstRow(db.all<{ recorded: number }>(sql`SELECT count(*) AS recorded FROM "__drizzle_migrations"`))
+  return (row?.recorded ?? 0) > 0
 }
 
 export function migrateDatabase(db: Db) {
-  if (tableExists(db, 'schema_migrations') && !tableExists(db, '__drizzle_migrations')) {
+  if (tableExists(db, 'schema_migrations') && !hasRecordedMigrations(db)) {
     adoptRailsDatabase(db)
   }
   migrate(db, { migrationsFolder })
