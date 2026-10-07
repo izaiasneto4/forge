@@ -32,10 +32,10 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: Include OS, Ruby version, and relevant CLI tools.
+      description: Include OS, Bun version, and relevant CLI tools.
       placeholder: |
         OS:
-        Ruby:
+        Bun:
         Node:
         gh version:
         review CLI:

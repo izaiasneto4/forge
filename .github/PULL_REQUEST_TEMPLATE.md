@@ -5,9 +5,9 @@
 
 ## Verification
 
-- [ ] `bin/rails test`
-- [ ] `npm test`
-- [ ] `bin/rubocop`
+- [ ] `bun run --cwd backend test`
+- [ ] `bun run --cwd backend typecheck`
+- [ ] `npm --prefix frontend test`
 - [ ] other relevant checks
 
 ## Notes

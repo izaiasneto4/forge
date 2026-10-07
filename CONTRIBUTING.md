@@ -10,8 +10,7 @@
 
 Requirements:
 
-- Ruby `3.4.2`
-- SQLite
+- Bun `1.2.20`
 - Node/npm
 - authenticated `gh`
 - at least one supported review CLI on your `PATH`: `claude`, `codex`, or `opencode`
@@ -38,20 +37,19 @@ The app is intended to run locally by default at `http://127.0.0.1:3000`.
 Run the smallest relevant test set first, then broader checks before opening a PR.
 
 ```bash
-bin/rails test
-bin/rails test test/models/pull_request_test.rb
+bun run --cwd backend test
+bun test backend/test/models/pull-request.test.ts
+bun run --cwd backend typecheck
 npm --prefix frontend test
-bin/rubocop
-bin/ci
 ```
 
 If a check cannot run in your environment, note that explicitly in the pull request.
 
 ## Style
 
-- Ruby follows `rubocop-rails-omakase`.
-- Use 2-space indentation in Ruby and JavaScript.
-- Prefer small service objects with a single responsibility.
+- TypeScript is strict: no `any`, no type assertions; validate unknown input with TypeBox.
+- Use 2-space indentation, single quotes and no semicolons.
+- Prefer small service modules with a single responsibility; pass the `AppContext` explicitly.
 - Keep changes scoped to the task; avoid incidental cleanup unless it reduces risk.
 
 ## Pull requests
