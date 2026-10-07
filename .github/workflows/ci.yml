@@ -21,6 +21,10 @@ jobs:
       - name: Install backend dependencies
         run: bun install --cwd backend --frozen-lockfile
 
+      - name: Scan for security vulnerabilities in backend dependencies
+        working-directory: backend
+        run: bun audit
+
       - name: Typecheck
         run: bun run --cwd backend typecheck
 
