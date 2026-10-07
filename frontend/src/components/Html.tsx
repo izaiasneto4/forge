@@ -1,4 +1,6 @@
-import type { MouseEvent } from 'react'
+import { useMemo, type MouseEvent } from 'react'
+
+import { sanitizeHtml } from '../lib/sanitizeHtml'
 
 const COPIED_RESET_MS = 1200
 
@@ -16,6 +18,7 @@ function copyCodeBlock(event: MouseEvent<HTMLDivElement>) {
 }
 
 export function Html({ html, className = 'md' }: { html: string | null; className?: string }) {
-  if (!html) return null
-  return <div className={className} onClick={copyCodeBlock} dangerouslySetInnerHTML={{ __html: html }} />
+  const safeHtml = useMemo(() => (html ? sanitizeHtml(html) : ''), [html])
+  if (!safeHtml) return null
+  return <div className={className} onClick={copyCodeBlock} dangerouslySetInnerHTML={{ __html: safeHtml }} />
 }
