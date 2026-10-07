@@ -278,6 +278,9 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     },
 
     archive: async (item) => {
+      // Reviews opened off the board (other repositories, older closed PRs) come back through their task route.
+      const offBoardTaskId = items.some((entry) => entry.id === item.id) ? null : item.review_task?.id ?? null
+      const restorePath = offBoardTaskId === null ? mailboxPath(mailboxFor(item, login), item.id) : `/review_tasks/${offBoardTaskId}`
       const response = await run(null, () => api.patch<UiMutationResponse>(`/api/v1/pull_requests/${item.id}/archive`))
       if (!response) return
       applyBoard(response)
@@ -290,7 +293,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
           void run(null, () => api.patch<UiMutationResponse>(`/api/v1/pull_requests/${item.id}/unarchive`)).then((restored) => {
             if (!restored) return
             invalidateAll()
-            navigate(mailboxPath(mailboxFor(item, login), item.id))
+            navigate(restorePath)
           })
         },
       })
@@ -395,7 +398,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       advanceFrom(item.id)
       invalidateAll()
     },
-  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login, applyBoard, resetRunDraft])
+  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login, applyBoard, resetRunDraft, items])
 
   const maybeSync = useEffectEvent(() => {
     if (!board || document.visibilityState !== 'visible') return
