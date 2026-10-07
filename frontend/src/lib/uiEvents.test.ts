@@ -53,4 +53,15 @@ describe('uiEvents', () => {
     expect(tone).toBe('error')
     expect(options.onClick).toBeUndefined()
   })
+
+  it('leaves the pull request number out when the payload has none', () => {
+    const { client } = buildClient()
+    const pushToast = vi.fn()
+
+    handleReviewNotification({ type: 'review_completed' }, client, pushToast)
+    handleReviewNotification({ type: 'review_failed' }, client, pushToast)
+
+    const texts = pushToast.mock.calls.flatMap(([message, , options]) => [message, options.title])
+    expect(texts.some((text) => String(text).includes('#'))).toBe(false)
+  })
 })

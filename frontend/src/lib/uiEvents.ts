@@ -56,15 +56,18 @@ export function handleReviewNotification(
   openReview?: OpenReview,
 ) {
   const prNumber = event.pr_number
+  // The number is optional in the payload; leave it out rather than print "#undefined".
+  const suffix = prNumber === undefined ? '' : ` · #${prNumber}`
   const onClick = openReview ? () => openReview(event) : undefined
 
   if (event.type === 'review_completed') {
-    pushToast(`Findings for #${prNumber} are ready for you to send.`, 'success', { title: `Review finished · #${prNumber}`, onClick })
+    const message = prNumber === undefined ? 'Findings are ready for you to send.' : `Findings for #${prNumber} are ready for you to send.`
+    pushToast(message, 'success', { title: `Review finished${suffix}`, onClick })
     invalidateReviewQueries(client)
   }
 
   if (event.type === 'review_failed') {
-    pushToast(event.reason ?? 'The agent stopped before producing findings.', 'error', { title: `Review failed · #${prNumber}`, onClick })
+    pushToast(event.reason ?? 'The agent stopped before producing findings.', 'error', { title: `Review failed${suffix}`, onClick })
     invalidateReviewQueries(client)
   }
 }
