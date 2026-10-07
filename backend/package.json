@@ -19,6 +19,6 @@
   "devDependencies": {
     "@elysiajs/eden": "^1.4.9",
     "@types/bun": "latest",
-    "typescript": "~5.9.3"
+    "typescript": "~7.0.2"
   }
 }
