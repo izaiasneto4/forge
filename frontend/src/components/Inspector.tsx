@@ -115,6 +115,7 @@ function HistoryRun({ iteration }: { iteration: ReviewIterationItem }) {
                 </div>
                 <div className="sev">{entry.severity}</div>
                 <Html html={entry.comment_html} />
+                <Html html={entry.suggested_fix_html} className="md finding-fix" />
               </div>
             ))
             : <Html html={iteration.raw_output_html} />}
@@ -136,7 +137,7 @@ function History({ detail }: { detail: ReviewTaskDetailResponse | undefined }) {
 }
 
 export function Inspector({ item }: { item: PullRequestItem | null }) {
-  const { inspectorTab, openInspector } = useWorkspace()
+  const { inspectorTab, openInspector, toggleInspector } = useWorkspace()
   const detail = useTaskDetail(item?.review_task?.id).data
 
   return (
@@ -149,6 +150,7 @@ export function Inspector({ item }: { item: PullRequestItem | null }) {
             </button>
           ))}
         </div>
+        <button type="button" className="tb-btn insp-close" title="Close inspector  I" aria-label="Close inspector" onClick={toggleInspector}><Icon name="x" size={14} /></button>
       </div>
       <div className="insp-body">
         {!item ? <div className="insp-empty">Select a pull request.</div> : null}

@@ -63,7 +63,8 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
 
   const [sort, setSort] = useState<SortOption>('longest_waiting')
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  // Below 900px the sidebar floats over the list, so start with it closed there.
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia('(min-width: 901px)').matches)
   const [inspectorOpen, setInspectorOpen] = useState(false)
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('activity')
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -133,6 +134,14 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     if (route.kind === 'task') return offBoardTask.data?.pull_request ?? null
     return items.find((item) => item.id === selectedId) ?? null
   }, [route.kind, offBoardTask.data, items, selectedId])
+
+  // Finding focus belongs to one pull request; drop it whenever the selection changes.
+  const [focusOwner, setFocusOwner] = useState<number | null>(null)
+  const selectedPullRequestId = selected?.id ?? null
+  if (focusOwner !== selectedPullRequestId) {
+    setFocusOwner(selectedPullRequestId)
+    setFocusedFinding(null)
+  }
   const anyReviewing = items.some((item) => item.lifecycle === 'reviewing')
   const requestedItems = useMemo(
     () => items.filter((item) => item.lifecycle === 'needs_review' && item.review_requested_for_me && !isAuthoredBy(item, login)),
