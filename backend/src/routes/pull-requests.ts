@@ -22,6 +22,7 @@ import {
   inProgressOrRetrying,
   prepareNewRun,
   queuePosition,
+  reviewTaskIdsWithPendingJob,
   updateReviewTask,
   type ReviewTaskChanges,
   type ReviewTaskRecord,
@@ -71,7 +72,7 @@ export function startOrQueueReview(ctx: AppContext, pullRequestId: number, optio
 
   return transaction(ctx, (txCtx) => {
     const existing = reviewTaskFor(txCtx.db, pullRequest.id)
-    if (existing && inProgressOrRetrying(existing)) {
+    if (existing && (inProgressOrRetrying(existing) || existing.state === 'queued' || reviewTaskIdsWithPendingJob(txCtx.jobs).has(existing.id))) {
       renderError('conflict', `Review already in progress for PR #${pullRequest.number}`, 409)
     }
 

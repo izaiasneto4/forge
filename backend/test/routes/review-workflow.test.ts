@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { reviewComments, reviewIterations } from '../../src/db/schema'
-import { findReviewTask, MAX_RETRY_ATTEMPTS } from '../../src/models/review-task'
+import { findReviewTask, MAX_RETRY_ATTEMPTS, updateReviewTask } from '../../src/models/review-task'
 import { SETTLED_REVIEWS_LIMIT } from '../../src/presenters/pull-request-index'
 import type { ApiServices } from '../../src/routes/shared'
 import { createTestApp } from '../support/app'
@@ -72,12 +72,57 @@ describe('starting a review', () => {
     const first = await call('POST', `/api/v1/pull_requests/${pullRequest.id}/review_task`, { focus: `  ${focus}  ` })
     const taskId = Number(dig(first.json, 'detail', 'task', 'id'))
     const firstFocus = findReviewTask(ctx.db, taskId).reviewFocus
-    await call('POST', `/api/v1/pull_requests/${pullRequest.id}/review_task`, { focus: '   ' })
+    const job = ctx.jobs.claimNext()
+    if (!job) throw new Error('Expected the first review job')
+    ctx.jobs.finish(job)
+    updateReviewTask(ctx, findReviewTask(ctx.db, taskId), { state: 'reviewed' })
+    const second = await call('POST', `/api/v1/pull_requests/${pullRequest.id}/review_task`, { focus: '   ' })
 
     expect(first.status).toBe(201)
     expect(dig(first.json, 'detail', 'task', 'review_focus')).toBe(focus)
     expect(firstFocus).toBe(focus)
+    expect(second.status).toBe(201)
     expect(findReviewTask(ctx.db, taskId).reviewFocus).toBeNull()
+  })
+
+  test('rejects a duplicate start while the same review job is waiting', async () => {
+    const focus = 'check migrations'
+    const pullRequest = insertPullRequest(ctx.db)
+    const first = await call('POST', `/api/v1/pull_requests/${pullRequest.id}/review_task`, { focus })
+    const taskId = Number(dig(first.json, 'detail', 'task', 'id'))
+    const originalJobs = ctx.jobs.unfinished('ReviewTaskJob')
+
+    const duplicate = await call('POST', `/api/v1/pull_requests/${pullRequest.id}/review_task`, { cli_client: 'codex', focus: 'replace the focus' })
+
+    expect(duplicate.status).toBe(409)
+    expect(dig(duplicate.json, 'error', 'code')).toBe('conflict')
+    expect(findReviewTask(ctx.db, taskId)).toMatchObject({ state: 'pending_review', reviewFocus: focus })
+    expect(ctx.jobs.unfinished('ReviewTaskJob')).toEqual(originalJobs)
+  })
+
+  test('rejects a duplicate start while the same task is queued', async () => {
+    insertReviewTask(ctx.db, { pullRequestId: insertPullRequest(ctx.db).id, state: 'in_review' })
+    const focus = 'check migrations'
+    const pullRequest = insertPullRequest(ctx.db)
+    const first = await call('POST', `/api/v1/pull_requests/${pullRequest.id}/review_task`, { focus })
+    const taskId = Number(dig(first.json, 'detail', 'task', 'id'))
+    const originalTask = findReviewTask(ctx.db, taskId)
+
+    const duplicate = await call('POST', `/api/v1/pull_requests/${pullRequest.id}/review_task`, { focus: 'replace the focus' })
+
+    expect(duplicate.status).toBe(409)
+    expect(findReviewTask(ctx.db, taskId)).toEqual(originalTask)
+    expect(ctx.jobs.unfinished('ReviewTaskJob')).toEqual([])
+  })
+
+  test('allows a pending task to start when it has no waiting job', async () => {
+    const pullRequest = insertPullRequest(ctx.db)
+    const task = insertReviewTask(ctx.db, { pullRequestId: pullRequest.id, state: 'pending_review' })
+
+    const { status } = await call('POST', `/api/v1/pull_requests/${pullRequest.id}/review_task`)
+
+    expect(status).toBe(201)
+    expect(ctx.jobs.unfinished('ReviewTaskJob').map((job) => job.payload)).toEqual([{ reviewTaskId: task.id, isRetry: false }])
   })
 
   test('a re-review moves the previous findings into history and starts with a fresh retry budget', async () => {
@@ -140,6 +185,24 @@ describe('starting a review', () => {
 })
 
 describe('submitting a review', () => {
+  test('an explicit empty approval can include a summary without sending findings', async () => {
+    const summary = 'Checked the changes; ready to merge.'
+    const task = insertReviewTask(ctx.db, { pullRequestId: insertPullRequest(ctx.db).id, state: 'reviewed' })
+    const pending = insertReviewComment(ctx.db, { reviewTaskId: task.id, severity: 'major' })
+    const submitted: Array<{ event: string; summary: string | null; commentIds: number[] }> = []
+    services.submitReview = async (_ctx, _task, options) => {
+      submitted.push({ event: options.event, summary: options.summary, commentIds: options.comments.map((comment) => comment.id) })
+      return {}
+    }
+
+    const { status } = await call('POST', `/api/v1/review_tasks/${task.id}/submissions`, { event: 'APPROVE', summary, comment_ids: [], force_empty_submission: true })
+
+    expect(status).toBe(200)
+    expect(submitted).toEqual([{ event: 'APPROVE', summary, commentIds: [] }])
+    expect(findReviewTask(ctx.db, task.id)).toMatchObject({ state: 'done', submissionStatus: 'submitted', submittedEvent: 'APPROVE' })
+    expect(commentsOf(task.id).map((comment) => [comment.id, comment.status])).toEqual([[pending.id, 'pending']])
+  })
+
   test('an explicitly empty selection submits nothing, even with a summary', async () => {
     const task = insertReviewTask(ctx.db, { pullRequestId: insertPullRequest(ctx.db).id, state: 'reviewed' })
     const pending = insertReviewComment(ctx.db, { reviewTaskId: task.id, severity: 'major' })
