@@ -23,9 +23,8 @@ describe('renderMarkdown', () => {
 
     const html = renderMarkdown(`\`\`\`${language}\n${code}\n\`\`\``)
 
-    expect(html).toContain('<div class="code-block relative group my-4">')
-    expect(html).toContain(`<span class="text-gray-400 text-xs font-mono">${language}</span>`)
-    expect(html).toContain(`data-copy-content-value="${htmlEscape(`${code}\n`)}"`)
+    expect(html).toContain(`<div class="code-block"><div class="code-head"><span>${language}</span>`)
+    expect(html).toContain(`<button type="button" class="copy-btn" data-copy="${htmlEscape(`${code}\n`)}">`)
     expect(html).toContain(`<code class="language-${language}">${code}\n</code>`)
   })
 
@@ -41,7 +40,16 @@ describe('renderMarkdown', () => {
     const html = renderMarkdown(`\`\`\`js\n${code}\n\`\`\``)
 
     expect(html).toContain(`<code class="language-js">a &lt; b &amp;&amp; "c" &amp;&amp; 'd'\n</code>`)
-    expect(html).toContain(`data-copy-content-value="${htmlEscape(`${code}\n`)}"`)
+    expect(html).toContain(`data-copy="${htmlEscape(`${code}\n`)}"`)
+  })
+
+  test('escapes the fence language, which comes from the AI output', () => {
+    const hostileLanguage = 'x"><img>'
+
+    const html = renderMarkdown(`\`\`\`${hostileLanguage}\ncode\n\`\`\``)
+
+    expect(html).not.toContain('<img>')
+    expect(html).toContain(`<span>${htmlEscape(hostileLanguage)}</span>`)
   })
 
   test('renders tables', () => {
@@ -86,14 +94,13 @@ describe('renderCodeBlock', () => {
   test('labels the block with the given language', () => {
     const language = 'ruby'
 
-    expect(renderCodeBlock('def foo; end', language)).toContain(`<span class="text-gray-400 text-xs font-mono">${language}</span>`)
+    expect(renderCodeBlock('def foo; end', language)).toContain(`<div class="code-head"><span>${language}</span>`)
   })
 
-  test('includes the copy button wiring', () => {
-    const html = renderCodeBlock('test code')
+  test('carries the raw code on the copy button for the frontend', () => {
+    const code = 'a < b'
 
-    expect(html).toContain('data-controller="copy"')
-    expect(html).toContain('data-action="click->copy#copy"')
+    expect(renderCodeBlock(code, 'plaintext')).toContain(`<button type="button" class="copy-btn" data-copy="${htmlEscape(code)}">Copy</button>`)
   })
 
   test.each([
