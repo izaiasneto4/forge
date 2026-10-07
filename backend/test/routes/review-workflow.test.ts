@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { reviewComments, reviewIterations } from '../../src/db/schema'
 import { findReviewTask, MAX_RETRY_ATTEMPTS } from '../../src/models/review-task'
+import { SETTLED_REVIEWS_LIMIT } from '../../src/presenters/pull-request-index'
 import type { ApiServices } from '../../src/routes/shared'
 import { createTestApp } from '../support/app'
 import { createTestContext, type TestContext } from '../support/context'
@@ -225,6 +226,21 @@ describe('payloads for the redesigned frontend', () => {
     const board = await call('GET', '/api/v1/pull_requests/board')
 
     expect(list(dig(board.json, 'settled_reviews')).map((item) => [dig(item, 'id'), dig(item, 'lifecycle')])).toEqual([[merged.id, 'settled']])
+  })
+
+  test('reviews still running on closed pull requests are listed beyond the settled history limit', async () => {
+    const running = insertPullRequest(ctx.db, { remoteState: 'closed', inactiveReason: 'closed', updatedAtGithub: new Date('2020-01-01T00:00:00Z') })
+    insertReviewTask(ctx.db, { pullRequestId: running.id, state: 'in_review' })
+    for (let index = 0; index < SETTLED_REVIEWS_LIMIT; index += 1) {
+      const finished = insertPullRequest(ctx.db, { remoteState: 'merged', inactiveReason: 'merged', updatedAtGithub: new Date() })
+      insertReviewTask(ctx.db, { pullRequestId: finished.id, state: 'done' })
+    }
+
+    const board = await call('GET', '/api/v1/pull_requests/board')
+    const settled = list(dig(board.json, 'settled_reviews'))
+
+    expect(settled).toHaveLength(SETTLED_REVIEWS_LIMIT + 1)
+    expect(dig(settled.find((item) => dig(item, 'id') === running.id), 'lifecycle')).toBe('reviewing')
   })
 
   test('the task detail includes the full pull request, even when it is not on the board', async () => {

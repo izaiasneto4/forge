@@ -25,6 +25,8 @@ export const REVIEW_TASK_STATES = literals(
   'failed_review',
 )
 export type ReviewTaskState = (typeof REVIEW_TASK_STATES)[number]
+// States in which a run is queued or under way.
+export const ACTIVE_RUN_STATES = literals('queued', 'pending_review', 'in_review')
 export const REVIEW_TYPES = ['review', 'swarm']
 export const SUBMISSION_STATUSES = ['pending_submission', 'submitted', 'submission_failed']
 export const SUBMITTED_EVENTS = literals('COMMENT', 'APPROVE', 'REQUEST_CHANGES')
