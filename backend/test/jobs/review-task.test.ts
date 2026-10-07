@@ -362,15 +362,41 @@ describe('reviewTaskJob cleanup', () => {
     expect(enqueuedJobs('ProcessReviewQueueJob')).toHaveLength(1)
   })
 
-  test('returns early without touching anything when the repo path is blank', async () => {
+  test('fails the task and moves the queue on when no repository is selected or found', async () => {
+    const failed = 'failed_review'
     new SettingStore(ctx.db).setCurrentRepo(null)
 
     await run()
 
-    expect(reloaded().state).toBe('pending_review')
-    expect(ctx.commands.calls).toEqual([])
-    expect(logMessages()).toEqual([])
-    expect(ctx.jobs.all()).toEqual([])
+    expect(reloaded().state).toBe(failed)
+    expect(reloaded().failureReason).toContain(`${pullRequest.repoOwner}/${pullRequest.repoName}`)
+    expect(ctx.commands.commandsMatching(['gh', 'pr', 'view'])).toEqual([])
+    expect(enqueuedJobs('ProcessReviewQueueJob')).toHaveLength(1)
+  })
+
+  test('reviews in the pull request\'s checkout from the repositories folder when no repository is selected', async () => {
+    const reposFolder = createTempFolder()
+    try {
+      new SettingStore(ctx.db).setCurrentRepo(null)
+      const checkout = createGitRepository(ctx.commands, reposFolder.path, 'api', `${pullRequest.repoOwner}/${pullRequest.repoName}`)
+      new SettingStore(ctx.db).setReposFolder(reposFolder.path)
+      ctx.commands.on(['gh', 'pr', 'view'], { stdout: JSON.stringify({ headRefName: 'feature/test' }) })
+      ctx.commands.on(['git', '-C', checkout, 'fetch'], { success: true })
+      ctx.commands.on(['git', '-C', checkout, 'worktree', 'add'], (command) => {
+        const path = command[5]
+        if (path !== undefined) mkdirSync(path, { recursive: true })
+        return { success: true }
+      })
+      ctx.commands.on(['git', '-C', checkout, 'worktree', 'remove'], { success: true })
+      scriptReview(reviewOutput)
+
+      await run()
+
+      expect(reloaded().state).toBe('reviewed')
+      expect(ctx.commands.commandsMatching(['git', '-C', checkout, 'fetch']).length).toBeGreaterThan(0)
+    } finally {
+      reposFolder.remove()
+    }
   })
 })
 

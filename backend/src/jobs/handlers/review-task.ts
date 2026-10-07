@@ -173,11 +173,14 @@ function handleFailure(ctx: AppContext, task: ReviewTaskRecord, pullRequest: Pul
 
 // The selected repository can change while a review waits in the queue, and PR
 // numbers are only unique per repository, so always check out the PR's own one.
-// Null when no local checkout of it exists under the repositories folder.
-async function checkoutFor(ctx: AppContext, pullRequest: PullRequestRecord, currentRepo: string) {
-  const currentSlug = await slugFromPath(ctx.commands, currentRepo)
+// Without a selected repository it is looked up in the repositories folder.
+// Null when no local checkout of it exists there.
+async function checkoutFor(ctx: AppContext, pullRequest: PullRequestRecord, currentRepo: string | null) {
   const slug = repoFullName(pullRequest)
-  if (currentSlug === null || currentSlug.toLowerCase() === slug.toLowerCase()) return currentRepo
+  if (isPresent(currentRepo)) {
+    const currentSlug = await slugFromPath(ctx.commands, currentRepo)
+    if (currentSlug === null || currentSlug.toLowerCase() === slug.toLowerCase()) return currentRepo
+  }
 
   const resolution = await resolveRepoSlug(ctx.commands, new SettingStore(ctx.db).reposFolder(), slug, { ignoreCase: true })
   return resolution.status === 'ok' ? resolution.path : null
@@ -187,11 +190,9 @@ export async function reviewTaskJob(ctx: AppContext, payload: ReviewTaskJobPaylo
   const { reviewTaskId, isRetry } = payload
   let task = findReviewTask(ctx.db, reviewTaskId)
   const pullRequest = pullRequestOf(ctx, task)
-  const currentRepo = new SettingStore(ctx.db).currentRepo()
-
-  if (!isPresent(currentRepo)) return
-
-  const repoPath = await checkoutFor(ctx, pullRequest, currentRepo)
+  // A missing checkout fails the task instead of leaving it in pending_review,
+  // which would block the queue behind it.
+  const repoPath = await checkoutFor(ctx, pullRequest, new SettingStore(ctx.db).currentRepo())
   if (repoPath === null) {
     handlePermanentError(ctx, task, pullRequest, new PermanentError(`No local checkout of ${repoFullName(pullRequest)} in the repositories folder`))
     ctx.jobs.enqueue('ProcessReviewQueueJob', {})
