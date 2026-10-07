@@ -108,3 +108,14 @@ describe('PullRequest model', () => {
     expect(findPullRequest(ctx.db, pullRequest.id).reviewStatus).toBe('waiting_implementation')
   })
 })
+
+describe('PullRequest uniqueness', () => {
+  test('rejects a duplicate even when the record itself matches first', () => {
+    const ctx = createTestContext()
+    const original = insertPullRequest(ctx.db)
+    const duplicate = insertPullRequest(ctx.db, { githubId: original.githubId, number: (original.number ?? 0) + 1000 })
+
+    expect(() => updatePullRequest(ctx, original, { title: 'Renamed' })).toThrow('Github has already been taken')
+    expect(() => updatePullRequest(ctx, duplicate, { title: 'Renamed too' })).toThrow('Github has already been taken')
+  })
+})

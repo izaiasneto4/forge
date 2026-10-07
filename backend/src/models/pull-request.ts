@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, isNull, ne, sql, type SQL } from 'drizzle-orm'
 import type { AppContext } from '../context'
 import type { Db } from '../db/client'
 import { pullRequestSnapshots, pullRequests, reviewComments, reviewIterations, reviewTasks } from '../db/schema'
@@ -88,11 +88,13 @@ function validate(db: Db, merged: PullRequestValues & { id?: number }) {
   validator.inclusion('Remote state', merged.remoteState ?? 'open', REMOTE_STATES)
   validator.inclusion('Inactive reason', merged.inactiveReason, INACTIVE_REASONS, { allowNil: true })
 
+  // Uniqueness checks exclude the record itself, like Rails' UniquenessValidator.
+  const notSelf = merged.id === undefined ? undefined : ne(pullRequests.id, merged.id)
   const otherWithGithubId =
     merged.githubId !== null && merged.githubId !== undefined
-      ? db.select({ id: pullRequests.id }).from(pullRequests).where(eq(pullRequests.githubId, merged.githubId)).get()
+      ? db.select({ id: pullRequests.id }).from(pullRequests).where(and(eq(pullRequests.githubId, merged.githubId), notSelf)).get()
       : undefined
-  if (otherWithGithubId && otherWithGithubId.id !== merged.id) validator.add('Github has already been taken')
+  if (otherWithGithubId) validator.add('Github has already been taken')
 
   if (merged.number !== null && merged.number !== undefined) {
     const sameNumber = db
@@ -103,10 +105,11 @@ function validate(db: Db, merged: PullRequestValues & { id?: number }) {
           eq(pullRequests.number, merged.number),
           merged.repoOwner === null || merged.repoOwner === undefined ? isNull(pullRequests.repoOwner) : eq(pullRequests.repoOwner, merged.repoOwner),
           merged.repoName === null || merged.repoName === undefined ? isNull(pullRequests.repoName) : eq(pullRequests.repoName, merged.repoName),
+          notSelf,
         ),
       )
       .get()
-    if (sameNumber && sameNumber.id !== merged.id) validator.add('Number has already been taken')
+    if (sameNumber) validator.add('Number has already been taken')
   }
 
   // review_status_consistency (skipped while a sync is applying remote state).
