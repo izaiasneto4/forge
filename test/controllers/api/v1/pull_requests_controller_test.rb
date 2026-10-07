@@ -191,4 +191,31 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_response :created
     assert_nil pull_request.reload.review_task.review_focus
   end
+
+  test "create_review_task moves the previous run into history before re-reviewing" do
+    previous_output = "Earlier findings"
+    pull_request = PullRequest.find_by!(number: 1)
+    task = pull_request.create_review_task!(state: "reviewed", review_output: previous_output)
+    task.review_comments.create!(file_path: "app/a.rb", body: "Stale blocker", severity: "critical", status: "pending")
+    ReviewTask.stubs(:any_review_running?).returns(false)
+    ReviewTaskJob.stubs(:perform_later)
+
+    post "/api/v1/pull_requests/#{pull_request.id}/review_task", as: :json
+
+    assert_response :created
+    task.reload
+    assert_empty task.review_comments
+    assert_nil task.review_output
+    assert_equal [ previous_output ], task.review_iterations.map(&:review_output)
+  end
+
+  test "unarchive restores an archived pull request" do
+    pull_request = PullRequest.find_by!(number: 1)
+    pull_request.archive!
+
+    patch "/api/v1/pull_requests/#{pull_request.id}/unarchive", as: :json
+
+    assert_response :success
+    refute PullRequest.unscoped.find(pull_request.id).archived?
+  end
 end

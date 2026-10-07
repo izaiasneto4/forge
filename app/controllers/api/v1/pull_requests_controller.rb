@@ -115,7 +115,7 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
   end
 
   def unarchive
-    pull_request = PullRequest.find(params[:id])
+    pull_request = PullRequest.unscoped.not_deleted.find(params[:id])
     pull_request.unarchive!
     UiEventBroadcaster.pull_request_updated(pull_request)
 
@@ -158,6 +158,7 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
       return render_error("conflict", "Review already in progress for PR ##{pull_request.number}", :conflict)
     end
 
+    review_task.prepare_new_run!
     review_task.cli_client = cli_client
     review_task.review_type = review_type
     review_task.review_focus = params[:focus].to_s.strip.presence

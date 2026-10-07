@@ -322,6 +322,16 @@ class ReviewTask < ApplicationRecord
     )
   end
 
+  # Moves the previous run's output and findings into history so a new run starts clean.
+  def prepare_new_run!
+    return unless persisted? && (review_output.present? || review_comments.any?)
+
+    transaction do
+      archive_current_review!
+      reset_for_new_review!
+    end
+  end
+
   # Clear current review data after archiving
   def reset_for_new_review!
     review_comments.destroy_all

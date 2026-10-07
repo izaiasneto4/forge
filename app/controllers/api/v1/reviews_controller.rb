@@ -20,6 +20,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
       return render_error("conflict", "Review already in progress for PR ##{pull_request.number}", :conflict)
     end
 
+    review_task.prepare_new_run!
     review_task.cli_client = params[:cli_client].presence || Setting.default_cli_client
     review_task.review_type = params[:review_type].presence || "review"
     review_task.review_focus = params[:focus].to_s.strip.presence

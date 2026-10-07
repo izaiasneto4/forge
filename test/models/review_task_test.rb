@@ -181,6 +181,14 @@ class ReviewTaskTest < ActiveSupport::TestCase
     assert @task.started_at.present?
   end
 
+  test "prepare_new_run! leaves a task without output untouched" do
+    @task.save!
+
+    assert_no_difference -> { @task.review_iterations.count } do
+      @task.prepare_new_run!
+    end
+  end
+
   test "start_review! clears submission metadata from the previous run" do
     pending = "pending_submission"
     @task.save!
