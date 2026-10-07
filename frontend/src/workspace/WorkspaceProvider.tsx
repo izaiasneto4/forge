@@ -238,7 +238,8 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       if (response.detail?.task.state === 'queued') {
         pushToast(`#${item.number} starts after the current review.`, 'info', { title: 'Added to queue' })
       }
-      setDrafts((current) => ({ ...current, [item.id]: { ...(current[item.id] ?? EMPTY_DRAFT), text: '' } }))
+      // A new run replaces the findings, so the verdict and summary drafted for the old one no longer apply.
+      setDrafts((current) => ({ ...current, [item.id]: { ...(current[item.id] ?? EMPTY_DRAFT), text: '', event: null, summary: '' } }))
       invalidateAll()
     },
 

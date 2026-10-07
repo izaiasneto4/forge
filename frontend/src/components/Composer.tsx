@@ -189,7 +189,8 @@ function StartComposer({ item, mode }: { item: PullRequestItem; mode: 'start' | 
 function SubmitComposer({ item }: { item: PullRequestItem }) {
   const { draftFor, updateDraft, selectionFor, actions, pending } = useWorkspace()
   const task = item.review_task
-  const detail = useTaskDetail(task?.id).data
+  const detailQuery = useTaskDetail(task?.id)
+  const detail = detailQuery.data
   const draft = draftFor(item.id)
   const textareaRef = useAutosize(draft.summary)
   const comments = detail?.comments ?? []
@@ -200,11 +201,13 @@ function SubmitComposer({ item }: { item: PullRequestItem }) {
   const nothingIncluded = included === 0 && event !== 'APPROVE'
   const blocked = !detail || pending.submit || event === null || nothingIncluded
   const hasPendingFindings = comments.some((comment) => comment.status === 'pending')
-  const blockedReason = event === null
-    ? 'Choose a verdict first'
-    : nothingIncluded
-      ? hasPendingFindings ? 'Include a finding or approve' : 'No findings to send. Approve, or reply on GitHub.'
-      : undefined
+  const blockedReason = !detail
+    ? detailQuery.isError ? 'Couldn’t load the review' : 'Loading the review…'
+    : event === null
+      ? 'Choose a verdict first'
+      : nothingIncluded
+        ? hasPendingFindings ? 'Include a finding or approve' : 'No findings to send. Approve, or reply on GitHub.'
+        : undefined
 
   const submit = () => {
     if (blocked || event === null) return

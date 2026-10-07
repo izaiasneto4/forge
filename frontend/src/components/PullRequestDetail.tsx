@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 
 import { agentLabel, DEPTHS, EVENTS, isReviewEvent } from '../lib/agents'
+import { errorMessage } from '../lib/errors'
 import { elapsedClock, formatCount, mergeVerb, pluralize, relativeAgo } from '../lib/format'
 import {
   groupBySeverity,
@@ -516,6 +517,18 @@ function MainContent({ item }: { item: PullRequestItem }) {
       <div className="block" style={{ '--d': 5 }}><StatusCallouts item={item} /></div>
       {item.lifecycle === 'reviewing' ? <Block title="Review in progress" delay={5}><RunCard item={item} detail={detail} /></Block> : null}
       {task && detailQuery.isLoading && item.lifecycle !== 'reviewing' ? <div className="loading-line"><Spinner size={14} />Loading review…</div> : null}
+      {task && detailQuery.isError ? (
+        <div className="block" style={{ '--d': 5 }}>
+          <Callout
+            icon="warn"
+            color="var(--red)"
+            title="Couldn’t load this review"
+            actions={<button type="button" className="btn" onClick={() => void detailQuery.refetch()}>Try again</button>}
+          >
+            {errorMessage(detailQuery.error)}
+          </Callout>
+        </div>
+      ) : null}
       {showOutput || showReReviewOutput ? <ReviewOutput item={item} detail={detail} /> : null}
     </>
   )
