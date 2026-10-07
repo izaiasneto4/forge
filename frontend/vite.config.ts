@@ -21,7 +21,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/cable': {
-        target: 'ws://localhost:3000',
+        target: apiTarget,
         changeOrigin: true,
         ws: true,
       },
