@@ -15,10 +15,12 @@ import {
   reviewTaskFor,
   updatePullRequest,
 } from '../models/pull-request'
+import { transaction } from '../models/record'
 import {
   anyReviewRunning,
   createReviewTask,
   inProgressOrRetrying,
+  prepareNewRun,
   queuePosition,
   updateReviewTask,
   type ReviewTaskChanges,
@@ -46,31 +48,53 @@ function syncFailed(error: unknown): never {
   throw error
 }
 
+export interface StartReviewOptions {
+  cliClient: string
+  reviewType: string
+  // The reviewer's free-text focus for the prompt; blank clears an earlier one.
+  focus: string | null
+}
+
+// `params[:focus].to_s.strip.presence`
+export function focusParam(params: Record<string, unknown>) {
+  return presentString(params, 'focus')?.trim() ?? null
+}
+
 // Shared by PullRequestsController#create_review_task and ReviewsController#create:
 // queue behind a running review, otherwise start a ReviewTaskJob right away.
-export function startOrQueueReview(ctx: AppContext, pullRequestId: number, options: { cliClient: string; reviewType: string }) {
+// One transaction, so a rejected request (say, an unknown cli_client) leaves the
+// previous run's findings in place instead of half-reset.
+// The task is read inside the transaction so two servers sharing the database
+// can't both pass the conflict check and reset each other's run.
+export function startOrQueueReview(ctx: AppContext, pullRequestId: number, options: StartReviewOptions) {
   const pullRequest = findPullRequest(ctx.db, pullRequestId)
-  const existing = reviewTaskFor(ctx.db, pullRequest.id)
-  if (existing && inProgressOrRetrying(existing)) {
-    renderError('conflict', `Review already in progress for PR #${pullRequest.number}`, 409)
-  }
 
-  const snapshot = currentSnapshotOrCreate(ctx, pullRequest)
-  const queued = anyReviewRunning(ctx)
-  const changes: ReviewTaskChanges = {
-    cliClient: options.cliClient,
-    reviewType: options.reviewType,
-    pullRequestSnapshotId: snapshot?.id ?? null,
-    state: queued ? 'queued' : 'pending_review',
-    ...(queued ? { queuedAt: new Date() } : {}),
-  }
+  return transaction(ctx, (txCtx) => {
+    const existing = reviewTaskFor(txCtx.db, pullRequest.id)
+    if (existing && inProgressOrRetrying(existing)) {
+      renderError('conflict', `Review already in progress for PR #${pullRequest.number}`, 409)
+    }
 
-  const task: ReviewTaskRecord = existing
-    ? updateReviewTask(ctx, existing, changes)
-    : createReviewTask(ctx, { pullRequestId: pullRequest.id, ...changes })
+    const snapshot = currentSnapshotOrCreate(txCtx, pullRequest)
+    const queued = anyReviewRunning(txCtx)
+    const changes: ReviewTaskChanges = {
+      cliClient: options.cliClient,
+      reviewType: options.reviewType,
+      reviewFocus: options.focus,
+      pullRequestSnapshotId: snapshot?.id ?? null,
+      // A run started on a task archived through the old UI or the API must show up again.
+      archived: false,
+      state: queued ? 'queued' : 'pending_review',
+      ...(queued ? { queuedAt: new Date() } : {}),
+    }
 
-  if (!queued) ctx.jobs.enqueue('ReviewTaskJob', { reviewTaskId: task.id, isRetry: false })
-  return { pullRequest, task, queued, queuePosition: queued ? queuePosition(ctx.db, task) : null }
+    const task: ReviewTaskRecord = existing
+      ? updateReviewTask(txCtx, prepareNewRun(txCtx, existing), changes)
+      : createReviewTask(txCtx, { pullRequestId: pullRequest.id, ...changes })
+
+    if (!queued) txCtx.jobs.enqueue('ReviewTaskJob', { reviewTaskId: task.id, isRetry: false })
+    return { pullRequest, task, queued, queuePosition: queued ? queuePosition(txCtx.db, task) : null }
+  })
 }
 
 export function pullRequestRoutes({ ctx, services, queueKick }: RouteDependencies) {
@@ -216,6 +240,7 @@ export function pullRequestRoutes({ ctx, services, queueKick }: RouteDependencie
         startOrQueueReview(ctx, idParam(route.id), {
           cliClient: presentString(params, 'cli_client') ?? settings.defaultCliClient(),
           reviewType: presentString(params, 'review_type') ?? 'review',
+          focus: focusParam(params),
         }),
       )
       const message = queued

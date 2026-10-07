@@ -38,6 +38,19 @@ describe('migrateDatabase', () => {
     expect(db.all<{ key: string }>(sql`SELECT key FROM settings`)[0]?.key).toBe(existingSettingKey)
   })
 
+  test('adds the review focus column to fresh and adopted databases', () => {
+    const column = 'review_focus'
+    const fresh = openDatabase(':memory:')
+    const adopted = createRailsDatabase(RAILS_BASELINE_VERSION)
+    const columnsOf = (db: Db) => db.all<{ name: string }>(sql`PRAGMA table_info(review_tasks)`).map((row) => row.name)
+
+    migrateDatabase(fresh)
+    migrateDatabase(adopted)
+
+    expect(columnsOf(fresh)).toContain(column)
+    expect(columnsOf(adopted)).toContain(column)
+  })
+
   test('is idempotent', () => {
     const db = createRailsDatabase(RAILS_BASELINE_VERSION)
 

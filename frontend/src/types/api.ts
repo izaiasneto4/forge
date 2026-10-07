@@ -49,6 +49,18 @@ export type PullRequestStatus =
   | 'reviewed_by_others'
   | 'review_failed'
 
+export type Lifecycle =
+  | 'needs_review'
+  | 'queued'
+  | 'reviewing'
+  | 'ready'
+  | 'failed'
+  | 'waiting'
+  | 'settled'
+  | 'authored'
+
+export type ReviewEvent = 'COMMENT' | 'APPROVE' | 'REQUEST_CHANGES'
+
 export type ReviewTaskState =
   | 'queued'
   | 'pending_review'
@@ -79,6 +91,8 @@ export interface PullRequestReviewTaskSummary {
   has_review_history: boolean
   current_iteration_number: number
   swarm_review: boolean
+  review_focus: string | null
+  pending_comment_count: number
   pull_request_snapshot_id: number | null
   analysis_status: 'none' | 'pending' | 'current' | 'stale'
   snapshot_current: boolean
@@ -125,6 +139,8 @@ export interface PullRequestItem {
   check_status: string | null
   draft: boolean
   review_requested_for_me: boolean
+  lifecycle: Lifecycle
+  has_new_commits: boolean
   additions: number | null
   deletions: number | null
   changed_files: number | null
@@ -143,6 +159,7 @@ export interface PullRequestBoardResponse {
   counts: Record<PullRequestStatus, number>
   total_count: number
   columns: Record<PullRequestStatus, PullRequestItem[]>
+  settled_reviews: PullRequestItem[]
 }
 
 export interface CompactPullRequest {
@@ -185,6 +202,8 @@ export interface ReviewTaskItem {
   has_review_history: boolean
   current_iteration_number: number
   swarm_review: boolean
+  review_focus: string | null
+  pending_comment_count: number
   pull_request: CompactPullRequest | null
 }
 
@@ -250,6 +269,7 @@ export interface AgentLogItem {
 export interface ReviewTaskDetailResponse {
   current_repo: CurrentRepo
   task: ReviewTaskItem
+  pull_request: PullRequestItem
   submission: {
     auto_submit_enabled: boolean
     pending_comment_count: number

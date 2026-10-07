@@ -32,10 +32,20 @@ describe('frontend routes', () => {
     return frontendRoutes({ publicDir: dir, development, frontendDevUrl })
   }
 
-  test.each(['/', '/review_tasks', '/review_tasks/12', '/repositories', '/settings'])('serves the SPA shell at %p', async (path) => {
+  test.each(['/', '/review_tasks', '/review_tasks/12', '/repositories', '/settings', '/new', '/inbox', '/reviewing/12', '/waiting', '/mine/3', '/settled'])(
+    'serves the SPA shell at %p',
+    async (path) => {
+      const response = await app(publicDir).handle(new Request(`${origin}${path}`))
+
+      expect(await response.text()).toBe(indexHtml)
+    },
+  )
+
+  test.each(['/inbox/not-a-number', '/archive', '/settled/1/2'])('leaves non-mailbox paths like %p to the 404 page', async (path) => {
     const response = await app(publicDir).handle(new Request(`${origin}${path}`))
 
-    expect(await response.text()).toBe(indexHtml)
+    expect(response.status).toBe(404)
+    expect(await response.text()).toBe(notFoundHtml)
   })
 
   test('serves built assets with long-lived caching in production', async () => {
