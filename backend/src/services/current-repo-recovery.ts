@@ -1,7 +1,8 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import type { Db } from '../db/client'
 import { pullRequests } from '../db/schema'
-import { isBlank, SettingStore } from '../models/setting'
+import { isBlank } from '../lib/ruby'
+import { SettingStore } from '../models/setting'
 import { isDirectory } from './git'
 import { resolveRepoSlug } from './repo-switch-resolver'
 

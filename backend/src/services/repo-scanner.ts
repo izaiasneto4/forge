@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { isBlank } from '../models/setting'
+import { isBlank } from '../lib/ruby'
 import { gitOutput, isDirectory } from './git'
 
 export interface ScannedRepository {

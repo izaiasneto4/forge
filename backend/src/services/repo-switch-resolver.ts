@@ -1,5 +1,5 @@
 import { basename } from 'node:path'
-import { isBlank } from '../models/setting'
+import { isBlank } from '../lib/ruby'
 import { isDirectory } from './git'
 import { scanRepositories } from './repo-scanner'
 import { slugFromRemote } from './repo-slug-resolver'

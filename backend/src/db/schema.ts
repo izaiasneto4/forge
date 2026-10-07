@@ -219,3 +219,22 @@ export const reviewTasks = sqliteTable("review_tasks", {
 	index("index_review_tasks_on_pull_request_id_and_state").on(table.pullRequestId, table.state),
 	index("index_review_tasks_on_ai_model").on(table.aiModel),
 ]);
+
+// Bun-owned: replaces Solid Queue for background jobs.
+export const jobs = sqliteTable("jobs", {
+	id: integer().primaryKey({ autoIncrement: true }).notNull(),
+	name: text().notNull(),
+	payload: text().default("{}").notNull(),
+	state: text().default("ready").notNull(),
+	runAt: railsDatetime("run_at").notNull(),
+	attempts: integer().default(0).notNull(),
+	error: text(),
+	claimedAt: railsDatetime("claimed_at"),
+	finishedAt: railsDatetime("finished_at"),
+	createdAt: railsDatetime("created_at").notNull(),
+	updatedAt: railsDatetime("updated_at").notNull(),
+},
+(table) => [
+	index("index_jobs_on_state_and_run_at").on(table.state, table.runAt),
+	index("index_jobs_on_name_and_state").on(table.name, table.state),
+]);

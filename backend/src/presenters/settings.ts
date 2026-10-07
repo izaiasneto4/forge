@@ -1,6 +1,7 @@
 import { basename } from 'node:path'
 import type { Db } from '../db/client'
-import { CLI_CLIENTS, isBlank, SettingStore, VALID_THEME_PREFERENCES } from '../models/setting'
+import { isBlank } from '../lib/ruby'
+import { CLI_CLIENTS, SettingStore, VALID_THEME_PREFERENCES } from '../models/setting'
 import { recoverCurrentRepo } from '../services/current-repo-recovery'
 import { slugFromPath } from '../services/repo-slug-resolver'
 

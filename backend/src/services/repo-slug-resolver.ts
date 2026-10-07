@@ -1,4 +1,4 @@
-import { isBlank } from '../models/setting'
+import { isBlank } from '../lib/ruby'
 import { gitOutput, isDirectory } from './git'
 
 const GITHUB_REMOTE = /github\.com[:/](?<owner>[^/]+)\/(?<name>[^/]+?)(?:\.git)?$/

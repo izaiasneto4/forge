@@ -1,10 +1,8 @@
-import { migrate } from 'drizzle-orm/bun-sqlite/migrator'
 import { openDatabase } from '../../src/db/client'
-
-const migrationsFolder = new URL('../../drizzle', import.meta.url).pathname
+import { migrateDatabase } from '../../src/db/migrate'
 
 export function createTestDatabase() {
   const db = openDatabase(':memory:')
-  migrate(db, { migrationsFolder })
+  migrateDatabase(db)
   return db
 }
