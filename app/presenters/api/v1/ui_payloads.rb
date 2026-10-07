@@ -285,7 +285,8 @@ module Api
             sync_status: sync_status,
             counts: board_counts(columns),
             total_count: @presenter.total_count,
-            columns: columns.transform_values { |items| items.map { |pull_request| pull_request_payload(pull_request) } }
+            columns: columns.transform_values { |items| items.map { |pull_request| pull_request_payload(pull_request) } },
+            settled_reviews: @presenter.settled_reviews.map { |pull_request| pull_request_payload(pull_request) }
           }
         end
 

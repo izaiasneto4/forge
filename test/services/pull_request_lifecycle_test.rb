@@ -13,6 +13,14 @@ class PullRequestLifecycleTest < ActiveSupport::TestCase
     assert_equal expected, lifecycle_for(pull_request)
   end
 
+  test "pull requests dropped by sync are settled even with a review waiting" do
+    expected = "settled"
+    pull_request = create_pull_request(deleted_at: 1.hour.ago)
+    pull_request.create_review_task!(state: "reviewed")
+
+    assert_equal expected, lifecycle_for(PullRequest.unscoped.find(pull_request.id))
+  end
+
   test "pull requests authored by the current user without a task are authored" do
     expected = "authored"
     pull_request = create_pull_request(author: @github_login.upcase)

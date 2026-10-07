@@ -18,6 +18,23 @@ class PullRequestIndexPresenter
     }
   end
 
+  SETTLED_REVIEWS_LIMIT = 50
+
+  # Reviewed PRs that left the open list (merged, closed, or dropped by sync) so their
+  # findings stay reachable from Settled. PRs the user deleted are archived and stay hidden.
+  def settled_reviews
+    PullRequest.unscoped do
+      PullRequest.for_current_repo(current_repo)
+        .where(archived: false)
+        .where("pull_requests.deleted_at IS NOT NULL OR pull_requests.remote_state != 'open' OR pull_requests.inactive_reason IS NOT NULL")
+        .joins(:review_task)
+        .includes(:pull_request_snapshots, review_task: [ :review_comments, :review_iterations ])
+        .order(updated_at_github: :desc)
+        .limit(SETTLED_REVIEWS_LIMIT)
+        .to_a
+    end
+  end
+
   def total_count
     @total_count ||= PullRequest.for_current_repo(current_repo).active_remote.count
   end
