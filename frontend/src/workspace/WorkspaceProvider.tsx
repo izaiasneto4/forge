@@ -93,13 +93,16 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
   const bootstrap = bootstrapQuery.data
   const login = board?.settings.current_user_login ?? bootstrap?.settings.github_login ?? null
   const onlyRequested = board?.settings.only_requested_reviews ?? false
-  const items = useMemo(
-    () => (board ? flattenBoard(board).filter((item) => inReviewScope(item, login, onlyRequested)) : []),
-    [board, login, onlyRequested],
-  )
+  const allItems = useMemo(() => (board ? flattenBoard(board) : []), [board])
+  const items = useMemo(() => allItems.filter((item) => inReviewScope(item, login, onlyRequested)), [allItems, login, onlyRequested])
 
   if (route.kind === 'mailbox' && route.mailbox !== lastMailbox) setLastMailbox(route.mailbox)
   const mailbox = route.kind === 'mailbox' ? route.mailbox : lastMailbox
+  // Shown in the list so a mailbox emptied by the requested-only filter doesn't look broken.
+  const hiddenByScope = useMemo(
+    () => allItems.filter((item) => !inReviewScope(item, login, onlyRequested) && belongsToMailbox(item, mailbox, login)).length,
+    [allItems, login, onlyRequested, mailbox],
+  )
 
   const mailboxItems = useMemo(
     () => items.filter((item) => belongsToMailbox(item, mailbox, login)),
@@ -456,6 +459,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     counts,
     anyReviewing,
     requestedCount: requestedItems.length,
+    hiddenByScope,
     sort,
     setSort,
     collapsedSections,

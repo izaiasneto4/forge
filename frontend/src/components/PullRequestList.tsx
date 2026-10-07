@@ -115,7 +115,7 @@ function subtitleFor(mailbox: MailboxId, items: PullRequestItem[]) {
 export function PullRequestList() {
   const {
     mailbox, sections, selected, sort, setSort, board, actions, collapsedSections, toggleSection,
-    boardLoading, sidebarOpen, toggleSidebar,
+    boardLoading, sidebarOpen, toggleSidebar, hiddenByScope,
   } = useWorkspace()
   const items = sections.flatMap((section) => section.items)
   const onlyRequested = board?.settings.only_requested_reviews ?? false
@@ -149,11 +149,19 @@ export function PullRequestList() {
       <div className="rows">
         {boardLoading ? <div className="loading-line"><Icon name="refresh" className="spin" size={14} />Loading pull requests…</div> : null}
 
+        {!boardLoading && hiddenByScope > 0 ? (
+          <div className="scope-bar">
+            <Icon name="filter" size={13} />
+            <span>Requested from you only · {hiddenByScope} hidden</span>
+            <button type="button" className="link" onClick={() => void actions.setOnlyRequested(false)}>Show all</button>
+          </div>
+        ) : null}
+
         {!boardLoading && items.length === 0 ? (
           <div className="list-empty">
             <div className="big"><Icon name="check" size={26} stroke={2.2} /></div>
             <b>{empty.title}</b>
-            <span>{empty.body}</span>
+            <span>{hiddenByScope > 0 ? 'Nobody has requested your review here. The rest are hidden by the filter above.' : empty.body}</span>
           </div>
         ) : null}
 

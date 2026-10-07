@@ -70,6 +70,8 @@ export type WorkspaceValue = {
   counts: Record<MailboxId, number>
   anyReviewing: boolean
   requestedCount: number
+  // Pull requests in this mailbox hidden by "Only PRs requesting my review".
+  hiddenByScope: number
   sort: SortOption
   setSort: (sort: SortOption) => void
   collapsedSections: Set<string>
