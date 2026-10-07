@@ -87,6 +87,13 @@ class ReviewTaskJobTest < ActiveJob::TestCase
     assert_equal 0, @review_task.retry_count
   end
 
+  test "review notifications identify the review task" do
+    ActionCable.server.stubs(:broadcast)
+    ActionCable.server.expects(:broadcast).with("review_notifications", has_entries(review_task_id: @review_task.id, pr_number: @review_task.pull_request.number))
+
+    ReviewTaskJob.new.send(:broadcast_completion, @review_task)
+  end
+
   test "happy path: does not clear logs or reset retry state on retry" do
     @review_task.add_log("Existing log", log_type: "status")
     @review_task.update!(retry_count: 1)

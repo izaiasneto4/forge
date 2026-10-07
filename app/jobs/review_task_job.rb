@@ -181,6 +181,7 @@ class ReviewTaskJob < ApplicationJob
       "review_notifications",
       {
         type: failed ? "review_failed" : "review_completed",
+        review_task_id: review_task.id,
         pr_number: review_task.pull_request.number,
         pr_title: review_task.pull_request.title,
         reason: failed ? review_task.failure_reason&.truncate(100) : nil
