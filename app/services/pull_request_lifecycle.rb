@@ -13,7 +13,7 @@ class PullRequestLifecycle
   end
 
   def call
-    return "settled" if @pull_request.inactive? || @pull_request.deleted?
+    return "settled" if @pull_request.inactive?
     return task_lifecycle if task.present?
     return "authored" if authored_by_me?
     return "settled" if @pull_request.review_status == "reviewed_by_me"

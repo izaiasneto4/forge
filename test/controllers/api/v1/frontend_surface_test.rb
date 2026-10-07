@@ -165,6 +165,14 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     assert_equal pending, @review_comment.reload.status
   end
 
+  test "review detail is not found once its pull request is deleted" do
+    @review_task.pull_request.soft_delete!
+
+    get "/api/v1/review_tasks/#{@review_task.id}", as: :json
+
+    assert_response :not_found
+  end
+
   test "comment toggle rejects unknown statuses" do
     original = @review_comment.status
 

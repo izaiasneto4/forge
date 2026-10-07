@@ -248,7 +248,7 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
     refute task.reload.archived?
   end
 
-  test "bulk_destroy archives deleted pull requests so their reviews stay hidden" do
+  test "bulk_destroy soft-deletes without archiving so a sync can bring the PR back" do
     pull_request = PullRequest.find_by!(number: 1)
 
     delete "/api/v1/pull_requests/bulk_destroy", params: { pull_request_ids: [ pull_request.id ] }, as: :json
@@ -256,6 +256,6 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     deleted = PullRequest.unscoped.find(pull_request.id)
     assert deleted.deleted?
-    assert deleted.archived?
+    refute deleted.archived?
   end
 end

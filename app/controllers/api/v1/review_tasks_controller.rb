@@ -9,6 +9,10 @@ class Api::V1::ReviewTasksController < Api::V1::BaseController
   end
 
   def show
+    unless @review_task.pull_request
+      return render_error("not_found", "This review's pull request was archived or deleted", :not_found)
+    end
+
     render_ok(Api::V1::UiPayloads::ReviewTaskDetail.new(@review_task).as_json)
   end
 

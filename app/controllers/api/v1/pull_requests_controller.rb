@@ -132,8 +132,7 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
     return render_error("invalid_input", "No pull requests selected", :bad_request) if pr_ids.empty?
     return render_error("invalid_input", "Cannot delete more than 100 pull requests at once", :bad_request) if pr_ids.size > 100
 
-    # Archiving too keeps a deleted PR's review out of Settled until a sync brings the PR back.
-    deleted_count = PullRequest.where(id: pr_ids).update_all(deleted_at: Time.current, archived: true, updated_at: Time.current)
+    deleted_count = PullRequest.where(id: pr_ids).update_all(deleted_at: Time.current, updated_at: Time.current)
     UiEventBroadcaster.broadcast("pull_request.bulk_deleted", pull_request_ids: pr_ids)
 
     render_ok(

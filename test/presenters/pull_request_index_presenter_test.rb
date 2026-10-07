@@ -148,14 +148,15 @@ class PullRequestIndexPresenterTest < ActiveSupport::TestCase
     assert_equal "Using cached data (next sync available in 30 seconds)", presenter.build_sync_skipped_message
   end
 
-  test "settled_reviews keeps reviewed pull requests that left the open list" do
+  test "settled_reviews keeps reviewed pull requests that were merged or closed" do
     merged = create_pull_request(10, remote_state: "merged", inactive_reason: "merged")
-    synced_away = create_pull_request(11, deleted_at: 1.hour.ago)
-    deleted_by_user = create_pull_request(12, deleted_at: 1.hour.ago, archived: true)
-    still_open = create_pull_request(13)
-    merged_without_review = create_pull_request(14, remote_state: "merged", inactive_reason: "merged")
-    [ merged, synced_away, deleted_by_user, still_open ].each { |pull_request| pull_request.create_review_task!(state: "reviewed") }
-    expected = [ merged, synced_away ].map(&:id).sort
+    closed = create_pull_request(11, remote_state: "closed", inactive_reason: "closed")
+    deleted = create_pull_request(12, remote_state: "merged", inactive_reason: "merged", deleted_at: 1.hour.ago)
+    archived = create_pull_request(13, remote_state: "merged", inactive_reason: "merged", archived: true)
+    still_open = create_pull_request(14)
+    merged_without_review = create_pull_request(15, remote_state: "merged", inactive_reason: "merged")
+    [ merged, closed, deleted, archived, still_open ].each { |pull_request| pull_request.create_review_task!(state: "reviewed") }
+    expected = [ merged, closed ].map(&:id).sort
 
     settled_ids = PullRequestIndexPresenter.new.settled_reviews.map(&:id).sort
 
