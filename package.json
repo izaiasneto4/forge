@@ -1,12 +1,18 @@
 {
   "name": "forge",
   "version": "1.0.0",
-  "description": "Local-first Rails app for automated GitHub PR reviews using external CLI agents.",
+  "description": "Local-first app for automated GitHub PR reviews using external CLI agents (Bun API + React).",
   "scripts": {
+    "dev": "bin/dev",
+    "setup": "bin/setup",
+    "test": "bun run --cwd backend test && npm --prefix frontend run test",
     "frontend:dev": "npm --prefix frontend run dev",
     "frontend:build": "npm --prefix frontend run build",
     "frontend:test": "npm --prefix frontend run test",
-    "frontend:test:coverage": "npm --prefix frontend run test:coverage"
+    "frontend:test:coverage": "npm --prefix frontend run test:coverage",
+    "backend:dev": "bun run --cwd backend dev",
+    "backend:test": "bun run --cwd backend test",
+    "backend:typecheck": "bun run --cwd backend typecheck"
   },
   "keywords": [],
   "author": "",

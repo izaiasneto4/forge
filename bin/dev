@@ -1,16 +1,11 @@
 #!/usr/bin/env sh
+# Runs the Bun API (with its in-process job worker) and the Vite dev server.
+set -e
+cd "$(dirname "$0")/.."
 
-if ! gem list foreman -i --silent; then
-  echo "Installing foreman..."
-  gem install foreman
-fi
-
-# Default to port 3000 if not specified
 export PORT="${PORT:-3000}"
+trap 'kill 0' INT TERM EXIT
 
-# Let the debug gem allow remote connections,
-# but avoid loading until `debugger` is called
-export RUBY_DEBUG_OPEN="true"
-export RUBY_DEBUG_LAZY="true"
-
-exec foreman start -f Procfile.dev "$@"
+bun run --cwd backend dev &
+npm --prefix frontend run dev -- --host 0.0.0.0 &
+wait
