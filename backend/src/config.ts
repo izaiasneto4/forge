@@ -17,7 +17,7 @@ export interface RuntimeConfig {
 // Relative paths resolve from the app root (where storage/ and public/ live),
 // as they did under Rails; stored repo paths may be relative to it too.
 export function runtimeConfig(env: Record<string, string | undefined>): RuntimeConfig {
-  const appRoot = resolve(env.ORDEM_ROOT ?? env.RAILS_ROOT ?? DEFAULT_APP_ROOT)
+  const appRoot = resolve(env.ORDEM_ROOT ?? env.FORGE_ROOT ?? env.RAILS_ROOT ?? DEFAULT_APP_ROOT)
   const development = env.NODE_ENV !== 'production'
 
   return {
@@ -26,7 +26,7 @@ export function runtimeConfig(env: Record<string, string | undefined>): RuntimeC
     databasePath: resolve(appRoot, env.DATABASE_PATH ?? `storage/${development ? 'development' : 'production'}.sqlite3`),
     publicDir: resolve(appRoot, 'public'),
     development,
-    allowedHosts: allowedHostsFromEnv(env.ORDEM_ALLOWED_HOSTS, development),
+    allowedHosts: allowedHostsFromEnv(env.ORDEM_ALLOWED_HOSTS ?? env.FORGE_ALLOWED_HOSTS, development),
     frontendDevUrl: env.FRONTEND_DEV_URL ?? 'http://localhost:5173',
   }
 }

@@ -36,6 +36,8 @@ export interface CodeReviewOptions {
   worktreePath: string
   pullRequest: ReviewPullRequest
   reviewType?: string
+  // The reviewer's free-text focus, added to the prompt as its own section.
+  focus?: string | null
   // `GithubCliService.new(repo_path:)`, used to load the PR's existing comments.
   githubClientFor: GithubClientFactory
 }
@@ -45,6 +47,7 @@ interface CodeReviewSettings extends CliClientConfig {
   worktreePath: string
   pullRequest: ReviewPullRequest
   reviewType: string
+  focus: string | null
   previousComments: PullRequestComment[]
 }
 
@@ -74,6 +77,7 @@ export class CodeReviewService {
   readonly worktreePath: string
   readonly pullRequest: ReviewPullRequest
   readonly reviewType: string
+  readonly focus: string | null
   readonly previousComments: PullRequestComment[]
 
   // `CodeReviewService.for`: unknown clients fall back to the claude command.
@@ -86,6 +90,7 @@ export class CodeReviewService {
       worktreePath: options.worktreePath,
       pullRequest: options.pullRequest,
       reviewType: options.reviewType ?? 'review',
+      focus: options.focus ?? null,
       previousComments,
     })
   }
@@ -101,6 +106,7 @@ export class CodeReviewService {
     this.worktreePath = settings.worktreePath
     this.pullRequest = settings.pullRequest
     this.reviewType = settings.reviewType
+    this.focus = settings.focus
     this.previousComments = settings.previousComments
   }
 
@@ -183,6 +189,12 @@ export class CodeReviewService {
     return `\n## Previous PR Comments\n\nThe following comments exist on this PR from previous reviews:\n\n${lines}\n\n`
   }
 
+  focusContext() {
+    if (!isPresent(this.focus)) return ''
+
+    return `\n## Reviewer Focus\n\nThe reviewer asked you to pay special attention to:\n\n${this.focus}\n\nStill report any other significant issues you find.\n\n`
+  }
+
   standardReviewPrompt() {
     const skillInstruction = this.skill ? `Run ${this.skill} to analyze the changes.` : 'Analyze the code changes.'
 
@@ -190,7 +202,7 @@ export class CodeReviewService {
 
 ${this.pullRequest.description ?? ''}
 
-${this.previousCommentsContext()}
+${this.previousCommentsContext()}${this.focusContext()}
 IMPORTANT SCOPE CONSTRAINT: You must ONLY review code that was actually changed in this PR.
 - Use \`gh pr diff\` or \`git diff\` to identify exactly which files and lines were modified
 - Do NOT flag issues in pre-existing code that wasn't touched by this PR
@@ -260,7 +272,7 @@ PR #${this.pullRequest.number ?? ''}: ${this.pullRequest.title ?? ''}
 
 ${this.pullRequest.description ?? ''}
 
-${this.previousCommentsContext()}
+${this.previousCommentsContext()}${this.focusContext()}
 Review the changes in this PR. Use \`gh pr diff\` or \`git diff\` to identify exactly which files and lines were modified.
 
 ## Step 1: Invoke Specialized Reviewers

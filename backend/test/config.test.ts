@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { join, resolve } from 'node:path'
 import { runtimeConfig } from '../src/config'
-import { ALLOW_ALL_HOSTS, DEFAULT_ALLOWED_HOSTS } from '../src/http/host-authorization'
+import { ALLOW_ALL_HOSTS, DEFAULT_ALLOWED_HOSTS, isAllowedHost } from '../src/http/host-authorization'
 
 const repositoryRoot = resolve(import.meta.dir, '../..')
 
@@ -45,5 +45,35 @@ describe('runtimeConfig', () => {
     const config = runtimeConfig({ DATABASE_PATH: absoluteDatabasePath, PORT: String(port), ORDEM_ALLOWED_HOSTS: 'ordem.example.com', FRONTEND_DEV_URL: frontendDevUrl })
 
     expect(config).toMatchObject({ databasePath: absoluteDatabasePath, port, allowedHosts: ['ordem.example.com'], frontendDevUrl })
+  })
+
+  test('preserves an existing installation database location', () => {
+    const legacyRoot = '/srv/existing-app'
+    const relativeDatabasePath = 'storage/custom.sqlite3'
+
+    const config = runtimeConfig({ NODE_ENV: 'production', FORGE_ROOT: legacyRoot, DATABASE_PATH: relativeDatabasePath })
+
+    expect(config.databasePath).toBe(join(legacyRoot, relativeDatabasePath))
+  })
+
+  test('preserves existing production host restrictions', () => {
+    const allowedHost = 'private.example.com'
+
+    const config = runtimeConfig({ NODE_ENV: 'production', FORGE_ALLOWED_HOSTS: allowedHost })
+
+    expect(isAllowedHost(allowedHost, config.allowedHosts)).toBe(true)
+    expect(isAllowedHost('blocked.example.com', config.allowedHosts)).toBe(false)
+  })
+
+  test('prefers Ordem configuration over legacy settings', () => {
+    const appRoot = '/srv/ordem'
+    const allowedHost = 'ordem.example.com'
+    const legacyHost = 'legacy.example.com'
+
+    const config = runtimeConfig({ NODE_ENV: 'production', ORDEM_ROOT: appRoot, FORGE_ROOT: '/srv/existing-app', ORDEM_ALLOWED_HOSTS: allowedHost, FORGE_ALLOWED_HOSTS: legacyHost })
+
+    expect(config.appRoot).toBe(appRoot)
+    expect(isAllowedHost(allowedHost, config.allowedHosts)).toBe(true)
+    expect(isAllowedHost(legacyHost, config.allowedHosts)).toBe(false)
   })
 })

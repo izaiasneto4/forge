@@ -192,6 +192,22 @@ describe('WorktreeService', () => {
       expect(isDirectory(worktreePath)).toBe(false)
     })
 
+    test('reuses the legacy directory so a recovered review cleans its old checkout', async () => {
+      const legacyBase = join(repo.path, '.forge-worktrees')
+      const legacyPath = join(legacyBase, `pr-${pullRequest.number}`)
+      mkdirSync(legacyPath, { recursive: true })
+      scriptSuccessfulCheckout()
+      commands.on(removeCommand(legacyPath), { success: true })
+      const upgraded = new WorktreeService({ commands }, repo.path)
+
+      const path = await upgraded.createForPr(pullRequest)
+
+      expect(path).toBe(legacyPath)
+      expect(commands.calls.map((call) => call.command)).toEqual([ghViewCommand(), removeCommand(legacyPath), fetchCommand(), branchWorktreeCommand(legacyPath)])
+      expect(isDirectory(legacyPath)).toBe(false)
+      expect(isDirectory(worktreesBase)).toBe(false)
+    })
+
     test('uses fallback branch name when gh fails', async () => {
       const fallbackBranch = `pr-${pullRequest.number}`
       commands.on(ghViewCommand(), { success: false, stderr: 'boom' })
@@ -250,6 +266,19 @@ describe('WorktreeService', () => {
 
       expect(commands.calls).toHaveLength(1)
       expect(isDirectory(worktreesBase)).toBe(false)
+    })
+
+    test('cleanup_all includes both legacy and Ordem directories', async () => {
+      const legacyBase = join(repo.path, '.forge-worktrees')
+      mkdirSync(legacyBase, { recursive: true })
+      mkdirSync(worktreesBase, { recursive: true })
+      commands.on(['git', '-C', repo.path, 'worktree', 'prune'], { success: true })
+
+      await service.cleanupAll()
+
+      expect(isDirectory(legacyBase)).toBe(false)
+      expect(isDirectory(worktreesBase)).toBe(false)
+      expect(isDirectory(repo.path)).toBe(true)
     })
   })
 

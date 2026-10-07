@@ -72,7 +72,7 @@ export class Client implements OrdemApi {
   private readonly fetch: FetchFunction
 
   constructor({
-    baseUrl = process.env.ORDEM_API_URL ?? DEFAULT_API_URL,
+    baseUrl = process.env.ORDEM_API_URL ?? process.env.FORGE_API_URL ?? DEFAULT_API_URL,
     timeoutSeconds = 10,
     signal,
     fetch: fetchFunction = (url, init) => fetch(url, init),

@@ -24,6 +24,8 @@ bun bin/ordem.ts   # the ordem CLI (see the root README)
 | `ORDEM_LOG_LEVEL` | `info` (`silent` under `bun test`) |
 | `ORDEM_DISABLE_JOB_WORKER` | unset; `1` queues jobs without running them |
 
+Legacy `FORGE_*` environment variables remain supported when their `ORDEM_*` equivalent is unset.
+
 ## Layout
 
 - `src/routes/` — endpoints; `src/contracts/` — TypeBox response schemas.

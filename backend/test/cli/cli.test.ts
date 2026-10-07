@@ -51,6 +51,21 @@ describe('ordem cli', () => {
     expect(baseUrls).toEqual([TEST_API_URL, DEFAULT_API_URL])
   })
 
+  test('keeps the legacy API URL working and gives the Ordem URL priority', async () => {
+    const legacyUrl = 'http://legacy.test:4000'
+    const ordemUrl = 'http://ordem.test:4100'
+    const baseUrls: string[] = []
+    const createClient = (baseUrl: string): OrdemApi => {
+      baseUrls.push(baseUrl)
+      return new ScriptedClient()
+    }
+
+    await runCli([], { createClient, env: { FORGE_API_URL: legacyUrl } })
+    await runCli([], { createClient, env: { FORGE_API_URL: legacyUrl, ORDEM_API_URL: ordemUrl } })
+
+    expect(baseUrls).toEqual([legacyUrl, ordemUrl])
+  })
+
   describe('sync', () => {
     test('sync command success', async () => {
       const client = new ScriptedClient([{ result: { skipped: false } }])

@@ -15,7 +15,7 @@ import { AuthenticationError, NetworkError } from '../../src/services/review-err
 import { WORKTREES_DIR, WorktreeNetworkError } from '../../src/services/worktree'
 import { createTestContext, type TestContext } from '../support/context'
 import { insertPullRequest, insertReviewTask } from '../support/factories'
-import { createTempFolder } from '../support/git'
+import { createGitRepository, createTempFolder, stubGitRepository } from '../support/git'
 
 const ENV_KEYS = ['HOME', 'ANTHROPIC_MODEL', 'CLAUDE_MODEL']
 const originalEnv = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]))
@@ -362,15 +362,41 @@ describe('reviewTaskJob cleanup', () => {
     expect(enqueuedJobs('ProcessReviewQueueJob')).toHaveLength(1)
   })
 
-  test('returns early without touching anything when the repo path is blank', async () => {
+  test('fails the task and moves the queue on when no repository is selected or found', async () => {
+    const failed = 'failed_review'
     new SettingStore(ctx.db).setCurrentRepo(null)
 
     await run()
 
-    expect(reloaded().state).toBe('pending_review')
-    expect(ctx.commands.calls).toEqual([])
-    expect(logMessages()).toEqual([])
-    expect(ctx.jobs.all()).toEqual([])
+    expect(reloaded().state).toBe(failed)
+    expect(reloaded().failureReason).toContain(`${pullRequest.repoOwner}/${pullRequest.repoName}`)
+    expect(ctx.commands.commandsMatching(['gh', 'pr', 'view'])).toEqual([])
+    expect(enqueuedJobs('ProcessReviewQueueJob')).toHaveLength(1)
+  })
+
+  test('reviews in the pull request\'s checkout from the repositories folder when no repository is selected', async () => {
+    const reposFolder = createTempFolder()
+    try {
+      new SettingStore(ctx.db).setCurrentRepo(null)
+      const checkout = createGitRepository(ctx.commands, reposFolder.path, 'api', `${pullRequest.repoOwner}/${pullRequest.repoName}`)
+      new SettingStore(ctx.db).setReposFolder(reposFolder.path)
+      ctx.commands.on(['gh', 'pr', 'view'], { stdout: JSON.stringify({ headRefName: 'feature/test' }) })
+      ctx.commands.on(['git', '-C', checkout, 'fetch'], { success: true })
+      ctx.commands.on(['git', '-C', checkout, 'worktree', 'add'], (command) => {
+        const path = command[5]
+        if (path !== undefined) mkdirSync(path, { recursive: true })
+        return { success: true }
+      })
+      ctx.commands.on(['git', '-C', checkout, 'worktree', 'remove'], { success: true })
+      scriptReview(reviewOutput)
+
+      await run()
+
+      expect(reloaded().state).toBe('reviewed')
+      expect(ctx.commands.commandsMatching(['git', '-C', checkout, 'fetch']).length).toBeGreaterThan(0)
+    } finally {
+      reposFolder.remove()
+    }
   })
 })
 
@@ -402,7 +428,7 @@ describe('reviewTaskJob broadcasts', () => {
 
     expect(logStream()).toContainEqual({ type: 'completed', review_task_id: task.id, state: 'reviewed' })
     expect(ctx.events.on(STREAMS.reviewNotifications)).toEqual([
-      { type: 'review_completed', pr_number: pullRequest.number, pr_title: pullRequest.title, reason: null },
+      { type: 'review_completed', review_task_id: task.id, pr_number: pullRequest.number, pr_title: pullRequest.title, reason: null },
     ])
   })
 
@@ -416,7 +442,7 @@ describe('reviewTaskJob broadcasts', () => {
     const failureReason = `Review failed (permanent failure): ${message}`
     expect(logStream()).toContainEqual({ type: 'failed', review_task_id: task.id, state: 'failed_review' })
     expect(ctx.events.on(STREAMS.reviewNotifications)).toEqual([
-      { type: 'review_failed', pr_number: pullRequest.number, pr_title: pullRequest.title, reason: truncate(failureReason, 100) },
+      { type: 'review_failed', review_task_id: task.id, pr_number: pullRequest.number, pr_title: pullRequest.title, reason: truncate(failureReason, 100) },
     ])
   })
 
@@ -484,5 +510,87 @@ describe('reviewTaskJob lookups', () => {
     const missingId = task.id + 1000
 
     await expect(reviewTaskJob(ctx, { reviewTaskId: missingId, isRetry: false }, deps)).rejects.toThrow(`'id'=${missingId}`)
+  })
+})
+
+describe('reviewTaskJob review context', () => {
+  test('passes the reviewer focus into the prompt', async () => {
+    const focus = 'check the migration is safe to run online'
+    task = updateReviewTask(ctx, task, { reviewFocus: focus })
+    const prompts: string[] = []
+    scriptWorktree()
+    scriptReview((command) => {
+      prompts.push(command.join(' '))
+      return { stdout: reviewOutput }
+    })
+
+    await run()
+
+    expect(prompts.some((prompt) => prompt.includes(`## Reviewer Focus`) && prompt.includes(focus))).toBe(true)
+  })
+
+  test('reviews a pull request from another repository in that repository\'s checkout', async () => {
+    const reposFolder = createTempFolder()
+    try {
+      stubGitRepository(ctx.commands, repo.path, 'acme/web')
+      const otherCheckout = createGitRepository(ctx.commands, reposFolder.path, 'api', `${pullRequest.repoOwner}/${pullRequest.repoName}`)
+      new SettingStore(ctx.db).setReposFolder(reposFolder.path)
+      ctx.commands.on(['gh', 'pr', 'view'], { stdout: JSON.stringify({ headRefName: 'feature/test' }) })
+      ctx.commands.on(['git', '-C', otherCheckout, 'fetch'], { success: true })
+      ctx.commands.on(['git', '-C', otherCheckout, 'worktree', 'add'], (command) => {
+        const path = command[5]
+        if (path !== undefined) mkdirSync(path, { recursive: true })
+        return { success: true }
+      })
+      ctx.commands.on(['git', '-C', otherCheckout, 'worktree', 'remove'], { success: true })
+      scriptReview(reviewOutput)
+
+      await run()
+
+      expect(reloaded().state).toBe('reviewed')
+      expect(ctx.commands.commandsMatching(['git', '-C', otherCheckout, 'fetch']).length).toBeGreaterThan(0)
+      expect(ctx.commands.commandsMatching(['git', '-C', repo.path, 'fetch'])).toEqual([])
+    } finally {
+      reposFolder.remove()
+    }
+  })
+
+  test('finds the pull request\'s checkout regardless of remote casing', async () => {
+    const reposFolder = createTempFolder()
+    try {
+      stubGitRepository(ctx.commands, repo.path, 'acme/web')
+      const upperCaseSlug = `${pullRequest.repoOwner ?? ''}/${pullRequest.repoName ?? ''}`.toUpperCase()
+      const otherCheckout = createGitRepository(ctx.commands, reposFolder.path, 'api', upperCaseSlug)
+      new SettingStore(ctx.db).setReposFolder(reposFolder.path)
+      ctx.commands.on(['gh', 'pr', 'view'], { stdout: JSON.stringify({ headRefName: 'feature/test' }) })
+      ctx.commands.on(['git', '-C', otherCheckout, 'fetch'], { success: true })
+      ctx.commands.on(['git', '-C', otherCheckout, 'worktree', 'add'], (command) => {
+        const path = command[5]
+        if (path !== undefined) mkdirSync(path, { recursive: true })
+        return { success: true }
+      })
+      ctx.commands.on(['git', '-C', otherCheckout, 'worktree', 'remove'], { success: true })
+      scriptReview(reviewOutput)
+
+      await run()
+
+      expect(reloaded().state).toBe('reviewed')
+      expect(ctx.commands.commandsMatching(['git', '-C', otherCheckout, 'fetch']).length).toBeGreaterThan(0)
+    } finally {
+      reposFolder.remove()
+    }
+  })
+
+  test('fails clearly when the pull request\'s repository has no local checkout', async () => {
+    const failed = 'failed_review'
+    stubGitRepository(ctx.commands, repo.path, 'acme/web')
+
+    await run()
+
+    const reviewed = reloaded()
+    expect(reviewed.state).toBe(failed)
+    expect(reviewed.failureReason).toContain(`${pullRequest.repoOwner}/${pullRequest.repoName}`)
+    expect(ctx.commands.commandsMatching(['gh', 'pr', 'view'])).toEqual([])
+    expect(enqueuedJobs('ProcessReviewQueueJob')).toHaveLength(1)
   })
 })

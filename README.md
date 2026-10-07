@@ -71,7 +71,7 @@ Common variables:
 - `ORDEM_DISABLE_JOB_WORKER=1`: queue background jobs without running them
 - `ANTHROPIC_MODEL` or `CLAUDE_MODEL`
 
-When upgrading an existing installation, update app-specific environment variables to the `ORDEM_*` names above and use `bin/ordem` for CLI commands. Keep your existing SQLite file at `DATABASE_PATH`. For Docker or Kamal, mount your existing storage volume at `/app/storage`; use `ordem_storage` for a new installation.
+When upgrading an existing installation, use `bin/ordem` for CLI commands. The previous `FORGE_*` environment variables remain supported as fallbacks; `ORDEM_*` values take precedence. Keep your existing SQLite file at `DATABASE_PATH`. For Docker or Kamal, mount your existing storage volume at `/app/storage`; the Kamal example retains the existing volume identifier by default, while new installations may use `ordem_storage`. Existing review worktree directories and browser preferences also remain supported.
 
 External credentials are typically provided by the tools Ordem shells out to:
 

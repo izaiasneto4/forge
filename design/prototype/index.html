@@ -1,0 +1,1722 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ordem — redesign prototype</title>
+<style>
+:root {
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  --accent: #ff7a3d;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --spring: cubic-bezier(.34, 1.36, .64, 1);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --wall:
+    radial-gradient(1100px 700px at 12% 8%, #3b2c63 0%, transparent 60%),
+    radial-gradient(900px 700px at 92% 95%, #6a2c1b 0%, transparent 55%),
+    radial-gradient(700px 500px at 60% 40%, #1f2a4a 0%, transparent 60%),
+    linear-gradient(160deg, #13131d, #1b1420 60%, #110e13);
+  --sidebar: rgba(34, 34, 40, .55);
+  --list: #1c1c21;
+  --content: #17171b;
+  --elev: #212127;
+  --elev2: #2a2a31;
+  --field: rgba(255, 255, 255, .06);
+  --hover: rgba(255, 255, 255, .05);
+  --press: rgba(255, 255, 255, .09);
+  --sel-side: rgba(255, 255, 255, .10);
+  --sel-list: color-mix(in oklab, var(--accent) 22%, transparent);
+  --hair: rgba(255, 255, 255, .07);
+  --hair2: rgba(255, 255, 255, .13);
+  --t1: rgba(255, 255, 255, .93);
+  --t2: rgba(235, 235, 245, .62);
+  --t3: rgba(235, 235, 245, .40);
+  --t4: rgba(235, 235, 245, .20);
+  --red: #ff453a; --orange: #ff9f0a; --yellow: #ffd60a; --green: #30d158;
+  --blue: #0a84ff; --purple: #bf5af2; --teal: #64d2ff; --gray: #98989d;
+  --accent-text: color-mix(in oklab, var(--accent) 80%, white);
+  --shadow-win: inset 0 0 0 .5px rgba(255, 255, 255, .14), 0 0 0 1px rgba(0, 0, 0, .55), 0 30px 90px rgba(0, 0, 0, .55), 0 10px 30px rgba(0, 0, 0, .35);
+  --shadow-pop: inset 0 0 0 .5px rgba(255, 255, 255, .12), 0 0 0 .5px rgba(0, 0, 0, .8), 0 16px 48px rgba(0, 0, 0, .5);
+  --shadow-card: 0 0 0 .5px var(--hair2);
+  --glass: rgba(38, 38, 44, .72);
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+  --wall:
+    radial-gradient(1100px 700px at 12% 8%, #c9c1f2 0%, transparent 60%),
+    radial-gradient(900px 700px at 92% 95%, #ffc9a8 0%, transparent 55%),
+    radial-gradient(700px 500px at 60% 40%, #bfd6ff 0%, transparent 60%),
+    linear-gradient(160deg, #eef0f7, #f6efef 60%, #efeaf3);
+  --sidebar: rgba(236, 236, 241, .62);
+  --list: #fafafb;
+  --content: #ffffff;
+  --elev: #ffffff;
+  --elev2: #f3f3f5;
+  --field: rgba(0, 0, 0, .05);
+  --hover: rgba(0, 0, 0, .04);
+  --press: rgba(0, 0, 0, .07);
+  --sel-side: rgba(0, 0, 0, .075);
+  --sel-list: color-mix(in oklab, var(--accent) 16%, transparent);
+  --hair: rgba(0, 0, 0, .07);
+  --hair2: rgba(0, 0, 0, .12);
+  --t1: rgba(0, 0, 0, .87);
+  --t2: rgba(60, 60, 67, .68);
+  --t3: rgba(60, 60, 67, .46);
+  --t4: rgba(60, 60, 67, .24);
+  --red: #ff3b30; --orange: #ff9500; --yellow: #f5b800; --green: #28b84a;
+  --blue: #007aff; --purple: #af52de; --teal: #30b0d7; --gray: #8e8e93;
+  --accent-text: color-mix(in oklab, var(--accent) 82%, black);
+  --shadow-win: 0 0 0 .5px rgba(0, 0, 0, .22), 0 30px 90px rgba(40, 30, 60, .25), 0 10px 30px rgba(0, 0, 0, .10);
+  --shadow-pop: 0 0 0 .5px rgba(0, 0, 0, .14), 0 16px 48px rgba(0, 0, 0, .18);
+  --shadow-card: 0 0 0 .5px var(--hair2), 0 1px 2px rgba(0, 0, 0, .04);
+  --glass: rgba(250, 250, 252, .78);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font: 13px/1.45 var(--font);
+  color: var(--t1);
+  background: var(--wall);
+  background-color: #111;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  letter-spacing: -.003em;
+  user-select: none;
+  cursor: default;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: default; }
+code, .mono { font-family: var(--mono); font-size: .92em; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--t4); border-radius: 10px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.i { flex-shrink: 0; display: block; }
+
+/* ── Window ─────────────────────────────── */
+.desktop { position: fixed; inset: 0; padding: 26px; display: flex; }
+body.bare .desktop { padding: 0; }
+body.bare .window { border-radius: 0; }
+.window {
+  flex: 1;
+  display: grid;
+  grid-template-columns: var(--sb) var(--lw) minmax(0, 1fr) var(--iw);
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  --sb: 236px; --lw: 344px; --iw: 0px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-win);
+  position: relative;
+  transition: grid-template-columns .32s var(--ease);
+}
+.window.no-sidebar { --sb: 0px; }
+.window.with-inspector { --iw: 312px; }
+
+/* ── Sidebar ────────────────────────────── */
+.sidebar {
+  background: var(--sidebar);
+  backdrop-filter: blur(60px) saturate(190%);
+  -webkit-backdrop-filter: blur(60px) saturate(190%);
+  display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  border-right: .5px solid var(--hair);
+}
+.titlebar { height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 18px; flex-shrink: 0; }
+.lights { display: flex; gap: 8px; margin-right: auto; }
+.lights i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .25); }
+.lights i:nth-child(1) { background: #ff5f57; }
+.lights i:nth-child(2) { background: #febc2e; }
+.lights i:nth-child(3) { background: #28c840; }
+.floating-lights { position: absolute; top: 20px; left: 18px; z-index: 5; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.window.no-sidebar .floating-lights { opacity: 1; }
+.window.no-sidebar .list .toolbar { padding-left: 84px; }
+
+.tb-btn {
+  height: 28px; min-width: 28px; padding: 0 7px; border-radius: 7px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  color: var(--t2); transition: background .12s, color .12s; white-space: nowrap;
+}
+.tb-btn:hover { background: var(--hover); color: var(--t1); }
+.tb-btn:active { background: var(--press); }
+.tb-btn.on { color: var(--accent); }
+
+.sb-scroll { flex: 1; overflow: auto; padding: 2px 10px 10px; }
+.sb-search {
+  display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 8px; border-radius: 7px;
+  background: var(--field); color: var(--t3); margin-bottom: 12px; width: 100%;
+}
+.sb-search:hover { color: var(--t2); }
+.sb-search kbd { margin-left: auto; }
+kbd { font: 500 11px var(--font); color: var(--t3); letter-spacing: .02em; }
+.sb-item {
+  display: flex; align-items: center; gap: 9px; height: 28px; padding: 0 8px; border-radius: 6px;
+  width: 100%; text-align: left; color: var(--t1); transition: background .1s;
+}
+.sb-item:hover { background: var(--hover); }
+.sb-item.on { background: var(--sel-side); }
+.sb-item .i { color: var(--accent); }
+.sb-item.dim { color: var(--t2); }
+.sb-item.dim .i { color: var(--t3); }
+.sb-item .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-item .count { color: var(--t3); font-size: 12px; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 6px; }
+.sb-item .count.hot { color: var(--t1); font-weight: 600; }
+.sb-head { font-size: 11px; font-weight: 600; color: var(--t3); padding: 16px 8px 5px; display: flex; align-items: center; justify-content: space-between; }
+.sb-head button { color: var(--t3); border-radius: 5px; padding: 2px; }
+.sb-head button:hover { color: var(--t1); background: var(--hover); }
+.repo-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; margin: 0 3.5px; }
+.repo-dot.sm { width: 7px; height: 7px; border-radius: 2px; margin: 0; }
+.sb-foot { border-top: .5px solid var(--hair); padding: 8px 10px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.sync-chip { display: flex; align-items: center; gap: 6px; color: var(--t3); font-size: 11.5px; border-radius: 6px; padding: 4px 6px; margin-right: auto; min-width: 0; white-space: nowrap; }
+.sync-chip:hover { background: var(--hover); color: var(--t2); }
+.sync-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px color-mix(in oklab, var(--green) 20%, transparent); }
+
+/* ── List ───────────────────────────────── */
+.list { background: var(--list); display: flex; flex-direction: column; min-width: 0; border-right: .5px solid var(--hair); }
+.toolbar { height: 52px; display: flex; align-items: center; gap: 4px; padding: 0 10px 0 16px; flex-shrink: 0; border-bottom: .5px solid var(--hair); transition: padding .3s var(--ease); }
+.list .toolbar .ttl { flex: 1; min-width: 0; }
+.list .toolbar h2 { font-size: 14px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; }
+.list .toolbar .sub { font-size: 11px; color: var(--t3); line-height: 1.2; margin-top: 1px; }
+.rows { flex: 1; overflow: auto; padding: 4px 8px 16px; }
+.section-label { font-size: 11px; font-weight: 600; color: var(--t3); padding: 12px 10px 4px; display: flex; align-items: center; gap: 6px; }
+.section-label .n { font-weight: 500; color: var(--t4); }
+.row {
+  display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 1px;
+  padding: 9px 10px 10px; border-radius: 9px; position: relative; width: 100%; text-align: left;
+  transition: background .1s;
+}
+.row:hover { background: var(--hover); }
+.row.on { background: var(--sel-list); }
+.row .glyph { grid-row: 1 / 3; padding-top: 1px; }
+.row .title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .age { font-size: 11.5px; color: var(--t3); text-align: right; font-variant-numeric: tabular-nums; }
+.row .age.stale { color: var(--orange); }
+.row .age.rotten { color: var(--red); }
+.row .meta { font-size: 12px; color: var(--t2); display: flex; gap: 6px; align-items: center; overflow: hidden; white-space: nowrap; min-width: 0; }
+.row .meta .who { overflow: hidden; text-overflow: ellipsis; }
+.row .tag { justify-self: end; align-self: center; }
+.row.leaving { animation: leave .35s var(--ease) forwards; }
+@keyframes leave { to { opacity: 0; transform: translateX(-16px); } }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; height: 19px; padding: 0 7px; border-radius: 6px;
+  font-size: 11px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums;
+  color: var(--c, var(--t2)); background: color-mix(in oklab, var(--c, var(--t3)) 15%, transparent);
+}
+.chip.ghost { background: none; padding: 0; font-weight: 500; }
+.diffstat { font: 500 11.5px var(--mono); display: inline-flex; gap: 5px; }
+.diffstat .a { color: var(--green); }
+.diffstat .d { color: var(--red); }
+
+.list-empty { height: 70%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--t3); text-align: center; padding: 20px; }
+.list-empty .big { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: color-mix(in oklab, var(--green) 14%, transparent); color: var(--green); }
+.list-empty b { color: var(--t1); font-size: 14px; }
+
+/* ── Detail ─────────────────────────────── */
+.detail { background: var(--content); display: flex; flex-direction: column; min-width: 0; position: relative; }
+.crumbs { display: flex; align-items: center; gap: 6px; color: var(--t2); min-width: 0; flex: 1; font-size: 13px; }
+.crumbs b { color: var(--t1); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crumbs .i { color: var(--t4); }
+.scroll { flex: 1; overflow: auto; scroll-behavior: smooth; }
+.page { max-width: 760px; margin: 0 auto; padding: 30px 44px 240px; }
+.page > * { animation: rise .4s var(--ease) both; animation-delay: calc(var(--d, 0) * 40ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+
+.kicker { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--t2); margin-bottom: 10px; }
+.kicker .state { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--c, var(--t2)); }
+h1.pr-title { font-size: 23px; line-height: 1.22; font-weight: 700; letter-spacing: -.022em; user-select: text; }
+.byline { display: flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--t2); flex-wrap: wrap; row-gap: 4px; }
+.byline b { color: var(--t1); font-weight: 600; }
+.ref { font: 12px var(--mono); padding: 1px 6px; border-radius: 5px; background: var(--field); color: var(--t1); }
+.stats { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
+.stat { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 8px; background: var(--field); color: var(--t2); font-size: 12px; }
+.stat .i { color: var(--c, var(--t3)); }
+
+.block { margin-top: 28px; }
+.block-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.block-head h3 { font-size: 13px; font-weight: 700; letter-spacing: -.005em; }
+.block-head .aside { margin-left: auto; color: var(--t3); font-size: 12px; display: flex; align-items: center; gap: 10px; }
+.link { color: var(--accent-text); font-weight: 500; border-radius: 5px; }
+.link:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+.card { background: var(--elev); border-radius: 14px; box-shadow: var(--shadow-card); padding: 16px 18px; }
+.brief { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.brief ul { list-style: none; display: grid; gap: 7px; }
+.brief li { display: grid; grid-template-columns: 14px 1fr; gap: 8px; color: var(--t1); line-height: 1.5; user-select: text; }
+.brief li::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--t4); margin: 7px 0 0 4px; }
+.brief code { background: var(--field); padding: 0 4px; border-radius: 4px; }
+.risks { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding-top: 12px; border-top: .5px solid var(--hair); }
+.risks .lbl { font-size: 11.5px; color: var(--t3); margin-right: 2px; }
+.ai-mark { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--t3); }
+.ai-mark .i { color: var(--accent); }
+
+.verdict { display: grid; grid-template-columns: 36px 1fr auto; gap: 14px; align-items: center; }
+.agent-badge { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--field); }
+.verdict .what { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.verdict .what em { font-style: normal; color: var(--c); }
+.verdict .why { color: var(--t2); margin-top: 2px; user-select: text; }
+.verdict .meta { color: var(--t3); font-size: 11.5px; margin-top: 6px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sev-summary { display: flex; gap: 5px; margin-top: 12px; padding-top: 12px; border-top: .5px solid var(--hair); }
+
+.finding-group { font-size: 11px; font-weight: 600; color: var(--t3); margin: 18px 2px 8px; display: flex; align-items: center; gap: 6px; }
+.finding {
+  display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px; padding: 14px 16px 14px 14px; border-radius: 13px;
+  background: var(--elev); box-shadow: var(--shadow-card); margin-bottom: 8px; transition: opacity .2s, box-shadow .15s, transform .15s;
+}
+.finding.off { opacity: .48; }
+.finding.focus { box-shadow: 0 0 0 1.5px var(--accent), 0 6px 24px color-mix(in oklab, var(--accent) 12%, transparent); }
+.finding .top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.finding .f-title { font-weight: 600; font-size: 13.5px; letter-spacing: -.005em; }
+.finding .f-loc { font: 11.5px var(--mono); color: var(--t3); margin-left: auto; }
+.finding .f-body { color: var(--t2); margin-top: 5px; line-height: 1.55; user-select: text; }
+.finding .f-body code { color: var(--t1); background: var(--field); padding: 0 4px; border-radius: 4px; }
+.finding .f-actions { display: flex; gap: 2px; margin-top: 8px; margin-left: -7px; }
+.finding .f-actions .tb-btn { height: 24px; font-size: 12px; }
+.finding .status-chip { margin-left: auto; }
+.finding.addressed .f-title { text-decoration: line-through; text-decoration-color: var(--t4); color: var(--t2); }
+
+.check {
+  width: 18px; height: 18px; border-radius: 5px; margin-top: 1px; display: grid; place-items: center;
+  box-shadow: inset 0 0 0 1px var(--hair2); background: var(--field); transition: background .12s, box-shadow .12s;
+}
+.check.on { background: var(--accent); box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .15), 0 1px 2px rgba(0, 0, 0, .2); color: #fff; }
+.check .i { opacity: 0; transform: scale(.6); transition: .15s var(--spring); }
+.check.on .i { opacity: 1; transform: none; }
+
+.diff { font: 12px/1.65 var(--mono); border-radius: 9px; overflow: hidden; background: var(--content); box-shadow: 0 0 0 .5px var(--hair2); margin-top: 10px; user-select: text; }
+.diff .hd { padding: 5px 12px; font-size: 11px; color: var(--t3); border-bottom: .5px solid var(--hair); display: flex; gap: 8px; font-family: var(--font); }
+.diff .l { padding: 0 12px; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.diff .l::before { display: inline-block; width: 14px; color: var(--t4); content: " "; }
+.diff .add { background: color-mix(in oklab, var(--green) 12%, transparent); }
+.diff .add::before { content: "+"; color: var(--green); }
+.diff .del { background: color-mix(in oklab, var(--red) 11%, transparent); }
+.diff .del::before { content: "−"; color: var(--red); }
+
+/* Agent run */
+.run { padding: 0; overflow: hidden; }
+.run-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.run-head .what { font-weight: 600; font-size: 14px; }
+.run-head .sub { color: var(--t3); font-size: 12px; margin-top: 1px; }
+.run-head .clock { margin-left: auto; font: 500 13px var(--mono); color: var(--t2); font-variant-numeric: tabular-nums; }
+.steps { padding: 2px 16px 12px 16px; display: grid; gap: 7px; }
+.step { display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: center; color: var(--t3); }
+.step.done { color: var(--t2); }
+.step.now { color: var(--t1); font-weight: 500; }
+.step .d { width: 18px; height: 18px; display: grid; place-items: center; }
+.log { border-top: .5px solid var(--hair); background: color-mix(in oklab, var(--content) 60%, transparent); padding: 10px 16px 12px; font: 11.5px/1.7 var(--mono); color: var(--t3); height: 132px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; -webkit-mask-image: linear-gradient(transparent, #000 40%); mask-image: linear-gradient(transparent, #000 40%); }
+.log .ln { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: lnIn .3s var(--ease); }
+.log .ln.status { color: var(--t1); }
+.log .ln.ok { color: var(--green); }
+.log .ln.err { color: var(--red); }
+@keyframes lnIn { from { opacity: 0; transform: translateY(4px); } }
+.shimmer {
+  background: linear-gradient(90deg, var(--t3) 0%, var(--t3) 35%, var(--t1) 50%, var(--t3) 65%, var(--t3) 100%);
+  background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shimmer 2.2s linear infinite;
+}
+@keyframes shimmer { from { background-position: 125% 0; } to { background-position: -125% 0; } }
+.spin { animation: spin .9s linear infinite; transform-origin: 50% 50%; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+.callout { display: grid; grid-template-columns: 36px 1fr auto; gap: 14px; align-items: center; }
+.callout .ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: var(--c); background: color-mix(in oklab, var(--c) 15%, transparent); }
+.callout .what { font-weight: 600; font-size: 14px; }
+.callout .why { color: var(--t2); margin-top: 2px; user-select: text; }
+
+.btn {
+  height: 30px; padding: 0 13px; border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; font-weight: 500;
+  background: var(--elev2); box-shadow: 0 0 0 .5px var(--hair2), 0 1px 1px rgba(0, 0, 0, .08); white-space: nowrap;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:active { filter: brightness(.95); transform: translateY(.5px); }
+.btn.primary { background: var(--accent); color: #fff; box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .25), 0 1px 2px rgba(0, 0, 0, .25); }
+
+/* Composer */
+.composer-wrap { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 32px 20px; pointer-events: none; background: linear-gradient(transparent, var(--content) 46%); }
+.composer {
+  pointer-events: auto; max-width: 720px; margin: 0 auto; background: var(--elev); border-radius: 20px;
+  box-shadow: 0 0 0 .5px var(--hair2), 0 10px 40px rgba(0, 0, 0, .22), 0 2px 6px rgba(0, 0, 0, .08);
+  padding: 13px 10px 9px 16px; transition: box-shadow .2s; container-type: inline-size;
+}
+.composer:focus-within { box-shadow: 0 0 0 .5px var(--hair2), 0 0 0 4px color-mix(in oklab, var(--accent) 16%, transparent), 0 10px 40px rgba(0, 0, 0, .22); }
+.composer textarea {
+  width: 100%; background: none; border: 0; outline: 0; resize: none; color: var(--t1);
+  font: 14px/1.5 var(--font); min-height: 44px; max-height: 160px; padding-right: 6px; user-select: text;
+}
+.composer textarea::placeholder { color: var(--t3); }
+.composer textarea:disabled { opacity: .9; }
+.composer .bar { display: flex; align-items: center; gap: 2px; margin-top: 4px; margin-left: -6px; min-width: 0; }
+.composer .bar > .send, .composer .bar > .vsep { flex-shrink: 0; }
+.composer .bar .pill { min-width: 0; overflow: hidden; }
+@container (max-width: 660px) { .composer .opt { display: none; } }
+@container (max-width: 560px) { .composer .opt2 { display: none; } .send.wide kbd { display: none; } }
+.pill { height: 28px; padding: 0 9px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; color: var(--t2); font-size: 12.5px; white-space: nowrap; transition: background .1s, color .1s; }
+.pill:hover { background: var(--hover); color: var(--t1); }
+.pill .i.chev { opacity: .5; }
+.pill .swatch { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px color-mix(in oklab, var(--c) 22%, transparent); }
+.vsep { width: 1px; height: 14px; background: var(--hair2); margin: 0 3px; }
+.send {
+  margin-left: auto; height: 32px; min-width: 32px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--accent); color: #fff; font-weight: 600; box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .3), 0 2px 8px color-mix(in oklab, var(--accent) 40%, transparent);
+  transition: transform .12s var(--spring), filter .12s;
+}
+.send.wide { padding: 0 8px 0 14px; }
+.send.wide kbd { color: rgba(255, 255, 255, .75); background: rgba(255, 255, 255, .16); padding: 1px 5px; border-radius: 5px; }
+.send:hover { filter: brightness(1.08); }
+.send:active { transform: scale(.96); }
+.send.stop { background: var(--elev2); color: var(--t1); box-shadow: 0 0 0 .5px var(--hair2); }
+.send:disabled { opacity: .45; }
+.composer-hint { max-width: 720px; margin: 8px auto 0; display: flex; justify-content: center; gap: 14px; color: var(--t3); font-size: 11px; pointer-events: auto; }
+.composer-hint span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* Hero */
+.hero { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 48px 80px; }
+.hero .mark {
+  width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; margin-bottom: 22px;
+  background: linear-gradient(160deg, #ffb057, #ff6a3d 55%, #e2433b); color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 12px 30px rgba(255, 106, 61, .35);
+}
+.hero h2 { font-size: 26px; font-weight: 600; letter-spacing: -.025em; text-align: center; }
+.hero h2 u { text-decoration: underline dotted var(--t3); text-underline-offset: 5px; text-decoration-thickness: 1.5px; }
+.hero p { color: var(--t3); margin-top: 6px; text-align: center; }
+.hero .composer { width: 100%; max-width: 680px; margin-top: 28px; }
+.suggestions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; justify-content: center; max-width: 720px; }
+.suggestion { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 11px; background: var(--field); color: var(--t2); font-size: 12.5px; transition: background .12s, color .12s, transform .12s; }
+.suggestion:hover { background: var(--press); color: var(--t1); transform: translateY(-1px); }
+.suggestion .i { color: var(--accent); }
+
+/* Inspector */
+.inspector { background: var(--list); border-left: .5px solid var(--hair); display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.inspector .toolbar { padding: 0 12px; }
+.seg { display: flex; padding: 2px; border-radius: 8px; background: var(--field); gap: 2px; width: 100%; }
+.seg button { flex: 1; height: 24px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--t2); white-space: nowrap; }
+.seg button.on { background: var(--elev2); color: var(--t1); box-shadow: 0 0 0 .5px var(--hair2), 0 1px 3px rgba(0, 0, 0, .18); }
+html[data-theme="light"] .seg button.on { background: #fff; }
+.insp-body { flex: 1; overflow: auto; padding: 14px 14px 30px; min-width: 312px; }
+.tl { display: grid; gap: 0; }
+.tl-item { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding-bottom: 16px; position: relative; }
+.tl-item::before { content: ""; position: absolute; left: 10.5px; top: 22px; bottom: 2px; width: 1px; background: var(--hair2); }
+.tl-item:last-child::before { display: none; }
+.tl-dot { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--field); color: var(--c, var(--t2)); }
+.tl-item .what { font-size: 12.5px; color: var(--t1); line-height: 1.4; padding-top: 2px; }
+.tl-item .when { font-size: 11.5px; color: var(--t3); margin-top: 1px; }
+.file-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 7px; font-size: 12px; }
+.file-row:hover { background: var(--hover); }
+.file-row .p { font-family: var(--mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+.file-row .i { color: var(--t3); }
+.bars { display: inline-flex; gap: 1.5px; margin-left: 6px; vertical-align: middle; }
+.bars i { width: 6px; height: 6px; border-radius: 1.5px; background: var(--t4); }
+.bars i.a { background: var(--green); }
+.bars i.d { background: var(--red); }
+.file-line { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 7px 10px; border-radius: 8px; }
+.file-line:hover { background: var(--hover); }
+.file-line .i { color: var(--t3); }
+.file-line .fp { display: flex; gap: 8px; align-items: baseline; min-width: 0; white-space: nowrap; overflow: hidden; }
+.file-line .fp b { font: 500 12.5px var(--mono); color: var(--t1); }
+.file-line .fp span { font: 11.5px var(--mono); color: var(--t3); overflow: hidden; text-overflow: ellipsis; }
+.file-line .bars { margin-left: 0; }
+.full-log { font: 11.5px/1.75 var(--mono); color: var(--t3); user-select: text; }
+.full-log .ln.status { color: var(--t1); }
+.full-log .ln.ok { color: var(--green); }
+.full-log .ln.err { color: var(--red); }
+.full-log .ln { white-space: pre-wrap; word-break: break-all; }
+
+/* Menus / popovers */
+.menu {
+  position: fixed; z-index: 60; min-width: 220px; padding: 5px; border-radius: 11px; background: var(--glass);
+  backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%);
+  box-shadow: var(--shadow-pop); animation: pop .14s var(--ease); transform-origin: var(--origin, top left);
+}
+@keyframes pop { from { opacity: 0; transform: scale(.96); } }
+.menu .mi { display: flex; align-items: center; gap: 9px; width: 100%; height: 26px; padding: 0 9px 0 7px; border-radius: 6px; text-align: left; color: var(--t1); white-space: nowrap; }
+.menu .mi .tick { width: 14px; color: var(--t1); }
+.menu .mi .k { margin-left: auto; padding-left: 16px; color: var(--t3); font-size: 12px; }
+.menu .mi .sub { color: var(--t3); font-size: 11.5px; }
+.menu .mi:hover, .menu .mi.hl { background: var(--accent); color: #fff; }
+.menu .mi:hover .k, .menu .mi:hover .sub, .menu .mi:hover .tick { color: rgba(255, 255, 255, .8); }
+.menu .ms { height: 1px; background: var(--hair2); margin: 5px 8px; }
+.menu .mh { font-size: 11px; font-weight: 600; color: var(--t3); padding: 6px 9px 3px; }
+
+/* Palette */
+.scrim { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, .18); animation: fade .15s; }
+@keyframes fade { from { opacity: 0; } }
+.palette {
+  position: fixed; z-index: 55; top: 15%; left: 50%; transform: translateX(-50%); width: min(640px, 90vw);
+  background: var(--glass); backdrop-filter: blur(50px) saturate(190%); -webkit-backdrop-filter: blur(50px) saturate(190%);
+  border-radius: 16px; box-shadow: var(--shadow-pop), 0 40px 100px rgba(0, 0, 0, .35); overflow: hidden; animation: palIn .18s var(--ease);
+}
+@keyframes palIn { from { opacity: 0; transform: translateX(-50%) scale(.97) translateY(-6px); } }
+.palette .q { display: flex; align-items: center; gap: 12px; padding: 0 18px; height: 56px; border-bottom: .5px solid var(--hair2); }
+.palette .q .i { color: var(--t3); }
+.palette input { flex: 1; background: none; border: 0; outline: 0; font: 400 19px var(--font); color: var(--t1); letter-spacing: -.01em; }
+.palette input::placeholder { color: var(--t3); }
+.palette .res { max-height: 380px; overflow: auto; padding: 6px; }
+.palette .grp { font-size: 11px; font-weight: 600; color: var(--t3); padding: 8px 12px 4px; }
+.palette .it { display: flex; align-items: center; gap: 11px; width: 100%; height: 38px; padding: 0 12px; border-radius: 9px; text-align: left; }
+.palette .it .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palette .it .s { color: var(--t3); font-size: 12px; white-space: nowrap; }
+.palette .it.hl { background: var(--sel-list); }
+.palette .it .ic { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--field); color: var(--t2); }
+.palette .foot { display: flex; gap: 16px; padding: 8px 16px; border-top: .5px solid var(--hair2); color: var(--t3); font-size: 11px; }
+
+/* Settings sheet */
+.sheet {
+  position: fixed; z-index: 55; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(680px, 92vw); height: min(560px, 86vh);
+  background: var(--list); border-radius: 12px; box-shadow: var(--shadow-win); display: flex; flex-direction: column; overflow: hidden;
+  animation: sheetIn .24s var(--spring);
+}
+@keyframes sheetIn { from { opacity: 0; transform: translate(-50%, -48%) scale(.97); } }
+.sheet-bar { display: flex; flex-direction: column; align-items: center; padding: 10px 14px 8px; border-bottom: .5px solid var(--hair); background: var(--sidebar); position: relative; }
+.sheet-bar .lights { position: absolute; left: 14px; top: 14px; }
+.sheet-bar .ttl { font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+.sheet-tabs { display: flex; gap: 2px; }
+.sheet-tab { width: 76px; padding: 6px 0 5px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: var(--t2); }
+.sheet-tab:hover { background: var(--hover); }
+.sheet-tab.on { background: var(--sel-side); color: var(--accent-text); }
+.sheet-body { flex: 1; overflow: auto; padding: 22px 28px 28px; }
+.group-label { font-size: 11.5px; font-weight: 600; color: var(--t3); margin: 18px 4px 6px; }
+.group-label:first-child { margin-top: 0; }
+.group { background: var(--elev); border-radius: 11px; box-shadow: var(--shadow-card); }
+.grow { display: flex; align-items: center; gap: 12px; padding: 10px 14px; min-height: 44px; }
+.grow + .grow { border-top: .5px solid var(--hair); }
+.grow .l { flex: 1; min-width: 0; }
+.grow .l small { display: block; color: var(--t3); font-size: 11.5px; margin-top: 1px; }
+.switch { width: 32px; height: 19px; border-radius: 10px; background: var(--press); position: relative; transition: background .2s; flex-shrink: 0; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .22s var(--spring); }
+.switch.on { background: var(--green); }
+.switch.on::after { transform: translateX(13px); }
+.appearance { display: flex; gap: 14px; }
+.ap { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11.5px; color: var(--t2); }
+.ap .thumb { width: 66px; height: 44px; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 .5px var(--hair2); display: grid; grid-template-columns: 20px 1fr; }
+.ap.on .thumb { box-shadow: 0 0 0 2.5px var(--accent); }
+.ap.on { color: var(--t1); font-weight: 600; }
+.accents { display: flex; gap: 8px; }
+.accents button { width: 18px; height: 18px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .2); position: relative; }
+.accents button.on::after { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: #fff; }
+.select-btn { height: 26px; padding: 0 8px 0 10px; border-radius: 7px; background: var(--elev2); box-shadow: 0 0 0 .5px var(--hair2), 0 1px 1px rgba(0, 0, 0, .06); display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; }
+html[data-theme="light"] .select-btn { background: #fff; }
+.agent-row .agent-badge { width: 30px; height: 30px; border-radius: 8px; }
+.ok-pill { font-size: 11.5px; color: var(--green); display: inline-flex; align-items: center; gap: 5px; }
+.ok-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.ok-pill.off { color: var(--t3); }
+
+/* Notification */
+.notif-stack { position: fixed; top: 14px; right: 14px; z-index: 70; display: grid; gap: 8px; width: 356px; }
+.notif {
+  display: grid; grid-template-columns: 38px 1fr; gap: 11px; padding: 12px 14px 12px 12px; border-radius: 16px;
+  background: var(--glass); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%);
+  box-shadow: var(--shadow-pop); animation: notifIn .45s var(--spring);
+}
+.notif.out { animation: notifOut .3s var(--ease) forwards; }
+@keyframes notifIn { from { opacity: 0; transform: translateX(30px); } }
+@keyframes notifOut { to { opacity: 0; transform: translateX(30px); } }
+.notif .app { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(160deg, #ffb057, #ff6a3d 55%, #e2433b); color: #fff; }
+.notif .h { display: flex; gap: 8px; align-items: baseline; }
+.notif .h b { font-weight: 600; font-size: 13px; }
+.notif .h span { margin-left: auto; font-size: 11px; color: var(--t3); }
+.notif p { color: var(--t2); font-size: 12.5px; margin-top: 1px; line-height: 1.4; }
+
+.avatar { border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-weight: 600; flex-shrink: 0; box-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .15); }
+
+@media (max-width: 1180px) { .window { --lw: 300px; --sb: 214px; } .page { padding-left: 32px; padding-right: 32px; } }
+@media (max-width: 980px) { .window { --sb: 0px; } .window .floating-lights { opacity: 1; } .window .list .toolbar { padding-left: 84px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="desktop">
+  <div class="window" id="window">
+    <div class="lights floating-lights"><i></i><i></i><i></i></div>
+    <aside class="sidebar" id="sidebar"></aside>
+    <section class="list" id="list"></section>
+    <main class="detail" id="detail"></main>
+    <aside class="inspector" id="inspector"></aside>
+  </div>
+</div>
+<div id="overlay"></div>
+<div class="notif-stack" id="notifs"></div>
+
+<script>
+/* ───────────────────────── Icons ───────────────────────── */
+const PATHS = {
+  inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  sparkles: '<path d="M12 3.5 13.8 9a1.5 1.5 0 0 0 1 1l5.5 1.8-5.5 1.8a1.5 1.5 0 0 0-1 1L12 20.5l-1.8-5.5a1.5 1.5 0 0 0-1-1L3.7 12.2l5.5-1.8a1.5 1.5 0 0 0 1-1z"/><path d="M19 3v4M21 5h-4"/>',
+  hourglass: '<path d="M6 2.5h12M6 21.5h12"/><path d="M17 2.5v3.2a5 5 0 0 1-2 4L12 12l-3-2.3a5 5 0 0 1-2-4V2.5"/><path d="M7 21.5v-3.2a5 5 0 0 1 2-4L12 12l3 2.3a5 5 0 0 1 2 4v3.2"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
+  checkCircle: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>',
+  sidebar: '<rect x="3" y="4" width="18" height="16" rx="3.5"/><path d="M9.5 4v16"/>',
+  inspector: '<rect x="3" y="4" width="18" height="16" rx="3.5"/><path d="M14.5 4v16"/>',
+  compose: '<path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L12 14.8 8.5 15.5l.7-3.5z"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  refresh: '<path d="M20.5 12a8.5 8.5 0 1 1-2.5-6l2.5 2.5"/><path d="M20.5 3.5v5h-5"/>',
+  external: '<path d="M14 4h6v6"/><path d="M10 14 20 4"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>',
+  more: '<circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/>',
+  chevDown: '<path d="m7 10 5 5 5-5"/>',
+  chevRight: '<path d="m10 7 5 5-5 5"/>',
+  arrowUp: '<path d="M12 19V5"/><path d="m5.5 11.5 6.5-6.5 6.5 6.5"/>',
+  branch: '<circle cx="6" cy="5.5" r="2.2"/><circle cx="6" cy="18.5" r="2.2"/><circle cx="18" cy="7.5" r="2.2"/><path d="M6 7.7v8.6"/><path d="M18 9.7c0 4.3-5 3.8-10.3 7.4"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+  files: '<path d="M15 2H9a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V7z"/><path d="M15 2v5h5"/><path d="M4 7v13a2 2 0 0 0 2 2h9"/>',
+  filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
+  warn: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4.5M12 17.2v.1"/>',
+  stop: '<rect x="7" y="7" width="10" height="10" rx="2.2" fill="currentColor" stroke="none"/>',
+  archive: '<rect x="3" y="4" width="18" height="4.5" rx="1.2"/><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5M10 12.5h4"/>',
+  activity: '<path d="M22 12h-4l-3 8L9 4l-3 8H2"/>',
+  layers: '<path d="m12 3 9 4.5-9 4.5-9-4.5z"/><path d="m3 16.5 9 4.5 9-4.5"/><path d="m3 12 9 4.5 9-4.5"/>',
+  bolt: '<path d="M13 2.5 4 13.5h7.5L10.5 21.5l9.5-11.5h-7.5z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
+  moon: '<path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  link: '<path d="M10 13.5a4.5 4.5 0 0 0 6.4.4l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.6 1.6"/><path d="M14 10.5a4.5 4.5 0 0 0-6.4-.4l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6"/>',
+  shield: '<path d="M12 21.5s8-3.5 8-10V5l-8-3-8 3v6.5c0 6.5 8 10 8 10z"/>',
+  gauge: '<path d="M12 14.5 16 9"/><path d="M3.5 18a9.5 9.5 0 1 1 17 0"/>',
+  plug: '<path d="M9 2v5M15 2v5"/><path d="M6 7h12v4a6 6 0 0 1-12 0z"/><path d="M12 17v5"/>',
+  db: '<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  keyboard: '<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8"/>',
+  folder: '<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.2h7.5A2.5 2.5 0 0 1 21 9.7v7.8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/>',
+  github: '<path d="M12 2.5a9.5 9.5 0 0 0-3 18.5c.5.1.7-.2.7-.5v-1.7c-2.6.6-3.2-1.2-3.2-1.2-.4-1.1-1-1.4-1-1.4-.9-.6.1-.6.1-.6.9.1 1.4 1 1.4 1 .8 1.4 2.2 1 2.7.8.1-.6.3-1 .6-1.2-2.1-.2-4.3-1-4.3-4.7 0-1 .4-1.9 1-2.6-.1-.2-.4-1.2.1-2.6 0 0 .8-.3 2.6 1a9 9 0 0 1 4.8 0c1.8-1.2 2.6-1 2.6-1 .5 1.4.2 2.4.1 2.6.6.7 1 1.6 1 2.6 0 3.7-2.2 4.5-4.3 4.7.3.3.6.9.6 1.8v2.6c0 .3.2.6.7.5A9.5 9.5 0 0 0 12 2.5z"/>',
+  flame: '<path d="M12 21.5c-3.9 0-7-2.8-7-6.6 0-2.6 1.3-4.4 2.7-5.8.4 1.6 1.3 2.6 2.4 3-.3-3.8 1.3-7 4.4-9.6-.2 2.7.9 4.6 2.5 6.3C18.6 10.5 19 12.6 19 14.9c0 3.8-3.1 6.6-7 6.6z"/><path d="M12 21.5c-1.8 0-3-1.2-3-2.9 0-1.5 1-2.6 2.2-3.6.1 1 .6 1.6 1.3 1.8.1-1.3.7-2.3 1.6-3 .4 1.3 1.9 2.4 1.9 4.6 0 1.8-1.4 3.1-4 3.1z"/>',
+  anvil: '<path d="M7 10h13.5c0 2.4-2.2 4-5 4.4V16l1.8 1.5V20H6.7v-2.5L8.5 16v-1.4C6 14.2 4 12.6 3.5 10.5"/><path d="M3.5 10.5H7"/><path d="M12 8.5c-1.8-.6-2.5-2.2-1.6-3.8.5 1 1.2 1.2 1.6 1.2-.2-1.6.6-3.2 2.2-3.9-.3 1.4.4 2.5 1.2 3.2.8.7 1 2.3-.2 3.3"/>',
+  command: '<path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z"/>',
+  returnKey: '<path d="M20 5v7a3 3 0 0 1-3 3H5"/><path d="m9 11-4 4 4 4"/>',
+  eye: '<path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/>',
+  wand: '<path d="m15 4 5 5L8.5 20.5l-5-5z"/><path d="m12.5 6.5 5 5"/>',
+  message: '<path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/>',
+}
+
+function icon(name, size = 16, cls = '', stroke = 1.7) {
+  return `<svg class="i ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">${PATHS[name]}</svg>`
+}
+
+const AGENT_SVGS = {
+  claude: (s) => `<svg class="i" width="${s}" height="${s}" viewBox="0 0 100 100" fill="#D97757">${Array.from({ length: 12 }, (_, k) => `<path d="M50 6 L54 42 L50 50 L46 42 Z" transform="rotate(${k * 30} 50 50)"/>`).join('')}<circle cx="50" cy="50" r="11"/></svg>`,
+  codex: (s) => `<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor"><path d="M22.28 9.82a5.98 5.98 0 0 0-.52-4.91 6.05 6.05 0 0 0-6.51-2.9A6.07 6.07 0 0 0 4.98 4.18a5.98 5.98 0 0 0-4 2.9 6.05 6.05 0 0 0 .74 7.1 5.98 5.98 0 0 0 .51 4.91 6.05 6.05 0 0 0 6.52 2.9A5.98 5.98 0 0 0 13.26 24a6.06 6.06 0 0 0 5.77-4.21 5.99 5.99 0 0 0 4-2.9 6.06 6.06 0 0 0-.75-7.07zM13.26 22.43a4.48 4.48 0 0 1-2.88-1.04l.14-.08 4.78-2.76a.8.8 0 0 0 .39-.68v-6.74l2.02 1.17a.07.07 0 0 1 .04.05v5.58a4.5 4.5 0 0 1-4.49 4.5zM3.6 18.3a4.47 4.47 0 0 1-.54-3.01l.14.08 4.78 2.76a.77.77 0 0 0 .78 0l5.84-3.37v2.33a.08.08 0 0 1-.03.06l-4.83 2.79a4.5 4.5 0 0 1-6.14-1.65zM2.34 7.9A4.49 4.49 0 0 1 4.7 5.92v5.68a.77.77 0 0 0 .39.68l5.81 3.35-2.02 1.17a.08.08 0 0 1-.07 0L4 14.02A4.5 4.5 0 0 1 2.34 7.87zm16.6 3.86-5.84-3.39 2.02-1.16a.08.08 0 0 1 .07 0l4.83 2.79a4.49 4.49 0 0 1-.68 8.1v-5.67a.79.79 0 0 0-.4-.67zm2-3.02-.14-.09-4.77-2.78a.78.78 0 0 0-.79 0L9.4 9.23V6.9a.07.07 0 0 1 .03-.06l4.83-2.79a4.5 4.5 0 0 1 6.68 4.66zM8.3 12.86 6.28 11.7a.08.08 0 0 1-.04-.06V6.08a4.5 4.5 0 0 1 7.38-3.45l-.14.08L8.7 5.46a.8.8 0 0 0-.39.68zm1.1-2.37 2.6-1.5 2.61 1.5v3l-2.6 1.5-2.6-1.5z"/></svg>`,
+  opencode: (s) => `<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h7v14H3V5zm2 2v10h3V7H5zm11-2h5v2h-5v4h3v2h-3v4h5v2h-7V5h2z"/></svg>`,
+}
+const agentIcon = (id, s = 16) => AGENT_SVGS[id](s)
+
+/* ───────────────────────── Data ───────────────────────── */
+const ME = 'izaias'
+const NOW = Date.now()
+const H = 3600e3
+
+const REPOS = [
+  { slug: 'acme/api', name: 'api', color: '#ff7a3d' },
+  { slug: 'acme/web', name: 'web', color: '#64d2ff' },
+  { slug: 'acme/infra', name: 'infra', color: '#30d158' },
+]
+const AGENTS = {
+  claude: { label: 'Claude', model: 'Opus 5.5', ok: true },
+  codex: { label: 'Codex', model: 'gpt-5.5', ok: true },
+  opencode: { label: 'OpenCode', model: 'Sonnet 5.5', ok: false },
+}
+const DEPTHS = {
+  quick: { label: 'Quick pass', sub: 'Skims for blockers · ~1 min', icon: 'bolt' },
+  standard: { label: 'Standard', sub: 'Full review · ~3 min', icon: 'eye' },
+  swarm: { label: 'Swarm', sub: '3 specialist agents · ~6 min', icon: 'layers' },
+}
+const LENSES = {
+  general: { label: 'General', icon: 'sparkles' },
+  security: { label: 'Security', icon: 'shield' },
+  performance: { label: 'Performance', icon: 'gauge' },
+  api: { label: 'API contract', icon: 'plug' },
+  migrations: { label: 'Migrations', icon: 'db' },
+}
+const EVENTS = {
+  COMMENT: { label: 'Comment', color: 'var(--blue)', icon: 'message' },
+  APPROVE: { label: 'Approve', color: 'var(--green)', icon: 'checkCircle' },
+  REQUEST_CHANGES: { label: 'Request changes', color: 'var(--orange)', icon: 'warn' },
+}
+const SEV = {
+  critical: { label: 'Critical', color: 'var(--red)' },
+  major: { label: 'Major', color: 'var(--orange)' },
+  minor: { label: 'Minor', color: 'var(--blue)' },
+  nit: { label: 'Nit', color: 'var(--gray)' },
+}
+const STATES = {
+  needs_review: { label: 'Needs review', color: 'var(--t2)' },
+  queued: { label: 'Queued', color: 'var(--t2)' },
+  reviewing: { label: 'Reviewing', color: 'var(--accent)' },
+  ready: { label: 'Ready to send', color: 'var(--accent)' },
+  failed: { label: 'Review failed', color: 'var(--red)' },
+  waiting: { label: 'Waiting on author', color: 'var(--purple)' },
+  settled: { label: 'Settled', color: 'var(--green)' },
+  authored: { label: 'Your pull request', color: 'var(--blue)' },
+}
+
+const files = (list) => list.map(([path, a, d]) => ({ path, a, d }))
+
+const PRS = [
+  {
+    id: 1, repo: 'acme/api', num: 482, title: 'Add idempotency keys to payment webhooks', author: 'mara',
+    head: 'mara/idempotent-webhooks', base: 'main', add: 342, del: 58, commits: 4, updated: NOW - 50 * H,
+    requested: true, checks: 'pass', state: 'ready', agent: 'claude', depth: 'standard', lens: 'general',
+    run: { duration: '2m 14s', iteration: 1, at: NOW - 1.2 * H },
+    event: 'REQUEST_CHANGES',
+    draft: 'Nice direction on making webhooks idempotent. One blocking race in the processor and a missing unique index — details inline. The rest are small.',
+    brief: {
+      changes: [
+        'Adds an <code>idempotency_key</code> column and model-level uniqueness to <code>WebhookEvent</code>',
+        'Processor short-circuits events that were already processed',
+        'Controller reads the <code>Idempotency-Key</code> header and falls back to the Stripe event id',
+        'Adds 14 specs covering retries and replays',
+      ],
+      risks: ['Concurrent retries', 'Migration on 38M-row table', 'Replay behavior change'],
+    },
+    findings: [
+      { id: 11, sev: 'critical', on: true, title: 'Idempotency check races with concurrent deliveries', file: 'app/services/webhooks/processor.rb', line: 48,
+        body: '<code>find_or_create_by</code> isn\'t atomic. Two Stripe retries landing ~50ms apart both miss the lookup and both enqueue <code>ChargeCaptureJob</code> — the exact double charge this PR is meant to prevent.',
+        fix: [['del', 'event = WebhookEvent.find_or_create_by(idempotency_key: key)'], ['del', 'return if event.processed?'], ['add', 'event = WebhookEvent.create_or_find_by!(idempotency_key: key)'], ['add', 'return unless event.claim!(worker: job_id)']] },
+      { id: 12, sev: 'major', on: true, title: 'Unique index missing on idempotency_key', file: 'db/migrate/20261004_add_idempotency_key.rb', line: 6,
+        body: 'The model validates uniqueness but the migration only adds a plain index. <code>create_or_find_by!</code> relies on the database constraint to be safe.',
+        fix: [['del', 'add_index :webhook_events, :idempotency_key'], ['add', 'add_index :webhook_events, :idempotency_key, unique: true, algorithm: :concurrently']] },
+      { id: 13, sev: 'major', on: true, title: 'Keys never expire', file: 'app/models/webhook_event.rb', line: 12,
+        body: 'Stripe stops retrying after 3 days. Keeping every key forever grows the table by ~4M rows a month. Add a TTL and a pruning job.' },
+      { id: 14, sev: 'minor', on: true, title: 'Header lookup differs between app and specs', file: 'app/controllers/webhooks_controller.rb', line: 21,
+        body: 'Specs set <code>HTTP_IDEMPOTENCY_KEY</code> while the controller reads <code>Idempotency-Key</code>. Works under Rack today, but normalize it once so a middleware change can\'t break it.' },
+      { id: 15, sev: 'nit', on: false, title: 'Spec name doesn\'t match what it asserts', file: 'spec/services/webhooks/processor_spec.rb', line: 88,
+        body: '<code>it "ignores duplicates"</code> actually asserts the job is enqueued exactly once. Rename it so the guarantee is explicit.' },
+    ],
+    fileList: files([['app/services/webhooks/processor.rb', 96, 22], ['app/models/webhook_event.rb', 41, 3], ['app/controllers/webhooks_controller.rb', 18, 9], ['db/migrate/20261004_add_idempotency_key.rb', 12, 0], ['db/schema.rb', 6, 1], ['spec/services/webhooks/processor_spec.rb', 121, 14], ['spec/requests/webhooks_spec.rb', 38, 4], ['config/initializers/stripe.rb', 4, 2], ['app/jobs/charge_capture_job.rb', 6, 3]]),
+  },
+  {
+    id: 2, repo: 'acme/api', num: 479, title: 'Migrate invoice amounts to a decimal money type', author: 'theo',
+    head: 'theo/decimal-money', base: 'main', add: 1204, del: 611, commits: 11, updated: NOW - 26 * H,
+    requested: true, checks: 'pass', state: 'reviewing', agent: 'claude', depth: 'swarm', lens: 'general',
+    startedAt: NOW - 31e3,
+    brief: {
+      changes: [
+        'Replaces float amount columns with <code>decimal(19,4)</code> across invoices, line items and credits',
+        'Introduces a <code>Money</code> value object and a <code>money_attribute</code> macro',
+        'Backfills existing rows in batches of 10k',
+      ],
+      risks: ['Long-running migration', 'Tax rounding', 'Public API serialization'],
+    },
+    script: [
+      ['status', 'Preparing worktree ~/.ordem/worktrees/api-479'],
+      ['ok', 'Checked out theo/decimal-money @ 9f2c1ab'],
+      ['status', 'Reading diff · 23 files, +1,204 −611'],
+      ['out', 'app/models/concerns/money_attribute.rb'],
+      ['out', 'app/models/invoice.rb'],
+      ['out', 'db/migrate/20261003_convert_amounts_to_decimal.rb'],
+      ['status', 'Swarm · spawned 3 reviewers (correctness, data, api)'],
+      ['out', '[data] Checking lock behavior on invoices (38M rows)'],
+      ['out', '[correctness] Tracing tax rounding through LineItem#total'],
+      ['out', '[api] Diffing serializer output before / after'],
+      ['out', '[data] change_column rewrites the table under ACCESS EXCLUSIVE'],
+      ['out', '[correctness] BigDecimal rounding matches Stripe (HALF_UP)'],
+      ['out', '[api] amount now serializes as "12.5000" instead of 12.5'],
+      ['status', 'Consolidating findings'],
+    ],
+    pendingFindings: [
+      { id: 21, sev: 'critical', on: true, title: 'Table rewrite under ACCESS EXCLUSIVE lock', file: 'db/migrate/20261003_convert_amounts_to_decimal.rb', line: 9,
+        body: '<code>change_column</code> from float to decimal rewrites <code>invoices</code> (38M rows) while holding an exclusive lock. Expect minutes of write downtime. Add a new column, dual-write, backfill, then swap.' },
+      { id: 22, sev: 'major', on: true, title: 'API now returns amounts as strings', file: 'app/serializers/invoice_serializer.rb', line: 14,
+        body: '<code>BigDecimal#as_json</code> emits <code>"12.5000"</code>. That is a breaking change for every API client that expects a number.',
+        fix: [['del', 'attribute :amount'], ['add', 'attribute(:amount) { |inv| inv.amount.to_f }']] },
+      { id: 23, sev: 'minor', on: true, title: 'money_attribute ignores nil currency', file: 'app/models/concerns/money_attribute.rb', line: 22,
+        body: 'When <code>currency</code> is nil the macro silently falls back to USD. Raise instead, or make the default explicit per model.' },
+    ],
+    fileList: files([['db/migrate/20261003_convert_amounts_to_decimal.rb', 88, 0], ['app/models/concerns/money_attribute.rb', 74, 0], ['app/models/invoice.rb', 31, 44], ['app/models/line_item.rb', 22, 38], ['app/serializers/invoice_serializer.rb', 9, 6]]),
+  },
+  {
+    id: 3, repo: 'acme/web', num: 1131, title: 'Command palette for the dashboard', author: 'june',
+    head: 'june/cmdk', base: 'main', add: 488, del: 120, commits: 7, updated: NOW - 6 * H,
+    requested: true, checks: 'pending', state: 'needs_review',
+    brief: {
+      changes: ['New <code>&lt;CommandPalette&gt;</code> built on cmdk with fuzzy search over routes and projects', 'Global <code>⌘K</code> shortcut registered in <code>AppShell</code>', 'Recent items persisted to localStorage'],
+      risks: ['Focus trapping', 'Shortcut conflicts', 'Bundle size (+38 kB)'],
+    },
+    fileList: files([['src/components/CommandPalette.tsx', 212, 0], ['src/components/AppShell.tsx', 34, 12], ['src/lib/shortcuts.ts', 61, 40], ['src/lib/recent.ts', 48, 0], ['package.json', 2, 0]]),
+  },
+  {
+    id: 4, repo: 'acme/api', num: 471, title: 'Rate limit /v1/exports per API key', author: 'dev',
+    head: 'dev/export-rate-limit', base: 'main', add: 96, del: 12, commits: 2, updated: NOW - 150 * H,
+    requested: false, checks: 'pass', state: 'needs_review',
+    brief: {
+      changes: ['Adds a Rack::Attack throttle keyed on API key for <code>/v1/exports</code>', 'Returns <code>429</code> with a <code>Retry-After</code> header', 'Documents the limit in the public API reference'],
+      risks: ['Shared keys across tenants'],
+    },
+    fileList: files([['config/initializers/rack_attack.rb', 38, 4], ['app/controllers/v1/exports_controller.rb', 12, 6], ['spec/requests/v1/exports_spec.rb', 40, 2], ['docs/api/exports.md', 6, 0]]),
+  },
+  {
+    id: 5, repo: 'acme/infra', num: 88, title: 'Bump Postgres to 17 and tune autovacuum', author: 'kai',
+    head: 'kai/pg17', base: 'main', add: 44, del: 19, commits: 3, updated: NOW - 74 * H,
+    requested: true, checks: 'fail', state: 'failed', agent: 'codex', depth: 'standard', lens: 'general',
+    failure: 'Couldn\'t check out kai/pg17 — the branch was force-pushed while Ordem was preparing the worktree. Retrying will fetch the new head.',
+    attempts: 2,
+    brief: {
+      changes: ['Bumps the RDS engine to Postgres 17.2', 'Lowers <code>autovacuum_vacuum_scale_factor</code> on hot tables', 'Adds a blue/green deployment step'],
+      risks: ['Extension compatibility', 'Planner regressions'],
+    },
+    fileList: files([['terraform/rds.tf', 22, 9], ['terraform/parameter_groups.tf', 18, 6], ['docs/runbooks/pg-upgrade.md', 4, 4]]),
+  },
+  {
+    id: 6, repo: 'acme/web', num: 1127, title: 'Fix hydration mismatch in DateRangePicker', author: 'lena',
+    head: 'lena/date-hydration', base: 'main', add: 31, del: 27, commits: 1, updated: NOW - 4 * H,
+    requested: false, checks: 'pass', state: 'queued', queuePos: 1, agent: 'claude', depth: 'quick', lens: 'general',
+    brief: { changes: ['Formats dates with an explicit timezone during SSR', 'Defers relative labels until after mount'], risks: ['Timezone edge cases'] },
+    fileList: files([['src/components/DateRangePicker.tsx', 24, 21], ['src/lib/dates.ts', 7, 6]]),
+  },
+  {
+    id: 13, repo: 'acme/infra', num: 91, title: 'Terraform: split staging VPC into public and private subnets', author: 'kai',
+    head: 'kai/staging-subnets', base: 'main', add: 312, del: 40, commits: 5, updated: NOW - 20 * H,
+    requested: true, checks: 'pass', state: 'needs_review',
+    brief: { changes: ['Splits the staging VPC into 3 public and 3 private subnets', 'Moves RDS and Redis into private subnets', 'Adds a NAT gateway per AZ'], risks: ['Downtime during move', 'NAT cost (+$96/mo)'] },
+    fileList: files([['terraform/staging/vpc.tf', 140, 22], ['terraform/staging/rds.tf', 18, 8], ['terraform/staging/redis.tf', 14, 6], ['terraform/staging/nat.tf', 60, 0]]),
+  },
+  {
+    id: 7, repo: 'acme/api', num: 468, title: 'Extract BillingAccount from Organization', author: 'mara',
+    head: 'mara/billing-account', base: 'main', add: 890, del: 402, commits: 14, updated: NOW - 3 * H,
+    requested: true, checks: 'pass', state: 'waiting', agent: 'claude', depth: 'standard', lens: 'general',
+    submitted: { event: 'REQUEST_CHANGES', at: NOW - 52 * H }, newCommits: 2,
+    run: { duration: '3m 02s', iteration: 1, at: NOW - 53 * H },
+    brief: { changes: ['Moves billing fields from <code>Organization</code> into a new <code>BillingAccount</code>', 'Adds a data migration and a compatibility delegate'], risks: ['Data migration', 'N+1 on dashboard'] },
+    findings: [
+      { id: 71, sev: 'major', on: true, status: 'addressed', title: 'N+1 when listing organizations', file: 'app/controllers/admin/organizations_controller.rb', line: 12, body: 'Each row now loads <code>billing_account</code>. Add <code>includes(:billing_account)</code>.' },
+      { id: 72, sev: 'major', on: true, status: 'pending', title: 'Data migration isn\'t reversible', file: 'db/migrate/20260930_create_billing_accounts.rb', line: 31, body: '<code>down</code> raises. Either make it reversible or mark it irreversible explicitly and document the rollback plan.' },
+      { id: 73, sev: 'minor', on: true, status: 'pending', title: 'Delegate hides nil billing accounts', file: 'app/models/organization.rb', line: 44, body: '<code>delegate ..., allow_nil: true</code> makes a missing account look like a free plan.' },
+    ],
+    fileList: files([['app/models/billing_account.rb', 120, 0], ['app/models/organization.rb', 40, 160], ['db/migrate/20260930_create_billing_accounts.rb', 88, 0]]),
+  },
+  {
+    id: 8, repo: 'acme/web', num: 1119, title: 'Dark mode tokens for charts', author: 'june',
+    head: 'june/chart-tokens', base: 'main', add: 210, del: 88, commits: 3, updated: NOW - 30 * H,
+    requested: false, checks: 'pass', state: 'waiting', agent: 'codex', depth: 'quick', lens: 'general',
+    submitted: { event: 'COMMENT', at: NOW - 28 * H }, newCommits: 0,
+    run: { duration: '58s', iteration: 1, at: NOW - 29 * H },
+    brief: { changes: ['Adds chart color tokens for both themes', 'Replaces hard-coded hex values in 6 chart components'], risks: ['Contrast in light mode'] },
+    findings: [
+      { id: 81, sev: 'minor', on: true, status: 'pending', title: 'Series 5 fails contrast in light mode', file: 'src/theme/charts.ts', line: 18, body: '<code>#f5d76e</code> on white is 1.6:1. Darken it or add a stroke.' },
+    ],
+    fileList: files([['src/theme/charts.ts', 96, 10], ['src/components/charts/LineChart.tsx', 22, 18]]),
+  },
+  {
+    id: 11, repo: 'acme/api', num: 486, title: 'Add OpenTelemetry spans to the job runner', author: 'izaias',
+    head: 'izaias/otel-jobs', base: 'main', add: 164, del: 21, commits: 3, updated: NOW - 9 * H,
+    requested: false, checks: 'pass', state: 'authored', reviewers: ['theo', 'mara'],
+    brief: { changes: ['Wraps job execution in OTel spans with queue and attempt attributes', 'Propagates trace context from the enqueuing request'], risks: ['Span cardinality'] },
+    fileList: files([['app/jobs/application_job.rb', 38, 4], ['config/initializers/opentelemetry.rb', 52, 0]]),
+  },
+  {
+    id: 12, repo: 'acme/web', num: 1135, title: 'Onboarding checklist v2', author: 'izaias',
+    head: 'izaias/onboarding-v2', base: 'main', add: 530, del: 210, commits: 9, updated: NOW - 2 * H,
+    requested: false, checks: 'pending', state: 'authored', reviewers: ['june'],
+    brief: { changes: ['Rebuilds the onboarding checklist as a resumable flow', 'Tracks completion server-side'], risks: ['Existing users mid-onboarding'] },
+    fileList: files([['src/features/onboarding/Checklist.tsx', 260, 140]]),
+  },
+  {
+    id: 9, repo: 'acme/api', num: 455, title: 'Remove legacy v0 auth endpoints', author: 'theo',
+    head: 'theo/drop-v0-auth', base: 'main', add: 12, del: 640, commits: 2, updated: NOW - 120 * H,
+    requested: true, checks: 'pass', state: 'settled', settledHow: 'You approved · merged',
+    submitted: { event: 'APPROVE', at: NOW - 122 * H },
+    brief: { changes: ['Deletes the v0 token endpoints and their specs'], risks: [] },
+    fileList: files([['app/controllers/v0/auth_controller.rb', 0, 210]]),
+  },
+  {
+    id: 10, repo: 'acme/web', num: 1102, title: 'Upgrade to React 19.2', author: 'lena',
+    head: 'lena/react-19-2', base: 'main', add: 88, del: 96, commits: 4, updated: NOW - 200 * H,
+    requested: false, checks: 'pass', state: 'settled', settledHow: 'Approved by june · merged',
+    brief: { changes: ['Bumps React and React DOM to 19.2'], risks: [] },
+    fileList: files([['package.json', 2, 2]]),
+  },
+]
+
+/* ───────────────────────── State ───────────────────────── */
+const S = {
+  box: 'inbox',
+  repo: null,
+  selected: 1,
+  inspector: false,
+  inspTab: 'activity',
+  sidebar: true,
+  theme: new URLSearchParams(location.search).get('theme') || 'dark',
+  accent: '#ff7a3d',
+  defaultAgent: 'claude',
+  defaultDepth: 'standard',
+  confirmSubmit: true,
+  autoReview: false,
+  notifyDone: true,
+  syncing: false,
+  syncedAt: NOW - 2 * 60e3,
+  focusFinding: null,
+  hero: false,
+  logs: {},
+}
+const Q = new URLSearchParams(location.search)
+if (Q.has('bare')) document.body.classList.add('bare')
+if (Q.get('box')) S.box = Q.get('box')
+if (Q.get('accent')) S.accent = '#' + Q.get('accent')
+if (Q.has('hero')) S.hero = true
+if (Q.get('inspector')) { S.inspector = true; S.inspTab = Q.get('inspector') }
+if (Q.has('nosidebar')) S.sidebar = false
+const PREFILL = Number(Q.get('lines') || 0)
+
+const BOXES = [
+  { id: 'inbox', label: 'Inbox', icon: 'inbox', match: (p) => ['needs_review', 'ready', 'failed'].includes(p.state) },
+  { id: 'reviewing', label: 'Reviewing', icon: 'sparkles', match: (p) => ['reviewing', 'queued'].includes(p.state) },
+  { id: 'waiting', label: 'Waiting on author', icon: 'hourglass', match: (p) => p.state === 'waiting' },
+  { id: 'mine', label: 'My pull requests', icon: 'user', match: (p) => p.author === ME },
+  { id: 'settled', label: 'Settled', icon: 'checkCircle', match: (p) => p.state === 'settled', dim: true },
+]
+
+const byId = (id) => PRS.find((p) => p.id === id)
+const repoOf = (p) => REPOS.find((r) => r.slug === p.repo)
+const inRepo = (p) => !S.repo || p.repo === S.repo
+const boxItems = (boxId) => PRS.filter((p) => BOXES.find((b) => b.id === boxId).match(p) && inRepo(p))
+
+/* ───────────────────────── Helpers ───────────────────────── */
+const fmtN = (n) => n.toLocaleString('en-US')
+function ago(ts) {
+  const s = Math.max(0, (Date.now() - ts) / 1000)
+  if (s < 45) return 'just now'
+  if (s < 3600) return `${Math.round(s / 60)}m`
+  if (s < 86400) return `${Math.round(s / 3600)}h`
+  return `${Math.round(s / 86400)}d`
+}
+const agoLong = (ts) => { const a = ago(ts); return a === 'just now' ? a : `${a} ago` }
+function clock(ts) {
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+function staleClass(ts) {
+  const d = (Date.now() - ts) / 86400e3
+  return d > 5 ? 'rotten' : d > 2.5 ? 'stale' : ''
+}
+const AV_COLORS = [['#ff9a62', '#e2533b'], ['#7aa7ff', '#4c5bd4'], ['#5fd6a4', '#1f9c74'], ['#d58cff', '#8a46d8'], ['#ffd36b', '#e09a1c'], ['#7fe3ef', '#2f9fb8']]
+function avatar(name, size = 20) {
+  const h = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % AV_COLORS.length
+  const [a, b] = AV_COLORS[h]
+  return `<span class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .45)}px;background:linear-gradient(160deg,${a},${b})">${name[0].toUpperCase()}</span>`
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+function glyph(p, size = 16) {
+  const v = `width="${size}" height="${size}" viewBox="0 0 16 16"`
+  switch (p.state) {
+    case 'needs_review':
+      return p.requested
+        ? `<svg ${v}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="1.6"/><circle cx="8" cy="8" r="2.4" fill="var(--accent)"/></svg>`
+        : `<svg ${v}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t3)" stroke-width="1.6" stroke-dasharray="2.6 2.1"/></svg>`
+    case 'queued':
+      return `<svg ${v}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t3)" stroke-width="1.6"/><path d="M8 5v3.2l2 1.3" stroke="var(--t2)" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`
+    case 'reviewing':
+      return `<svg ${v}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t4)" stroke-width="1.6"/><path class="spin" d="M8 2a6 6 0 0 1 6 6" stroke="var(--accent)" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`
+    case 'ready':
+      return `<svg ${v}><circle cx="8" cy="8" r="7" fill="var(--accent)"/><path d="M8 11V5.3M5.6 7.5 8 5.1l2.4 2.4" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    case 'failed':
+      return `<svg ${v}><circle cx="8" cy="8" r="7" fill="var(--red)"/><path d="M8 4.6v4.1" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><circle cx="8" cy="11.2" r="1" fill="#fff"/></svg>`
+    case 'waiting':
+      return `<svg ${v}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--purple)" stroke-width="1.6"/><path d="M8 4a4 4 0 0 1 0 8z" fill="var(--purple)"/></svg>`
+    case 'settled':
+      return `<svg ${v}><circle cx="8" cy="8" r="7" fill="var(--green)"/><path d="m5.2 8.2 1.9 1.9 3.8-4" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    case 'authored':
+      return `<svg ${v}><circle cx="8" cy="8" r="6" fill="none" stroke="var(--blue)" stroke-width="1.6"/><circle cx="8" cy="8" r="2.4" fill="none" stroke="var(--blue)" stroke-width="1.4"/></svg>`
+  }
+  return ''
+}
+
+const included = (p) => (p.findings || []).filter((f) => f.on && f.status !== 'addressed')
+function verdictOf(p) {
+  const f = p.findings || []
+  if (f.some((x) => x.sev === 'critical')) return 'REQUEST_CHANGES'
+  if (f.some((x) => x.sev === 'major')) return 'REQUEST_CHANGES'
+  if (f.length) return 'COMMENT'
+  return 'APPROVE'
+}
+
+/* ───────────────────────── Sidebar ───────────────────────── */
+function renderSidebar() {
+  const anyRunning = PRS.some((p) => p.state === 'reviewing')
+  const boxes = BOXES.map((b) => {
+    const n = boxItems(b.id).length
+    const hot = b.id === 'inbox' && n > 0
+    const extra = b.id === 'reviewing' && anyRunning ? `<svg width="12" height="12" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t4)" stroke-width="2"/><path class="spin" d="M8 2a6 6 0 0 1 6 6" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>` : ''
+    return `<button class="sb-item ${b.dim ? 'dim' : ''} ${S.box === b.id && !S.hero ? 'on' : ''}" data-act="box" data-id="${b.id}">
+      ${icon(b.icon)}<span class="label">${b.label}</span><span class="count ${hot ? 'hot' : ''}">${extra}${n || ''}</span></button>`
+  }).join('')
+
+  const repos = REPOS.map((r) => {
+    const n = PRS.filter((p) => p.repo === r.slug && !['settled'].includes(p.state)).length
+    return `<button class="sb-item ${S.repo === r.slug ? 'on' : ''}" data-act="repo" data-id="${r.slug}">
+      <span class="repo-dot" style="background:${r.color}"></span><span class="label">${r.name}</span><span class="count">${n}</span></button>`
+  }).join('')
+
+  document.getElementById('sidebar').innerHTML = `
+    <div class="titlebar">
+      <div class="lights"><i></i><i></i><i></i></div>
+      <button class="tb-btn" data-act="toggle-sidebar" title="Hide sidebar  ⌘\\">${icon('sidebar')}</button>
+      <button class="tb-btn" data-act="new" title="New review  ⌘N">${icon('compose')}</button>
+    </div>
+    <div class="sb-scroll">
+      <button class="sb-search" data-act="palette">${icon('search', 14)}<span>Search</span><kbd>⌘K</kbd></button>
+      ${boxes}
+      <div class="sb-head"><span>Repositories</span><button data-act="settings" data-tab="repos" title="Add repository">${icon('plus', 14)}</button></div>
+      ${repos}
+    </div>
+    <div class="sb-foot">
+      <button class="sync-chip" data-act="sync" title="Sync with GitHub  ⌘R">
+        ${S.syncing ? `<svg class="spin" width="12" height="12" viewBox="0 0 16 16"><path d="M8 2a6 6 0 0 1 6 6" stroke="var(--t2)" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>Syncing…</span>` : `<span class="dot"></span><span>Synced ${agoLong(S.syncedAt)}</span>`}
+      </button>
+      <button class="tb-btn" data-act="theme" title="Toggle appearance">${icon(S.theme === 'dark' ? 'sun' : 'moon', 15)}</button>
+      <button class="tb-btn" data-act="settings" title="Settings  ⌘,">${icon('gear', 15)}</button>
+    </div>`
+}
+
+/* ───────────────────────── List ───────────────────────── */
+function sectionsFor(boxId, items) {
+  const oldest = (a, b) => a.updated - b.updated
+  if (boxId === 'inbox') {
+    return [
+      ['Ready to send', items.filter((p) => p.state === 'ready')],
+      ['Needs attention', items.filter((p) => p.state === 'failed')],
+      ['Requested from you', items.filter((p) => p.state === 'needs_review' && p.requested).sort(oldest)],
+      ['Open in your repos', items.filter((p) => p.state === 'needs_review' && !p.requested).sort(oldest)],
+    ]
+  }
+  if (boxId === 'reviewing') {
+    return [['Running', items.filter((p) => p.state === 'reviewing')], ['Up next', items.filter((p) => p.state === 'queued').sort((a, b) => a.queuePos - b.queuePos)]]
+  }
+  if (boxId === 'waiting') {
+    return [['New commits since your review', items.filter((p) => p.newCommits)], ['Waiting', items.filter((p) => !p.newCommits)]]
+  }
+  return [[null, items]]
+}
+
+function rowTag(p) {
+  switch (p.state) {
+    case 'ready': return `<span class="chip" style="--c:var(--accent)">${included(p).length} findings</span>`
+    case 'reviewing': return `<span class="chip ghost mono" style="--c:var(--accent)" data-clock="${p.startedAt}">${clock(p.startedAt)}</span>`
+    case 'queued': return `<span class="chip">Queued · ${p.queuePos}</span>`
+    case 'failed': return `<span class="chip" style="--c:var(--red)">Failed</span>`
+    case 'waiting': return p.newCommits ? `<span class="chip" style="--c:var(--purple)">+${p.newCommits} commits</span>` : `<span class="chip ghost">${(p.findings || []).filter((f) => f.status === 'pending').length} open</span>`
+    case 'settled': return `<span class="chip ghost">${p.submitted?.event === 'APPROVE' ? 'Approved' : 'Merged'}</span>`
+    case 'authored': return `<span class="chip ghost">${p.reviewers.length} reviewers</span>`
+    default: return `<span class="diffstat"><span class="a">+${fmtN(p.add)}</span><span class="d">−${fmtN(p.del)}</span></span>`
+  }
+}
+
+function renderList() {
+  const box = BOXES.find((b) => b.id === S.box)
+  const items = boxItems(S.box)
+  const repo = S.repo ? REPOS.find((r) => r.slug === S.repo) : null
+  const subtitle = {
+    inbox: items.length ? `${items.length} need you` : 'All clear',
+    reviewing: `${items.filter((p) => p.state === 'reviewing').length} running · ${items.filter((p) => p.state === 'queued').length} queued`,
+    waiting: `${items.length} with authors`,
+    mine: `${items.length} open`,
+    settled: 'Last 30 days',
+  }[S.box]
+
+  let body = ''
+  if (!items.length) {
+    body = `<div class="list-empty"><div class="big">${icon('check', 26, '', 2.2)}</div><b>${S.box === 'inbox' ? 'Inbox zero' : 'Nothing here'}</b><span>${S.box === 'inbox' ? 'Every pull request that needs you has been handled.' : 'Pull requests will show up here when they match.'}</span></div>`
+  } else {
+    body = sectionsFor(S.box, items).filter(([, list]) => list.length).map(([label, list]) => `
+      ${label ? `<div class="section-label">${label}<span class="n">${list.length}</span></div>` : ''}
+      ${list.map((p) => rowHtml(p)).join('')}`).join('')
+  }
+
+  document.getElementById('list').innerHTML = `
+    <div class="toolbar">
+      <div class="ttl"><h2>${box.label}${repo ? ` <span style="color:var(--t3);font-weight:500">· ${repo.name}</span>` : ''}</h2><div class="sub">${subtitle}</div></div>
+      ${repo ? `<button class="tb-btn" data-act="repo" data-id="${repo.slug}" title="Show all repositories">${icon('x', 14)}</button>` : ''}
+      <button class="tb-btn" data-act="filter-menu" title="Filter and sort">${icon('filter')}</button>
+    </div>
+    <div class="rows" id="rows">${body}</div>`
+}
+
+function rowHtml(p) {
+  const r = repoOf(p)
+  return `<button class="row ${S.selected === p.id && !S.hero ? 'on' : ''}" data-act="select" data-id="${p.id}" data-row="${p.id}">
+    <span class="glyph">${glyph(p)}</span>
+    <span class="title">${esc(p.title)}</span>
+    <span class="age ${['needs_review'].includes(p.state) ? staleClass(p.updated) : ''}">${ago(p.updated)}</span>
+    <span class="meta"><span class="repo-dot sm" style="background:${r.color}"></span>${r.name} #${p.num}<span style="color:var(--t4)">·</span><span class="who">${p.author === ME ? 'you' : p.author}</span></span>
+    <span class="tag">${rowTag(p)}</span>
+  </button>`
+}
+
+/* ───────────────────────── Detail ───────────────────────── */
+function renderDetail() {
+  const el = document.getElementById('detail')
+  const p = byId(S.selected)
+  if (S.hero || !p) { el.innerHTML = heroHtml(); return }
+  const r = repoOf(p)
+  const st = STATES[p.state]
+
+  const kicker = `<div class="kicker" style="--d:0"><span class="state" style="--c:${st.color}">${glyph(p, 14)}${st.label}</span><span style="color:var(--t4)">·</span><span>${r.slug} #${p.num}</span></div>`
+  const header = `
+    ${kicker}
+    <h1 class="pr-title" style="--d:1">${esc(p.title)}</h1>
+    <div class="byline" style="--d:2">${avatar(p.author, 20)}<b>${p.author === ME ? 'You' : p.author}</b><span>want${p.author === ME ? '' : 's'} to merge ${p.commits} commit${p.commits === 1 ? '' : 's'} into</span><span class="ref">${p.base}</span><span>from</span><span class="ref">${p.head}</span></div>
+    <div class="stats" style="--d:3">
+      <span class="stat"><span class="diffstat"><span class="a">+${fmtN(p.add)}</span><span class="d">−${fmtN(p.del)}</span></span></span>
+      <span class="stat">${icon('files', 14)}${p.fileList.length} files</span>
+      <span class="stat" style="--c:${p.checks === 'pass' ? 'var(--green)' : p.checks === 'fail' ? 'var(--red)' : 'var(--orange)'}">${icon(p.checks === 'pass' ? 'checkCircle' : p.checks === 'fail' ? 'warn' : 'hourglass', 14)}${p.checks === 'pass' ? 'Checks passing' : p.checks === 'fail' ? 'Checks failing' : 'Checks running'}</span>
+      ${p.requested ? `<span class="stat" style="--c:var(--accent)">${icon('user', 14)}Requested you</span>` : ''}
+      <span class="stat">${icon('hourglass', 14)}Updated ${agoLong(p.updated)}</span>
+    </div>`
+
+  const brief = p.brief ? `
+    <div class="block" style="--d:4">
+      <div class="block-head"><h3>What changed</h3><span class="aside"><span class="ai-mark">${icon('sparkles', 12)}Brief</span></span></div>
+      <div class="card brief">
+        <ul>${p.brief.changes.map((c) => `<li><span>${c}</span></li>`).join('')}</ul>
+        ${p.brief.risks.length ? `<div class="risks"><span class="lbl">Watch for</span>${p.brief.risks.map((x) => `<span class="chip" style="--c:var(--orange)">${x}</span>`).join('')}</div>` : ''}
+      </div>
+    </div>` : ''
+
+  let main = ''
+  if (p.state === 'reviewing') main = `<div class="block" style="--d:5"><div class="block-head"><h3>Review in progress</h3></div>${runCard(p)}</div>`
+  if (p.state === 'queued') main = `<div class="block" style="--d:5"><div class="card callout" style="--c:var(--t2)"><div class="ico">${icon('hourglass', 18)}</div><div><div class="what">Queued · position ${p.queuePos}</div><div class="why">${AGENTS[p.agent].label} will pick this up after the current review finishes.</div></div><button class="btn" data-act="dequeue">Remove from queue</button></div></div>`
+  if (p.state === 'failed') main = `<div class="block" style="--d:5"><div class="card callout" style="--c:var(--red)"><div class="ico">${icon('warn', 18)}</div><div><div class="what">Review failed after ${p.attempts} attempts</div><div class="why">${p.failure}</div></div></div></div>`
+  if (p.state === 'ready' || p.state === 'waiting' || (p.state === 'settled' && p.findings)) main = verdictCard(p) + findingsBlock(p)
+  if (p.state === 'waiting' && p.newCommits) {
+    main = `<div class="block" style="--d:5"><div class="card callout" style="--c:var(--purple)"><div class="ico">${icon('branch', 18)}</div><div><div class="what">${p.newCommits} new commits since your review</div><div class="why">${p.author} pushed changes ${agoLong(p.updated)}. Re-review only what changed, and Ordem will check which findings were addressed.</div></div></div></div>` + main
+  }
+  if (p.state === 'settled' && !p.findings) main = `<div class="block" style="--d:5"><div class="card callout" style="--c:var(--green)"><div class="ico">${icon('checkCircle', 18)}</div><div><div class="what">${p.settledHow}</div><div class="why">Nothing left to do here.</div></div></div></div>`
+  if (p.state === 'authored') main = `<div class="block" style="--d:5"><div class="card callout" style="--c:var(--blue)"><div class="ico">${icon('user', 18)}</div><div><div class="what">Waiting on ${p.reviewers.join(' and ')}</div><div class="why">Run a self-review before they get to it — findings stay private until you choose to act on them.</div></div></div></div>`
+
+  if (['needs_review', 'authored', 'failed', 'queued'].includes(p.state)) main += filesBlock(p)
+
+  el.innerHTML = `
+    <div class="toolbar">
+      <div class="crumbs"><span class="repo-dot sm" style="background:${r.color}"></span><span>${r.name}</span>${icon('chevRight', 12)}<b>#${p.num} ${esc(p.title)}</b></div>
+      <button class="tb-btn" title="Open on GitHub">${icon('github', 15)}</button>
+      <button class="tb-btn" data-act="pr-menu" title="More">${icon('more')}</button>
+      <button class="tb-btn ${S.inspector ? 'on' : ''}" data-act="toggle-inspector" title="Inspector  I">${icon('inspector')}</button>
+    </div>
+    <div class="scroll" id="scroll"><div class="page">${header}${brief}${main}</div></div>
+    ${composerHtml(p)}`
+  autosize()
+}
+
+function diffBars(a, d, max) {
+  const total = a + d
+  const blocks = Math.max(1, Math.round((total / max) * 5))
+  const adds = Math.round((a / Math.max(total, 1)) * blocks)
+  return `<span class="bars">${Array.from({ length: 5 }, (_, i) => `<i class="${i < adds ? 'a' : i < blocks ? 'd' : ''}"></i>`).join('')}</span>`
+}
+
+function filesBlock(p) {
+  const max = Math.max(...p.fileList.map((f) => f.a + f.d))
+  return `<div class="block" style="--d:6">
+    <div class="block-head"><h3>Files</h3><span class="aside">${p.fileList.length} changed</span></div>
+    <div class="card" style="padding:6px">${p.fileList.map((f) => {
+      const parts = f.path.split('/')
+      const name = parts.pop()
+      return `<div class="file-line">${icon('file', 14)}<span class="fp"><b>${name}</b><span>${parts.join('/')}</span></span><span class="diffstat"><span class="a">+${f.a}</span><span class="d">−${f.d}</span></span>${diffBars(f.a, f.d, max)}</div>`
+    }).join('')}</div>
+  </div>`
+}
+
+function verdictCard(p) {
+  const v = EVENTS[p.state === 'ready' ? verdictOf(p) : p.submitted?.event || verdictOf(p)]
+  const counts = Object.keys(SEV).map((k) => [k, (p.findings || []).filter((f) => f.sev === k).length]).filter(([, n]) => n)
+  const head = p.state === 'ready'
+    ? `${AGENTS[p.agent].label} suggests <em style="--c:${v.color}">${v.label.toLowerCase()}</em>`
+    : `You ${p.submitted.event === 'APPROVE' ? 'approved' : p.submitted.event === 'COMMENT' ? 'commented' : 'requested changes'} ${agoLong(p.submitted.at)}`
+  const why = p.state === 'ready'
+    ? (p.findings.find((f) => f.sev === 'critical') ? `${p.findings.find((f) => f.sev === 'critical').title}. ${counts.length > 1 ? 'Plus a few smaller things.' : ''}` : 'No blockers — a couple of things worth mentioning.')
+    : `${(p.findings || []).filter((f) => f.status === 'addressed').length} of ${(p.findings || []).length} findings addressed so far.`
+  return `<div class="block" style="--d:5">
+    <div class="block-head"><h3>Review</h3><span class="aside"><button class="link" data-act="open-log">View log</button></span></div>
+    <div class="card">
+      <div class="verdict">
+        <div class="agent-badge">${agentIcon(p.agent, 20)}</div>
+        <div><div class="what">${head}</div><div class="why">${why}</div>
+          <div class="meta">${AGENTS[p.agent].label} ${AGENTS[p.agent].model}<span>·</span>${DEPTHS[p.depth].label}<span>·</span>${p.run.duration}<span>·</span>${agoLong(p.run.at)}</div></div>
+      </div>
+      <div class="sev-summary">${counts.map(([k, n]) => `<span class="chip" style="--c:${SEV[k].color}">${n} ${SEV[k].label.toLowerCase()}</span>`).join('')}</div>
+    </div>
+  </div>`
+}
+
+function findingsBlock(p) {
+  const list = p.findings || []
+  const editable = p.state === 'ready'
+  const groups = Object.keys(SEV).map((k) => [k, list.filter((f) => f.sev === k)]).filter(([, l]) => l.length)
+  return `<div class="block" style="--d:6">
+    <div class="block-head"><h3>Findings</h3><span class="aside">${editable ? `<span>${included(p).length} of ${list.length} included</span><button class="link" data-act="include-all">${list.every((f) => f.on) ? 'Exclude all' : 'Include all'}</button>` : ''}</span></div>
+    ${groups.map(([k, l]) => `
+      <div class="finding-group"><span class="chip" style="--c:${SEV[k].color}">${SEV[k].label}</span><span>${l.length}</span></div>
+      ${l.map((f) => findingHtml(p, f, editable)).join('')}`).join('')}
+  </div>`
+}
+
+function findingHtml(p, f, editable) {
+  const leading = editable
+    ? `<button class="check ${f.on ? 'on' : ''}" data-act="toggle-finding" data-id="${f.id}" title="Include in review  X">${icon('check', 12, '', 3)}</button>`
+    : `<span style="padding-top:1px">${f.status === 'addressed' ? `<svg width="18" height="18" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="var(--green)"/><path d="m5.2 8.2 1.9 1.9 3.8-4" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>` : `<svg width="18" height="18" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t3)" stroke-width="1.5"/></svg>`}</span>`
+  const fix = f.fix ? `<div class="diff"><div class="hd">${icon('wand', 12)}Suggested change</div>${f.fix.map(([t, l]) => `<div class="l ${t}">${esc(l)}</div>`).join('')}</div>` : ''
+  return `<div class="finding ${editable && !f.on ? 'off' : ''} ${S.focusFinding === f.id ? 'focus' : ''} ${f.status === 'addressed' ? 'addressed' : ''}" data-act="focus-finding" data-id="${f.id}">
+    ${leading}
+    <div>
+      <div class="top"><span class="f-title">${f.title}</span><span class="f-loc">${f.file.split('/').pop()}:${f.line}</span></div>
+      <div class="f-body">${f.body}</div>
+      ${fix}
+      ${editable ? `<div class="f-actions"><button class="tb-btn">${icon('compose', 13)}Edit</button><button class="tb-btn">${icon('file', 13)}Open file</button><button class="tb-btn">${icon('message', 13)}Ask ${AGENTS[p.agent].label}</button></div>` : ''}
+    </div>
+  </div>`
+}
+
+const STEP_LABELS = ['Prepare worktree', 'Read the diff', 'Review changes', 'Write findings']
+function runCard(p) {
+  const run = S.logs[p.id] || { lines: [] }
+  const statusCount = run.lines.filter(([t]) => t === 'status').length
+  const current = Math.max(0, statusCount - 1)
+  const nowLine = [...run.lines].reverse().find(([t]) => t === 'out' || t === 'status')
+  const steps = STEP_LABELS.map((label, i) => {
+    const done = i < current
+    const now = i === current
+    const dot = done
+      ? `<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="var(--green)"/><path d="m5.2 8.2 1.9 1.9 3.8-4" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+      : now ? `<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t4)" stroke-width="1.6"/><path class="spin" d="M8 2a6 6 0 0 1 6 6" stroke="var(--accent)" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`
+        : `<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--t4)" stroke-width="1.5" stroke-dasharray="2.4 2"/></svg>`
+    const text = now && nowLine ? `<span class="shimmer">${label} — ${esc(nowLine[1].replace(/^\[\w+\] /, ''))}</span>` : label
+    return `<div class="step ${done ? 'done' : now ? 'now' : ''}"><span class="d">${dot}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${text}</span></div>`
+  }).join('')
+  return `<div class="card run" id="run-${p.id}">
+    <div class="run-head">
+      <div class="agent-badge">${agentIcon(p.agent, 20)}</div>
+      <div><div class="what">${AGENTS[p.agent].label} is reviewing</div><div class="sub">${AGENTS[p.agent].model} · ${DEPTHS[p.depth].label}${p.lens !== 'general' ? ` · ${LENSES[p.lens].label} lens` : ''}</div></div>
+      <span class="clock" data-clock="${p.startedAt}">${clock(p.startedAt)}</span>
+    </div>
+    <div class="steps">${steps}</div>
+    <div class="log">${run.lines.slice(-7).map(([t, l]) => `<div class="ln ${t}">${t === 'status' ? '→ ' : t === 'ok' ? '✓ ' : '  '}${esc(l)}</div>`).join('')}</div>
+  </div>`
+}
+
+function composerHtml(p) {
+  if (p.state === 'settled') return ''
+  const agent = AGENTS[p.agent || S.defaultAgent]
+  const agentId = p.agent || S.defaultAgent
+  const depth = DEPTHS[p.depth || S.defaultDepth]
+  const lens = LENSES[p.lens || 'general']
+  const hint = (items) => `<div class="composer-hint">${items.map(([k, t]) => `<span><kbd>${k}</kbd> ${t}</span>`).join('')}</div>`
+  const startBar = (label, sendLabel) => `
+      <textarea id="composer-input" rows="2" placeholder="${label}">${esc(p.focus || '')}</textarea>
+      <div class="bar">
+        <button class="pill" data-act="menu-agent">${agentIcon(agentId, 14)}${agent.label} ${agent.model}${icon('chevDown', 12, 'chev')}</button>
+        <span class="vsep"></span>
+        <button class="pill" data-act="menu-depth">${icon(depth.icon, 14)}${depth.label}${icon('chevDown', 12, 'chev')}</button>
+        <span class="vsep"></span>
+        <button class="pill" data-act="menu-lens">${icon(lens.icon, 14)}${lens.label}${icon('chevDown', 12, 'chev')}</button>
+        ${sendLabel ? `<button class="send wide" data-act="send">${sendLabel}<kbd>⌘↵</kbd></button>` : `<button class="send" data-act="send" title="Start review  ⌘↵">${icon('arrowUp', 17, '', 2.2)}</button>`}
+      </div>`
+
+  if (p.state === 'ready') {
+    const ev = EVENTS[p.event || verdictOf(p)]
+    const n = included(p).length
+    return `<div class="composer-wrap"><div class="composer">
+      <textarea id="composer-input" rows="2" placeholder="Add a summary for ${p.author} (optional)…">${esc(p.draft || '')}</textarea>
+      <div class="bar">
+        <button class="pill" data-act="menu-event"><span class="swatch" style="--c:${ev.color}"></span>${ev.label}${icon('chevDown', 12, 'chev')}</button>
+        <span class="vsep opt2"></span>
+        <span class="pill opt2" style="pointer-events:none">${icon('message', 14)}${n} inline comment${n === 1 ? '' : 's'}</span>
+        <span class="vsep opt"></span>
+        <span class="pill opt" style="pointer-events:none">${icon('sparkles', 14)}Summary drafted by ${AGENTS[p.agent].label}</span>
+        <button class="send wide" data-act="submit">Submit review<kbd>⌘↵</kbd></button>
+      </div>
+    </div>${hint([['X', 'include finding'], ['J K', 'move'], ['⌘↵', 'submit to GitHub']])}</div>`
+  }
+  if (p.state === 'reviewing') {
+    return `<div class="composer-wrap"><div class="composer">
+      <textarea rows="2" disabled placeholder="${agent.label} is reviewing. You’ll get a notification when findings are ready — feel free to move on."></textarea>
+      <div class="bar">
+        <span class="pill" style="pointer-events:none">${agentIcon(agentId, 14)}${agent.label} ${agent.model}</span>
+        <span class="vsep"></span>
+        <span class="pill" style="pointer-events:none">${icon(depth.icon, 14)}${depth.label}</span>
+        <button class="send stop wide" data-act="stop" style="padding:0 14px">${icon('stop', 14)}Stop</button>
+      </div>
+    </div></div>`
+  }
+  if (p.state === 'queued') return ''
+  if (p.state === 'waiting') {
+    return `<div class="composer-wrap"><div class="composer">${startBar('Anything to check in the new commits? (optional)', `${icon('refresh', 14)}Re-review`)}</div></div>`
+  }
+  if (p.state === 'failed') {
+    return `<div class="composer-wrap"><div class="composer">${startBar(`Anything ${agent.label} should focus on? (optional)`, `${icon('refresh', 14)}Retry review`)}</div></div>`
+  }
+  if (p.state === 'authored') {
+    return `<div class="composer-wrap"><div class="composer">${startBar('Self-review before your reviewers do — anything to focus on?', null)}</div>${hint([['⌘↵', 'start self-review'], ['⌘K', 'search']])}</div>`
+  }
+  return `<div class="composer-wrap"><div class="composer">${startBar(`Anything ${agent.label} should focus on? e.g. “check the migration is safe to run online”`, null)}</div>${hint([['⌘↵', 'start review'], ['J K', 'next / previous'], ['E', 'archive']])}</div>`
+}
+
+function heroHtml() {
+  const requested = PRS.filter((p) => p.state === 'needs_review' && p.requested && inRepo(p))
+  const oldest = PRS.filter((p) => p.state === 'needs_review' && inRepo(p)).sort((a, b) => a.updated - b.updated)[0]
+  const newCommits = PRS.filter((p) => p.state === 'waiting' && p.newCommits)
+  const scope = S.repo ? REPOS.find((r) => r.slug === S.repo).name : 'acme'
+  return `<div class="toolbar" style="border-bottom-color:transparent"><div class="crumbs"><b>New review</b></div></div>
+  <div class="hero">
+    <div class="mark">${icon('flame', 34, '', 1.7)}</div>
+    <h2>What should we review in <u>${scope}</u>?</h2>
+    <p>Paste a pull request link, or let Ordem pick up what’s waiting on you.</p>
+    <div class="composer">
+      <textarea id="composer-input" rows="2" placeholder="https://github.com/acme/api/pull/…"></textarea>
+      <div class="bar">
+        <button class="pill" data-act="menu-agent">${agentIcon(S.defaultAgent, 14)}${AGENTS[S.defaultAgent].label} ${AGENTS[S.defaultAgent].model}${icon('chevDown', 12, 'chev')}</button>
+        <span class="vsep"></span>
+        <button class="pill" data-act="menu-depth">${icon(DEPTHS[S.defaultDepth].icon, 14)}${DEPTHS[S.defaultDepth].label}${icon('chevDown', 12, 'chev')}</button>
+        <button class="send" data-act="send-hero">${icon('arrowUp', 17, '', 2.2)}</button>
+      </div>
+    </div>
+    <div class="suggestions">
+      ${requested.length ? `<button class="suggestion" data-act="suggest-requested">${icon('layers', 14)}Review all ${requested.length} requested from you</button>` : ''}
+      ${oldest ? `<button class="suggestion" data-act="select" data-id="${oldest.id}">${icon('hourglass', 14)}Oldest waiting: #${oldest.num} · ${ago(oldest.updated)}</button>` : ''}
+      ${newCommits.length ? `<button class="suggestion" data-act="box" data-id="waiting">${icon('branch', 14)}${newCommits.length} PR${newCommits.length > 1 ? 's' : ''} with new commits</button>` : ''}
+    </div>
+  </div>`
+}
+
+/* ───────────────────────── Inspector ───────────────────────── */
+function renderInspector() {
+  const el = document.getElementById('inspector')
+  const p = byId(S.selected)
+  if (!S.inspector || !p || S.hero) { el.innerHTML = ''; return }
+  let body = ''
+  if (S.inspTab === 'activity') {
+    const ev = [
+      ['branch', 'var(--t2)', `<b>${p.author}</b> opened this pull request`, p.updated - 30 * H],
+      p.requested ? ['user', 'var(--accent)', 'Review requested from you', p.updated - 29 * H] : null,
+      ['refresh', 'var(--t2)', 'Synced from GitHub', S.syncedAt],
+      p.run ? ['sparkles', 'var(--accent)', `${AGENTS[p.agent].label} finished · ${(p.findings || []).length} findings in ${p.run.duration}`, p.run.at] : null,
+      p.state === 'reviewing' ? ['sparkles', 'var(--accent)', `${AGENTS[p.agent].label} started reviewing`, p.startedAt] : null,
+      p.state === 'failed' ? ['warn', 'var(--red)', `Review failed · attempt ${p.attempts}`, NOW - 3 * H] : null,
+      p.submitted ? ['github', 'var(--purple)', `You ${p.submitted.event === 'APPROVE' ? 'approved' : p.submitted.event === 'COMMENT' ? 'commented' : 'requested changes'} on GitHub`, p.submitted.at] : null,
+      p.newCommits ? ['branch', 'var(--purple)', `<b>${p.author}</b> pushed ${p.newCommits} commits`, p.updated] : null,
+    ].filter(Boolean).sort((a, b) => b[3] - a[3])
+    body = `<div class="tl">${ev.map(([ic, c, what, ts]) => `<div class="tl-item"><span class="tl-dot" style="--c:${c}">${icon(ic, 12)}</span><div><div class="what">${what}</div><div class="when">${agoLong(ts)}</div></div></div>`).join('')}</div>`
+  } else if (S.inspTab === 'files') {
+    const max = Math.max(...p.fileList.map((f) => f.a + f.d))
+    body = p.fileList.map((f) => {
+      const total = f.a + f.d
+      const blocks = Math.max(1, Math.round((total / max) * 5))
+      const adds = Math.round((f.a / Math.max(total, 1)) * blocks)
+      const bars = Array.from({ length: 5 }, (_, i) => `<i class="${i < adds ? 'a' : i < blocks ? 'd' : ''}"></i>`).join('')
+      const hits = (p.findings || []).filter((x) => x.file === f.path).length
+      return `<div class="file-row">${icon('file', 13)}<span class="p" title="${f.path}">${f.path}</span><span style="display:flex;align-items:center;gap:6px">${hits ? `<span class="chip" style="--c:var(--accent)">${hits}</span>` : ''}<span class="bars">${bars}</span></span></div>`
+    }).join('')
+  } else {
+    const lines = (S.logs[p.id]?.lines?.length ? S.logs[p.id].lines : p.run ? [['status', 'Preparing worktree'], ['ok', `Checked out ${p.head}`], ['status', `Reading diff · ${p.fileList.length} files`], ...p.fileList.map((f) => ['out', f.path]), ['status', 'Reviewing changes'], ['status', 'Writing findings'], ['ok', `${(p.findings || []).length} findings · ${p.run.duration}`]] : [['out', 'No runs yet.']])
+    body = `<div class="full-log">${lines.map(([t, l]) => `<div class="ln ${t}">${t === 'status' ? '→ ' : t === 'ok' ? '✓ ' : '  '}${esc(l)}</div>`).join('')}</div>`
+  }
+  el.innerHTML = `<div class="toolbar"><div class="seg">${[['activity', 'Activity'], ['files', 'Files'], ['log', 'Agent log']].map(([k, l]) => `<button class="${S.inspTab === k ? 'on' : ''}" data-act="insp-tab" data-id="${k}">${l}</button>`).join('')}</div></div><div class="insp-body">${body}</div>`
+}
+
+/* ───────────────────────── Render ───────────────────────── */
+function render() {
+  document.documentElement.dataset.theme = S.theme
+  document.documentElement.style.setProperty('--accent', S.accent)
+  const win = document.getElementById('window')
+  win.classList.toggle('no-sidebar', !S.sidebar)
+  win.classList.toggle('with-inspector', S.inspector && !S.hero)
+  renderSidebar(); renderList(); renderDetail(); renderInspector()
+}
+function autosize() {
+  const t = document.getElementById('composer-input')
+  if (!t) return
+  t.style.height = 'auto'
+  t.style.height = Math.min(t.scrollHeight, 160) + 'px'
+}
+
+/* ───────────────────────── Simulation ───────────────────────── */
+function genericScript(p) {
+  return [
+    ['status', `Preparing worktree ~/.ordem/worktrees/${repoOf(p).name}-${p.num}`],
+    ['ok', `Checked out ${p.head} @ ${Math.random().toString(16).slice(2, 9)}`],
+    ['status', `Reading diff · ${p.fileList.length} files, +${fmtN(p.add)} −${fmtN(p.del)}`],
+    ...p.fileList.slice(0, 3).map((f) => ['out', f.path]),
+    ['status', p.depth === 'swarm' ? 'Swarm · spawned 3 reviewers' : 'Reviewing changes'],
+    ['out', 'Tracing error handling on new code paths'],
+    ['out', 'Checking tests cover the new branches'],
+    ['out', `Comparing behavior against ${p.base}`],
+    ['status', 'Writing findings'],
+  ]
+}
+function genericFindings(p) {
+  const [a, b] = p.fileList
+  return [
+    { id: p.id * 100 + 1, sev: 'major', on: true, title: 'Error from the external call is swallowed', file: a.path, line: 42, body: 'The <code>rescue</code> logs and returns <code>nil</code>, so callers can’t tell a failure from an empty result. Re-raise, or return a result object.' },
+    { id: p.id * 100 + 2, sev: 'minor', on: true, title: 'New branch has no test', file: (b || a).path, line: 17, body: 'The early-return path added here isn’t exercised by any spec.' },
+    { id: p.id * 100 + 3, sev: 'nit', on: false, title: 'Unused variable', file: a.path, line: 88, body: '<code>result</code> is assigned but never read.' },
+  ]
+}
+
+function startReview(p, focus) {
+  p.focus = focus || ''
+  p.agent = p.agent || S.defaultAgent
+  p.depth = p.depth || S.defaultDepth
+  p.lens = p.lens || 'general'
+  const running = PRS.some((x) => x.state === 'reviewing' && x.id !== p.id)
+  if (running) {
+    p.state = 'queued'
+    p.queuePos = PRS.filter((x) => x.state === 'queued').length + 1
+    notify('Added to queue', `#${p.num} will start after the current review.`, p.id)
+  } else {
+    p.state = 'reviewing'
+    p.startedAt = Date.now()
+    p.findings = undefined
+    runScript(p)
+  }
+}
+
+function runScript(p) {
+  const script = p.script || genericScript(p)
+  S.logs[p.id] = { lines: S.logs[p.id]?.lines?.length ? S.logs[p.id].lines : [], i: S.logs[p.id]?.lines?.length || 0 }
+  if (PREFILL && !S.logs[p.id].i) { S.logs[p.id].lines = script.slice(0, PREFILL); S.logs[p.id].i = PREFILL }
+  const tick = () => {
+    const run = S.logs[p.id]
+    if (p.state !== 'reviewing') return
+    if (run.i >= script.length) return finish(p)
+    run.lines.push(script[run.i++])
+    const card = document.getElementById(`run-${p.id}`)
+    if (card) card.outerHTML = runCard(p)
+    if (S.inspector && S.selected === p.id && S.inspTab === 'log') renderInspector()
+    run.timer = setTimeout(tick, 650 + Math.random() * 700)
+  }
+  tick()
+}
+
+function finish(p) {
+  p.state = 'ready'
+  p.findings = p.pendingFindings || genericFindings(p)
+  p.event = verdictOf(p)
+  p.run = { duration: clock(p.startedAt).replace(':', 'm ') + 's', iteration: (p.run?.iteration || 0) + 1, at: Date.now() }
+  p.draft = p.findings.some((f) => f.sev === 'critical')
+    ? `Thanks ${p.author} — this is close. One blocking issue around ${p.findings[0].title.toLowerCase()}; the rest are smaller notes inline.`
+    : `Thanks ${p.author}! A couple of small notes inline, nothing blocking.`
+  p.lens = p.lens || 'general'
+  const crit = p.findings.filter((f) => f.sev === 'critical').length
+  const maj = p.findings.filter((f) => f.sev === 'major').length
+  notify(`${AGENTS[p.agent].label} finished #${p.num}`, `${p.findings.length} findings${crit ? ` · ${crit} critical` : ''}${maj ? ` · ${maj} major` : ''} — ready for you to send.`, p.id)
+  const next = PRS.filter((x) => x.state === 'queued').sort((a, b) => a.queuePos - b.queuePos)[0]
+  if (next) {
+    PRS.filter((x) => x.state === 'queued').forEach((x) => { x.queuePos -= 1 })
+    next.state = 'reviewing'; next.startedAt = Date.now(); runScript(next)
+  }
+  render()
+}
+
+function notify(title, body, prId) {
+  const stack = document.getElementById('notifs')
+  const n = document.createElement('div')
+  n.className = 'notif'
+  n.innerHTML = `<div class="app">${icon('flame', 22, '', 1.8)}</div><div><div class="h"><b>${esc(title)}</b><span>now</span></div><p>${esc(body)}</p></div>`
+  n.onclick = () => { if (prId) { S.hero = false; S.selected = prId; const p = byId(prId); S.box = BOXES.find((b) => b.match(p))?.id || S.box; render() } dismiss() }
+  const dismiss = () => { n.classList.add('out'); setTimeout(() => n.remove(), 300) }
+  stack.prepend(n)
+  setTimeout(dismiss, 6500)
+}
+
+/* ───────────────────────── Menus ───────────────────────── */
+let menuState = null
+function openMenu(anchor, sections, onPick, align = 'left') {
+  closeMenu()
+  const rect = anchor.getBoundingClientRect()
+  const m = document.createElement('div')
+  m.className = 'menu'
+  m.innerHTML = sections.map((sec, si) => `${si ? '<div class="ms"></div>' : ''}${sec.title ? `<div class="mh">${sec.title}</div>` : ''}${sec.items.map((it) => `<button class="mi" data-key="${it.key}"><span class="tick">${it.on ? icon('check', 13, '', 2.2) : ''}</span>${it.icon || ''}<span>${it.label}${it.sub ? ` <span class="sub">${it.sub}</span>` : ''}</span>${it.k ? `<span class="k">${it.k}</span>` : ''}</button>`).join('')}`).join('')
+  document.body.appendChild(m)
+  const mh = m.offsetHeight
+  const mw = m.offsetWidth
+  const openUp = rect.bottom + mh + 8 > innerHeight
+  m.style.top = `${openUp ? rect.top - mh - 6 : rect.bottom + 6}px`
+  m.style.left = `${align === 'right' ? Math.max(8, rect.right - mw) : Math.min(rect.left, innerWidth - mw - 8)}px`
+  m.style.setProperty('--origin', `${openUp ? 'bottom' : 'top'} ${align}`)
+  m.addEventListener('click', (e) => {
+    const b = e.target.closest('.mi'); if (!b) return
+    e.stopPropagation(); closeMenu(); onPick(b.dataset.key)
+  })
+  menuState = m
+}
+function closeMenu() { menuState?.remove(); menuState = null }
+
+/* ───────────────────────── Palette ───────────────────────── */
+let pal = null
+function openPalette() {
+  closeMenu()
+  const ov = document.getElementById('overlay')
+  ov.innerHTML = `<div class="scrim" data-act="close-overlay"></div><div class="palette"><div class="q">${icon('search', 18)}<input id="pal-q" placeholder="Search pull requests, repos, or actions…" autocomplete="off"></div><div class="res" id="pal-res"></div><div class="foot"><span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span></div></div>`
+  pal = { hl: 0, items: [] }
+  const q = document.getElementById('pal-q')
+  q.addEventListener('input', () => { pal.hl = 0; drawPalette(q.value) })
+  q.focus()
+  drawPalette('')
+}
+function paletteItems(query) {
+  const qq = query.trim().toLowerCase()
+  const prs = PRS.filter((p) => !qq || `${p.title} ${p.num} ${p.repo} ${p.author}`.toLowerCase().includes(qq.replace('#', ''))).slice(0, 7).map((p) => ({
+    group: 'Pull requests', html: `<span class="ic" style="background:none">${glyph(p)}</span><span class="t">${esc(p.title)}</span><span class="s">${repoOf(p).name} #${p.num}</span>`, run: () => { S.hero = false; S.selected = p.id; S.box = BOXES.find((b) => b.match(p) && b.id !== 'mine')?.id || 'mine'; render() },
+  }))
+  const actions = [
+    ['New review', 'compose', '⌘N', () => { S.hero = true; render(); document.getElementById('composer-input')?.focus() }],
+    ['Sync with GitHub', 'refresh', '⌘R', doSync],
+    ['Review everything requested from me', 'layers', '', reviewAllRequested],
+    [`Switch to ${S.theme === 'dark' ? 'light' : 'dark'} appearance`, S.theme === 'dark' ? 'sun' : 'moon', '', () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; render() }],
+    ['Toggle inspector', 'inspector', 'I', () => { S.inspector = !S.inspector; render() }],
+    ['Settings…', 'gear', '⌘,', () => openSettings()],
+    ...REPOS.map((r) => [`Go to ${r.slug}`, 'folder', '', () => { S.repo = r.slug; S.hero = false; render() }]),
+  ].filter(([l]) => !qq || l.toLowerCase().includes(qq)).map(([l, ic, k, run]) => ({ group: 'Actions', html: `<span class="ic">${icon(ic, 13)}</span><span class="t">${l}</span>${k ? `<span class="s"><kbd>${k}</kbd></span>` : ''}`, run }))
+  return [...prs, ...actions]
+}
+function drawPalette(query) {
+  pal.items = paletteItems(query)
+  let last = null
+  document.getElementById('pal-res').innerHTML = pal.items.map((it, i) => {
+    const head = it.group !== last ? `<div class="grp">${it.group}</div>` : ''
+    last = it.group
+    return `${head}<button class="it ${i === pal.hl ? 'hl' : ''}" data-pal="${i}">${it.html}</button>`
+  }).join('') || '<div class="grp" style="padding:16px">No results</div>'
+  document.querySelector('.it.hl')?.scrollIntoView({ block: 'nearest' })
+}
+function closeOverlay() { document.getElementById('overlay').innerHTML = ''; pal = null }
+
+/* ───────────────────────── Settings ───────────────────────── */
+let settingsTab = 'general'
+function openSettings(tab) {
+  closeMenu()
+  if (tab) settingsTab = tab
+  const tabs = [['general', 'General', 'gear'], ['agents', 'Agents', 'sparkles'], ['repos', 'Repositories', 'folder'], ['github', 'GitHub', 'github'], ['keys', 'Shortcuts', 'keyboard']]
+  const sw = (key, on) => `<button class="switch ${on ? 'on' : ''}" data-act="set-toggle" data-id="${key}"></button>`
+  const thumb = (dark) => `<div class="thumb"><div style="background:${dark ? '#2a2a31' : '#e9e9ee'}"></div><div style="background:${dark ? '#17171b' : '#fff'};display:grid;align-content:start;gap:3px;padding:6px"><i style="height:4px;border-radius:2px;background:${S.accent}"></i><i style="height:4px;width:70%;border-radius:2px;background:${dark ? '#444' : '#ddd'}"></i><i style="height:4px;width:50%;border-radius:2px;background:${dark ? '#444' : '#ddd'}"></i></div></div>`
+  const content = {
+    general: `
+      <div class="group-label">Appearance</div>
+      <div class="group">
+        <div class="grow"><div class="l">Theme</div><div class="appearance">
+          <button class="ap ${S.theme === 'light' ? 'on' : ''}" data-act="set-theme" data-id="light">${thumb(false)}Light</button>
+          <button class="ap ${S.theme === 'dark' ? 'on' : ''}" data-act="set-theme" data-id="dark">${thumb(true)}Dark</button>
+        </div></div>
+        <div class="grow"><div class="l">Accent color</div><div class="accents">${['#ff7a3d', '#0a84ff', '#bf5af2', '#ff375f', '#30d158', '#ffd60a', '#98989d'].map((c) => `<button class="${S.accent === c ? 'on' : ''}" style="--c:${c}" data-act="set-accent" data-id="${c}"></button>`).join('')}</div></div>
+      </div>
+      <div class="group-label">Reviews</div>
+      <div class="group">
+        <div class="grow"><div class="l">Review new pull requests automatically<small>Queue a review as soon as a PR requests you</small></div>${sw('autoReview', S.autoReview)}</div>
+        <div class="grow"><div class="l">Confirm before submitting to GitHub</div>${sw('confirmSubmit', S.confirmSubmit)}</div>
+        <div class="grow"><div class="l">Notify me when a review finishes</div>${sw('notifyDone', S.notifyDone)}</div>
+      </div>`,
+    agents: `
+      <div class="group-label">Installed agents</div>
+      <div class="group">${Object.entries(AGENTS).map(([id, a]) => `<div class="grow agent-row"><div class="agent-badge">${agentIcon(id, 18)}</div><div class="l">${a.label}<small>${a.model}</small></div><span class="ok-pill ${a.ok ? '' : 'off'}">${a.ok ? 'Ready' : 'Not on PATH'}</span></div>`).join('')}</div>
+      <div class="group-label">Defaults</div>
+      <div class="group">
+        <div class="grow"><div class="l">Default agent</div><button class="select-btn" data-act="menu-agent" data-scope="default">${agentIcon(S.defaultAgent, 14)}${AGENTS[S.defaultAgent].label}${icon('chevDown', 12)}</button></div>
+        <div class="grow"><div class="l">Default depth</div><button class="select-btn" data-act="menu-depth" data-scope="default">${DEPTHS[S.defaultDepth].label}${icon('chevDown', 12)}</button></div>
+      </div>`,
+    repos: `
+      <div class="group-label">Repositories folder</div>
+      <div class="group"><div class="grow">${icon('folder')}<div class="l mono" style="font-size:12px">~/code</div><button class="btn">Choose…</button></div></div>
+      <div class="group-label">Tracked repositories</div>
+      <div class="group">${REPOS.map((r) => `<div class="grow"><span class="repo-dot" style="background:${r.color}"></span><div class="l">${r.slug}<small class="mono">~/code/${r.name} · main</small></div>${sw('repo-' + r.name, true)}</div>`).join('')}</div>`,
+    github: `
+      <div class="group-label">Account</div>
+      <div class="group"><div class="grow">${avatar('izaias', 30)}<div class="l">izaias<small>Authenticated with gh · github.com</small></div><span class="ok-pill">Connected</span></div></div>
+      <div class="group-label">Sync</div>
+      <div class="group">
+        <div class="grow"><div class="l">Only show PRs that request my review</div>${sw('onlyRequested', false)}</div>
+        <div class="grow"><div class="l">Sync every<small>Ordem also syncs when the window becomes active</small></div><button class="select-btn">2 minutes${icon('chevDown', 12)}</button></div>
+      </div>`,
+    keys: `
+      <div class="group">${[['Search everything', '⌘K'], ['New review', '⌘N'], ['Next / previous PR', 'J / K'], ['Start review', '⌘↵'], ['Include / exclude finding', 'X'], ['Submit review', '⌘↵'], ['Archive', 'E'], ['Toggle sidebar', '⌘\\'], ['Toggle inspector', 'I'], ['Sync', '⌘R']].map(([l, k]) => `<div class="grow"><div class="l">${l}</div><kbd style="font-size:12px">${k}</kbd></div>`).join('')}</div>`,
+  }[settingsTab]
+  document.getElementById('overlay').innerHTML = `<div class="scrim" data-act="close-overlay"></div>
+    <div class="sheet">
+      <div class="sheet-bar"><div class="lights"><i data-act="close-overlay"></i><i></i><i></i></div><div class="ttl">${tabs.find((t) => t[0] === settingsTab)[1]}</div>
+        <div class="sheet-tabs">${tabs.map(([k, l, ic]) => `<button class="sheet-tab ${settingsTab === k ? 'on' : ''}" data-act="set-tab" data-id="${k}">${icon(ic, 20, '', 1.5)}${l}</button>`).join('')}</div></div>
+      <div class="sheet-body">${content}</div>
+    </div>`
+}
+
+/* ───────────────────────── Actions ───────────────────────── */
+function doSync() {
+  if (S.syncing) return
+  S.syncing = true; renderSidebar()
+  setTimeout(() => { S.syncing = false; S.syncedAt = Date.now(); renderSidebar() }, 1400)
+}
+function reviewAllRequested() {
+  const list = PRS.filter((p) => p.state === 'needs_review' && p.requested && inRepo(p))
+  list.forEach((p) => startReview(p))
+  S.hero = false; S.box = 'reviewing'; S.selected = list[0]?.id ?? S.selected
+  render()
+}
+function visibleIds() { return [...document.querySelectorAll('[data-row]')].map((n) => Number(n.dataset.row)) }
+function move(delta) {
+  const ids = visibleIds(); if (!ids.length) return
+  const i = ids.indexOf(S.selected)
+  const next = ids[Math.max(0, Math.min(ids.length - 1, i === -1 ? 0 : i + delta))]
+  S.hero = false; S.selected = next; S.focusFinding = null
+  renderList(); renderDetail(); renderInspector()
+  document.querySelector(`[data-row="${next}"]`)?.scrollIntoView({ block: 'nearest' })
+}
+function advanceAfter(p) {
+  const ids = visibleIds()
+  const i = ids.indexOf(p.id)
+  const nextId = ids[i + 1] ?? ids[i - 1]
+  const row = document.querySelector(`[data-row="${p.id}"]`)
+  const go = () => { S.selected = nextId && nextId !== p.id ? nextId : p.id; render() }
+  if (row && !BOXES.find((b) => b.id === S.box).match(p)) { row.classList.add('leaving'); setTimeout(go, 260) } else go()
+}
+function submit(p) {
+  const ev = p.event || verdictOf(p)
+  const n = included(p).length
+  p.submitted = { event: ev, at: Date.now() }
+  p.findings.forEach((f) => { f.status = f.on ? 'pending' : 'dismissed' })
+  p.findings = p.findings.filter((f) => f.status !== 'dismissed')
+  if (ev === 'APPROVE') { p.state = 'settled'; p.settledHow = 'You approved' } else { p.state = 'waiting'; p.newCommits = 0 }
+  notify('Review sent to GitHub', `${EVENTS[ev].label} on #${p.num} with ${n} inline comment${n === 1 ? '' : 's'}.`, p.id)
+  advanceAfter(p)
+}
+
+document.addEventListener('click', (e) => {
+  const palItem = e.target.closest('[data-pal]')
+  if (palItem) { const it = pal.items[Number(palItem.dataset.pal)]; closeOverlay(); it.run(); return }
+  if (menuState && !e.target.closest('.menu')) closeMenu()
+  const el = e.target.closest('[data-act]'); if (!el) return
+  const act = el.dataset.act
+  const id = el.dataset.id
+  const p = byId(S.selected)
+  switch (act) {
+    case 'box': S.box = id; S.hero = false; { const first = boxItems(id)[0]; const sec = sectionsFor(id, boxItems(id)).flatMap(([, l]) => l)[0]; S.selected = (sec || first)?.id ?? S.selected } render(); break
+    case 'repo': S.repo = S.repo === id ? null : id; S.hero = false; render(); break
+    case 'select': S.hero = false; S.selected = Number(id); S.focusFinding = null; { const sp = byId(S.selected); if (!BOXES.find((b) => b.id === S.box).match(sp)) S.box = BOXES.find((b) => b.match(sp))?.id || S.box } render(); break
+    case 'toggle-sidebar': S.sidebar = !S.sidebar; render(); break
+    case 'toggle-inspector': S.inspector = !S.inspector; render(); break
+    case 'insp-tab': S.inspTab = id; renderInspector(); break
+    case 'open-log': S.inspector = true; S.inspTab = 'log'; render(); break
+    case 'palette': openPalette(); break
+    case 'new': S.hero = true; render(); document.getElementById('composer-input')?.focus(); break
+    case 'sync': doSync(); break
+    case 'theme': S.theme = S.theme === 'dark' ? 'light' : 'dark'; render(); break
+    case 'settings': openSettings(el.dataset.tab); break
+    case 'close-overlay': closeOverlay(); break
+    case 'set-tab': openSettings(id); break
+    case 'set-theme': S.theme = id; render(); openSettings(); break
+    case 'set-accent': S.accent = id; render(); openSettings(); break
+    case 'set-toggle': if (id in S) S[id] = !S[id]; el.classList.toggle('on'); break
+    case 'toggle-finding': { e.stopPropagation(); const f = p.findings.find((x) => x.id === Number(id)); f.on = !f.on; S.focusFinding = f.id; const y = document.getElementById('scroll').scrollTop; const draft = document.getElementById('composer-input')?.value; p.draft = draft ?? p.draft; renderDetail(); document.getElementById('scroll').style.scrollBehavior = 'auto'; document.getElementById('scroll').scrollTop = y; renderList(); break }
+    case 'focus-finding': if (p.state === 'ready') { S.focusFinding = Number(id); document.querySelectorAll('.finding').forEach((n) => n.classList.toggle('focus', Number(n.dataset.id) === S.focusFinding)) } break
+    case 'include-all': { const all = p.findings.every((f) => f.on); p.findings.forEach((f) => { f.on = !all }); p.draft = document.getElementById('composer-input')?.value ?? p.draft; renderDetail(); renderList(); break }
+    case 'send': { const focus = document.getElementById('composer-input')?.value; startReview(p, focus); if (p.state === 'waiting') {} render(); break }
+    case 'send-hero': { const v = document.getElementById('composer-input').value; const m = v.match(/pull\/(\d+)/); const t = m && PRS.find((x) => x.num === Number(m[1])); if (t) { S.hero = false; S.selected = t.id; startReview(t); S.box = 'reviewing'; render() } else { reviewAllRequested() } break }
+    case 'suggest-requested': reviewAllRequested(); break
+    case 'retry': startReview(p, ''); render(); break
+    case 'stop': clearTimeout(S.logs[p.id]?.timer); delete S.logs[p.id]; p.state = 'needs_review'; render(); break
+    case 'dequeue': p.state = 'needs_review'; render(); break
+    case 'submit': {
+      p.draft = document.getElementById('composer-input')?.value ?? p.draft
+      submit(p); break
+    }
+    case 'menu-agent': {
+      const scoped = el.dataset.scope === 'default'
+      const current = scoped || S.hero ? S.defaultAgent : (p.agent || S.defaultAgent)
+      openMenu(el, [{ title: 'Agent', items: Object.entries(AGENTS).map(([k, a]) => ({ key: k, on: current === k, icon: agentIcon(k, 14), label: a.label, sub: a.ok ? a.model : 'not installed' })) }], (k) => {
+        if (scoped || S.hero) S.defaultAgent = k; else p.agent = k
+        if (scoped) openSettings(); else { const v = document.getElementById('composer-input')?.value; if (p && !S.hero) p.focus = v; renderDetail() }
+      })
+      break
+    }
+    case 'menu-depth': {
+      const scoped = el.dataset.scope === 'default'
+      const current = scoped || S.hero ? S.defaultDepth : (p.depth || S.defaultDepth)
+      openMenu(el, [{ title: 'Depth', items: Object.entries(DEPTHS).map(([k, d]) => ({ key: k, on: current === k, icon: icon(d.icon, 14), label: d.label, sub: d.sub })) }], (k) => {
+        if (scoped || S.hero) S.defaultDepth = k; else p.depth = k
+        if (scoped) openSettings(); else { const v = document.getElementById('composer-input')?.value; if (p && !S.hero) p.focus = v; renderDetail() }
+      })
+      break
+    }
+    case 'menu-lens': {
+      openMenu(el, [{ title: 'Focus', items: Object.entries(LENSES).map(([k, l]) => ({ key: k, on: (p.lens || 'general') === k, icon: icon(l.icon, 14), label: l.label })) }, { items: [{ key: 'new', icon: icon('plus', 14), label: 'New preset…' }] }], (k) => {
+        if (k !== 'new') { p.lens = k; p.focus = document.getElementById('composer-input')?.value; renderDetail() }
+      })
+      break
+    }
+    case 'menu-event': {
+      openMenu(el, [{ title: 'Submit as', items: Object.entries(EVENTS).map(([k, ev]) => ({ key: k, on: (p.event || verdictOf(p)) === k, icon: `<span class="swatch" style="width:8px;height:8px;border-radius:50%;background:${ev.color}"></span>`, label: ev.label, sub: k === verdictOf(p) ? 'suggested' : '' })) }], (k) => {
+        p.event = k; p.draft = document.getElementById('composer-input')?.value ?? p.draft; renderDetail()
+      })
+      break
+    }
+    case 'filter-menu': {
+      openMenu(el, [
+        { title: 'Show', items: [{ key: 'req', on: false, label: 'Only requested from me' }, { key: 'mine', on: true, label: 'Include my pull requests' }, { key: 'drafts', on: false, label: 'Include drafts' }] },
+        { title: 'Sort by', items: [{ key: 'wait', on: true, label: 'Longest waiting' }, { key: 'new', label: 'Newest' }, { key: 'small', label: 'Smallest diff' }, { key: 'act', label: 'Recent activity' }] },
+      ], () => {}, 'right')
+      break
+    }
+    case 'pr-menu': {
+      openMenu(el, [{ items: [{ key: 'gh', icon: icon('github', 14), label: 'Open on GitHub', k: '⌘O' }, { key: 'copy', icon: icon('link', 14), label: 'Copy link', k: '⇧⌘C' }] }, { items: [{ key: 'rerun', icon: icon('refresh', 14), label: 'Run another review…' }, { key: 'archive', icon: icon('archive', 14), label: 'Archive', k: 'E' }] }], (k) => {
+        if (k === 'archive') { p.state = 'settled'; p.settledHow = 'Archived'; advanceAfter(p) }
+      }, 'right')
+      break
+    }
+  }
+})
+
+document.addEventListener('input', (e) => { if (e.target.id === 'composer-input') autosize() })
+
+document.addEventListener('keydown', (e) => {
+  const mod = e.metaKey || e.ctrlKey
+  const typing = ['TEXTAREA', 'INPUT'].includes(document.activeElement?.tagName)
+  if (pal) {
+    if (e.key === 'Escape') { closeOverlay(); return }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); pal.hl = Math.max(0, Math.min(pal.items.length - 1, pal.hl + (e.key === 'ArrowDown' ? 1 : -1))); drawPalette(document.getElementById('pal-q').value); return }
+    if (e.key === 'Enter') { e.preventDefault(); const it = pal.items[pal.hl]; closeOverlay(); it?.run(); return }
+    return
+  }
+  if (e.key === 'Escape') { closeMenu(); closeOverlay(); if (typing) document.activeElement.blur(); return }
+  if (mod && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return }
+  if (mod && e.key === '\\') { e.preventDefault(); S.sidebar = !S.sidebar; render(); return }
+  if (mod && e.key === ',') { e.preventDefault(); openSettings(); return }
+  if (mod && e.key.toLowerCase() === 'r') { e.preventDefault(); doSync(); return }
+  if (mod && e.key === 'Enter') {
+    e.preventDefault()
+    if (S.hero) { document.querySelector('[data-act="send-hero"]')?.click(); return }
+    const btn = document.querySelector('[data-act="submit"]') || document.querySelector('.composer [data-act="send"]')
+    btn?.click(); return
+  }
+  if (typing || mod) return
+  const p = byId(S.selected)
+  if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); move(1) }
+  if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); move(-1) }
+  if (e.key === 'i') { S.inspector = !S.inspector; render() }
+  if (e.key === 'x' && p?.state === 'ready') {
+    const fid = S.focusFinding ?? included(p)[0]?.id ?? p.findings[0].id
+    document.querySelector(`[data-act="toggle-finding"][data-id="${fid}"]`)?.click()
+  }
+  if (e.key === 'e' && p) { p.state = 'settled'; p.settledHow = 'Archived'; advanceAfter(p) }
+  if (e.key === 'r' && p) { e.preventDefault(); document.getElementById('composer-input')?.focus() }
+})
+
+/* live clocks + relative times */
+setInterval(() => {
+  document.querySelectorAll('[data-clock]').forEach((n) => { n.textContent = clock(Number(n.dataset.clock)) })
+}, 1000)
+setInterval(() => { if (!S.syncing) renderSidebar() }, 30e3)
+
+if (Q.get('pr')) {
+  const target = PRS.find((p) => p.num === Number(Q.get('pr')))
+  if (target) S.selected = target.id
+}
+if (Q.get('start')) { const t = PRS.find((p) => p.num === Number(Q.get('start'))); if (t) { t.agent = 'claude'; t.depth = 'standard'; startReview(t) } }
+render()
+if (!Q.has('nosim')) runScript(byId(2))
+if (Q.has('palette')) { openPalette(); const q = document.getElementById('pal-q'); q.value = Q.get('palette'); q.dispatchEvent(new Event('input')) }
+if (Q.get('settings')) openSettings(Q.get('settings'))
+if (Q.get('menu')) document.querySelector(`[data-act="menu-${Q.get('menu')}"]`)?.click()
+if (Q.get('notify')) { const t = PRS.find((p) => p.num === Number(Q.get('notify'))); notify(`Claude finished #${t.num}`, '3 findings · 1 critical · 1 major — ready for you to send.', t.id) }
+</script>
+</body>
+</html>

@@ -82,7 +82,7 @@ class Cli {
     this.stdout = stdout
     this.stderr = stderr
     this.sleep = sleep
-    this.client = createClient(env.ORDEM_API_URL ?? DEFAULT_API_URL)
+    this.client = createClient(env.ORDEM_API_URL ?? env.FORGE_API_URL ?? DEFAULT_API_URL)
     this.posixlyCorrect = env.POSIXLY_CORRECT !== undefined
   }
 

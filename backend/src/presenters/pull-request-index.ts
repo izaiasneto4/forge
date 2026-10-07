@@ -1,7 +1,8 @@
-import { and, count, desc } from 'drizzle-orm'
+import { and, count, desc, exists, eq, inArray, isNotNull, ne, notInArray, or } from 'drizzle-orm'
 import type { AppContext } from '../context'
-import { pullRequests } from '../db/schema'
-import { activeRemote, currentRepoCondition, withReviewStatus, type PullRequestRecord, type ReviewStatus } from '../models/pull-request'
+import { pullRequests, reviewTasks } from '../db/schema'
+import { ACTIVE_RUN_STATES } from '../models/review-task'
+import { activeRemote, currentRepoCondition, notArchived, withReviewStatus, type PullRequestRecord, type ReviewStatus } from '../models/pull-request'
 import { SettingStore } from '../models/setting'
 import { defaultSyncStatus, syncStatePayload, syncStateForRepoPath } from '../models/sync-state'
 import { recoverCurrentRepo } from '../services/current-repo-recovery'
@@ -36,6 +37,29 @@ export async function pullRequestColumns({ db, commands }: PayloadContext, repoP
     reviewed_by_others: column('reviewed_by_others'),
     review_failed: column('review_failed'),
   }
+}
+
+export const SETTLED_REVIEWS_LIMIT = 50
+
+// Reviewed PRs that were merged or closed. The default scope (notArchived)
+// already leaves out PRs the user archived or deleted. Reviews still queued or
+// running are always included; the limit only trims finished history.
+export async function settledReviews({ db, commands }: PayloadContext, repoPath: string | null) {
+  const repoCondition = await currentRepoCondition(commands, repoPath)
+  const taskIn = (states: string[], include: boolean) =>
+    exists(
+      db
+        .select({ id: reviewTasks.id })
+        .from(reviewTasks)
+        .where(and(eq(reviewTasks.pullRequestId, pullRequests.id), include ? inArray(reviewTasks.state, states) : notInArray(reviewTasks.state, states))),
+    )
+  const inactive = or(ne(pullRequests.remoteState, 'open'), isNotNull(pullRequests.inactiveReason))
+  const query = (condition: ReturnType<typeof taskIn>) =>
+    db.select().from(pullRequests).where(and(notArchived, inactive, condition, repoCondition)).orderBy(desc(pullRequests.updatedAtGithub))
+
+  const activeRuns = query(taskIn([...ACTIVE_RUN_STATES], true)).all()
+  const history = query(taskIn([...ACTIVE_RUN_STATES], false)).limit(SETTLED_REVIEWS_LIMIT).all()
+  return [...activeRuns, ...history]
 }
 
 export async function pullRequestTotalCount({ db, commands }: PayloadContext, repoPath: string | null) {

@@ -1,75 +1,68 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ToastProvider, useToasts } from './toasts'
+import { useToasts } from './toastContext'
+import { ToastProvider } from './toasts'
 
-function ToastHarness() {
+function Harness({ onPush }: { onPush: (pushToast: ReturnType<typeof useToasts>['pushToast']) => void }) {
   const { pushToast } = useToasts()
+  return <button type="button" onClick={() => onPush(pushToast)}>Push</button>
+}
 
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        pushToast('First toast', 'success')
-        pushToast('Second toast', 'info')
-      }}
-    >
-      Push toasts
-    </button>
+function renderWith(onPush: (pushToast: ReturnType<typeof useToasts>['pushToast']) => void) {
+  const view = render(
+    <ToastProvider>
+      <Harness onPush={onPush} />
+    </ToastProvider>,
   )
+  fireEvent.click(screen.getByRole('button', { name: 'Push' }))
+  return view
 }
 
 describe('ToastProvider', () => {
-  it('renders multiple toasts inside a shared stack container', async () => {
-    const { container } = render(
-      <ToastProvider>
-        <ToastHarness />
-      </ToastProvider>,
-    )
+  afterEach(cleanup)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Push toasts' }))
-    await screen.findByText('First toast')
-    await screen.findByText('Second toast')
+  it('renders notifications newest first inside a shared stack', async () => {
+    const first = 'First notification'
+    const second = 'Second notification'
+    const { container } = renderWith((pushToast) => {
+      pushToast(first, 'success')
+      pushToast(second, 'info')
+    })
 
-    const stack = container.querySelector('.global-toast-stack')
-    const toasts = container.querySelectorAll('.global-toast')
+    await screen.findByText(second)
+
+    const stack = container.querySelector('.notif-stack')
+    const messages = [...container.querySelectorAll('.notif p')].map((node) => node.textContent)
 
     expect(stack).not.toBeNull()
-    expect(toasts).toHaveLength(2)
-    expect([...toasts].every((toast) => toast.parentElement === stack)).toBe(true)
-    expect(screen.getByText('First toast')).toBeTruthy()
-    expect(screen.getByText('Second toast')).toBeTruthy()
+    expect(messages).toEqual([second, first])
   })
 
-  it('replaces repeated keyed toasts instead of stacking duplicates', async () => {
-    function KeyedToastHarness() {
-      const { pushToast } = useToasts()
+  it('replaces repeated keyed notifications instead of stacking duplicates', async () => {
+    const stale = 'Requested only enabled'
+    const fresh = 'All open PRs enabled'
+    const { container } = renderWith((pushToast) => {
+      pushToast(stale, 'success', { key: 'review-scope' })
+      pushToast(fresh, 'success', { key: 'review-scope' })
+    })
 
-      return (
-        <button
-          type="button"
-          onClick={() => {
-            pushToast('Requested only enabled', 'success', { key: 'review-scope' })
-            pushToast('All open PRs enabled', 'success', { key: 'review-scope' })
-          }}
-        >
-          Push keyed toasts
-        </button>
-      )
-    }
+    await screen.findByText(fresh)
 
-    const { container } = render(
-      <ToastProvider>
-        <KeyedToastHarness />
-      </ToastProvider>,
-    )
+    expect(container.querySelectorAll('.notif')).toHaveLength(1)
+    expect(screen.queryByText(stale)).toBeNull()
+  })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Push keyed toasts' }))
-    await screen.findByText('All open PRs enabled')
+  it('shows the given title and runs the click action', async () => {
+    const title = 'Review finished · #12'
+    const message = 'Findings are ready'
+    const onClick = vi.fn()
 
-    const toasts = container.querySelectorAll('.global-toast')
+    renderWith((pushToast) => pushToast(message, 'success', { title, onClick }))
 
-    expect(toasts).toHaveLength(1)
-    expect(screen.queryByText('Requested only enabled')).toBeNull()
+    fireEvent.click(await screen.findByText(message))
+
+    expect(screen.getByText(title)).toBeTruthy()
+    expect(onClick).toHaveBeenCalledTimes(1)
   })
 })

@@ -6,7 +6,7 @@ Ordem is a Bun + Elysia API with a React frontend.
 - `backend/drizzle/` — SQL migrations; `backend/src/db/schema.ts` is the Drizzle schema.
 - `backend/test/` — Bun tests; `backend/test/support/` has the in-memory test context and factories.
 - `backend/bin/` — `ordem` CLI and `migrate` entrypoints.
-- `frontend/` — React + Vite app; its production build is served from `public/frontend`.
+- `frontend/` — React + Vite app (dark, macOS-style design; styles in `frontend/src/styles/ordem.css`). Its production build in `public/frontend` is committed: rebuild with `npm --prefix frontend run build`.
 - `public/` — static assets and error pages served by the API.
 - `storage/` — SQLite databases.
 - `bin/` — developer helpers (`setup`, `dev`, `ordem`).
@@ -29,6 +29,7 @@ Ordem is a Bun + Elysia API with a React frontend.
 - Tests use `bun:test` with `createTestContext()` (in-memory SQLite, recording broadcaster, fake command runner).
 - Declare inputs as named variables and assert against them; no network and no real `gh`/AI CLIs in tests.
 - Route tests go through the real app (`createTestApp`) so contracts and error envelopes are exercised.
+- Frontend tests use Vitest + Testing Library (`frontend/src/**/*.test.{ts,tsx}`).
 
 ## Commit & Pull Request Guidelines
 - Commit subjects are short, imperative, and capitalized (e.g., “Add worktree service tests”).

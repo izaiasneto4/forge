@@ -13,6 +13,7 @@ export class WorktreeServiceError extends Error {}
 export class WorktreeNetworkError extends WorktreeServiceError {}
 
 export const WORKTREES_DIR = '.ordem-worktrees'
+const LEGACY_WORKTREES_DIR = '.forge-worktrees'
 export const MAX_RETRIES = 3
 export const RETRY_DELAY_SECONDS = 2
 
@@ -55,7 +56,11 @@ export class WorktreeService {
     options: WorktreeServiceOptions = {},
   ) {
     this.repoPath = expandPath(repoPath)
-    this.worktreesBase = join(this.repoPath, WORKTREES_DIR)
+    const legacyBase = join(this.repoPath, LEGACY_WORKTREES_DIR)
+    // Reuse existing checkouts after a rebrand so retries still clean them up.
+    this.worktreesBase = isDirectory(legacyBase) && validateNewPath(legacyBase, this.repoPath) !== null
+      ? legacyBase
+      : join(this.repoPath, WORKTREES_DIR)
     this.sleep = options.sleep ?? ((seconds) => Bun.sleep(seconds * 1000))
   }
 
@@ -82,7 +87,10 @@ export class WorktreeService {
 
   async cleanupAll() {
     await this.ctx.commands.run(['git', '-C', this.repoPath, 'worktree', 'prune'])
-    if (isDirectory(this.worktreesBase)) rmSync(this.worktreesBase, { recursive: true, force: true })
+    for (const directory of [WORKTREES_DIR, LEGACY_WORKTREES_DIR]) {
+      const base = join(this.repoPath, directory)
+      if (isDirectory(base)) rmSync(base, { recursive: true, force: true })
+    }
   }
 
   // Head branch name from gh; falls back to "pr-<number>" on any failure.

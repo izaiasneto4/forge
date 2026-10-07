@@ -5,7 +5,7 @@ const LEVELS = literals('debug', 'info', 'warn', 'error', 'silent')
 type Level = (typeof LEVELS)[number]
 
 function configuredLevel(): Level {
-  const requested = process.env.ORDEM_LOG_LEVEL
+  const requested = process.env.ORDEM_LOG_LEVEL ?? process.env.FORGE_LOG_LEVEL
   const match = LEVELS.find((level) => level === requested)
   if (match) return match
   return process.env.NODE_ENV === 'test' ? 'silent' : 'info'

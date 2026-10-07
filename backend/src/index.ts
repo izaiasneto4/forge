@@ -8,7 +8,7 @@ const config = runtimeConfig(process.env)
 process.chdir(config.appRoot)
 
 // ORDEM_DISABLE_JOB_WORKER=1 queues jobs without running them.
-const server = startServer({ config, jobWorker: process.env.ORDEM_DISABLE_JOB_WORKER !== '1' })
+const server = startServer({ config, jobWorker: (process.env.ORDEM_DISABLE_JOB_WORKER ?? process.env.FORGE_DISABLE_JOB_WORKER) !== '1' })
 
 logger.info(`Ordem on http://localhost:${server.port} (db: ${config.databasePath})`)
 

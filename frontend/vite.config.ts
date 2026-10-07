@@ -1,13 +1,12 @@
-import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 // The Bun API (backend/) listens on :3000 by default; ORDEM_API_URL points elsewhere.
-const apiTarget = process.env.ORDEM_API_URL ?? 'http://localhost:3000'
+const apiTarget = process.env.ORDEM_API_URL ?? process.env.FORGE_API_URL ?? 'http://localhost:3000'
 
 export default defineConfig({
   base: '/frontend/',
-  plugins: [react(), tailwindcss()],
+  plugins: [react()],
   build: {
     outDir: '../public/frontend',
     emptyOutDir: true,

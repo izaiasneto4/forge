@@ -52,8 +52,9 @@ aliases:
 # Use a persistent storage volume for the SQLite database.
 # Recommended to change this to a mounted volume path that is backed up off server.
 # Existing deployments should keep their current storage volume name.
+# Retain the legacy identifier by default; new installations may use ordem_storage.
 volumes:
-  - "ordem_storage:/app/storage"
+  - "forge_storage:/app/storage"
 
 # Configure the image builder.
 builder:

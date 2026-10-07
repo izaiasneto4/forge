@@ -7,7 +7,7 @@
   {
     "helper": "render_markdown",
     "input": "```ruby\ndef foo\nend\n```",
-    "html": "<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">ruby</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"def foo\nend\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-ruby\">def foo\nend\n</code></pre>\n        </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>ruby</span><button type=\"button\" class=\"copy-btn\" data-copy=\"def foo\nend\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-ruby\">def foo\nend\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",
@@ -47,7 +47,7 @@
   {
     "helper": "render_markdown",
     "input": "Paragraph\n```js\nconst a = 1 < 2 && \"x\" && 'y'\n```",
-    "html": "<p>Paragraph</p>\n<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">js</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"const a = 1 &lt; 2 &amp;&amp; &quot;x&quot; &amp;&amp; &#39;y&#39;\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-js\">const a = 1 &lt; 2 &amp;&amp; \"x\" &amp;&amp; 'y'\n</code></pre>\n        </div>"
+    "html": "<p>Paragraph</p>\n<div class=\"code-block\"><div class=\"code-head\"><span>js</span><button type=\"button\" class=\"copy-btn\" data-copy=\"const a = 1 &lt; 2 &amp;&amp; &quot;x&quot; &amp;&amp; &#39;y&#39;\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-js\">const a = 1 &lt; 2 &amp;&amp; \"x\" &amp;&amp; 'y'\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",
@@ -62,7 +62,7 @@
   {
     "helper": "render_markdown",
     "input": "    indented code\n    more",
-    "html": "<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">plaintext</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"indented code\nmore\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-plaintext\">indented code\nmore\n</code></pre>\n        </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>plaintext</span><button type=\"button\" class=\"copy-btn\" data-copy=\"indented code\nmore\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-plaintext\">indented code\nmore\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",
@@ -97,7 +97,7 @@
   {
     "helper": "render_markdown",
     "input": "```\nplain\n```",
-    "html": "<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">plaintext</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"plain\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-plaintext\">plain\n</code></pre>\n        </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>plaintext</span><button type=\"button\" class=\"copy-btn\" data-copy=\"plain\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-plaintext\">plain\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",
@@ -117,7 +117,7 @@
   {
     "helper": "render_markdown",
     "input": "```diff\n- old\n+ new\n```",
-    "html": "<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">diff</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"- old\n+ new\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-diff\">- old\n+ new\n</code></pre>\n        </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>diff</span><button type=\"button\" class=\"copy-btn\" data-copy=\"- old\n+ new\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-diff\">- old\n+ new\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",
@@ -137,7 +137,7 @@
   {
     "helper": "render_markdown",
     "input": "**Bold**: text\n\n```ruby\nfoo(bar)\n```\n\nAfter",
-    "html": "<p><strong>Bold</strong>: text</p>\n<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">ruby</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"foo(bar)\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-ruby\">foo(bar)\n</code></pre>\n        </div>\n<p>After</p>\n"
+    "html": "<p><strong>Bold</strong>: text</p>\n<div class=\"code-block\"><div class=\"code-head\"><span>ruby</span><button type=\"button\" class=\"copy-btn\" data-copy=\"foo(bar)\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-ruby\">foo(bar)\n</code></pre></div>\n<p>After</p>\n"
   },
   {
     "helper": "render_markdown",
@@ -147,12 +147,12 @@
   {
     "helper": "render_markdown",
     "input": "Some ```json\n[1]\n``` thing",
-    "html": "<p>Some ```json<br>\n[1]</p>\n<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">thing</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-thing\"></code></pre>\n        </div>"
+    "html": "<p>Some ```json<br>\n[1]</p>\n<div class=\"code-block\"><div class=\"code-head\"><span>thing</span><button type=\"button\" class=\"copy-btn\" data-copy=\"\">Copy</button></div><pre class=\"highlight\"><code class=\"language-thing\"></code></pre></div>"
   },
   {
     "helper": "render_markdown",
     "input": "```json\n[{\"severity\": \"error\", \"file\": \"a.rb\"}]\n```\n\nSummary text",
-    "html": "<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">json</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"[{&quot;severity&quot;: &quot;error&quot;, &quot;file&quot;: &quot;a.rb&quot;}]\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-json\">[{\"severity\": \"error\", \"file\": \"a.rb\"}]\n</code></pre>\n        </div>\n<p>Summary text</p>\n"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>json</span><button type=\"button\" class=\"copy-btn\" data-copy=\"[{&quot;severity&quot;: &quot;error&quot;, &quot;file&quot;: &quot;a.rb&quot;}]\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-json\">[{\"severity\": \"error\", \"file\": \"a.rb\"}]\n</code></pre></div>\n<p>Summary text</p>\n"
   },
   {
     "helper": "render_markdown",
@@ -182,36 +182,36 @@
   {
     "helper": "render_markdown",
     "input": "```ruby   \ncode\n```",
-    "html": "<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">ruby</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"code\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-ruby\">code\n</code></pre>\n        </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>ruby</span><button type=\"button\" class=\"copy-btn\" data-copy=\"code\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-ruby\">code\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",
     "input": "~~~python\nprint(1)\n~~~",
-    "html": "<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">python</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"print(1)\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-python\">print(1)\n</code></pre>\n        </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>python</span><button type=\"button\" class=\"copy-btn\" data-copy=\"print(1)\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-python\">print(1)\n</code></pre></div>"
   },
   {
     "helper": "render_code_block",
     "input": "def foo; end",
     "language": "ruby",
-    "html": "<div class=\"code-block relative group\">\n      <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n        <span class=\"text-gray-400 text-xs font-mono\">ruby</span>\n        <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"def foo; end\">\n          <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n          Copy\n        </button>\n      </div>\n      <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-ruby\">def foo; end</code></pre>\n    </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>ruby</span><button type=\"button\" class=\"copy-btn\" data-copy=\"def foo; end\">Copy</button></div><pre class=\"highlight\"><code class=\"language-ruby\">def foo; end</code></pre></div>"
   },
   {
     "helper": "render_code_block",
     "input": "const x = \"<a>\" && 'b'\n",
     "language": null,
-    "html": "<div class=\"code-block relative group\">\n      <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n        <span class=\"text-gray-400 text-xs font-mono\">javascript</span>\n        <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"const x = &quot;&lt;a&gt;&quot; &amp;&amp; &#39;b&#39;\n\">\n          <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n          Copy\n        </button>\n      </div>\n      <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-javascript\">const x = \"&lt;a&gt;\" &amp;&amp; 'b'\n</code></pre>\n    </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>javascript</span><button type=\"button\" class=\"copy-btn\" data-copy=\"const x = &quot;&lt;a&gt;&quot; &amp;&amp; &#39;b&#39;\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-javascript\">const x = \"&lt;a&gt;\" &amp;&amp; 'b'\n</code></pre></div>"
   },
   {
     "helper": "render_code_block",
     "input": "plain words",
     "language": null,
-    "html": "<div class=\"code-block relative group\">\n      <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n        <span class=\"text-gray-400 text-xs font-mono\">plaintext</span>\n        <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"plain words\">\n          <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n          Copy\n        </button>\n      </div>\n      <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-plaintext\">plain words</code></pre>\n    </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>plaintext</span><button type=\"button\" class=\"copy-btn\" data-copy=\"plain words\">Copy</button></div><pre class=\"highlight\"><code class=\"language-plaintext\">plain words</code></pre></div>"
   },
   {
     "helper": "render_code_block",
     "input": "value: string",
     "language": null,
-    "html": "<div class=\"code-block relative group\">\n      <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n        <span class=\"text-gray-400 text-xs font-mono\">typescript</span>\n        <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"value: string\">\n          <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n          Copy\n        </button>\n      </div>\n      <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-typescript\">value: string</code></pre>\n    </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>typescript</span><button type=\"button\" class=\"copy-btn\" data-copy=\"value: string\">Copy</button></div><pre class=\"highlight\"><code class=\"language-typescript\">value: string</code></pre></div>"
   },
   {
     "helper": "render_markdown",
@@ -236,7 +236,7 @@
   {
     "helper": "render_markdown",
     "input": "## Findings\n\n1. **Critical**: Fix `x`\n2. **Minor**: rename `y`\n\n### Code\n\n```go\nfunc main() {\n\tfmt.Println(\"hi\")\n}\n```\n",
-    "html": "<h2>Findings</h2>\n\n<ol>\n<li><strong>Critical</strong>: Fix <code>x</code></li>\n<li><strong>Minor</strong>: rename <code>y</code></li>\n</ol>\n\n<h3>Code</h3>\n<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">go</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"func main() {\n    fmt.Println(&quot;hi&quot;)\n}\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-go\">func main() {\n    fmt.Println(\"hi\")\n}\n</code></pre>\n        </div>"
+    "html": "<h2>Findings</h2>\n\n<ol>\n<li><strong>Critical</strong>: Fix <code>x</code></li>\n<li><strong>Minor</strong>: rename <code>y</code></li>\n</ol>\n\n<h3>Code</h3>\n<div class=\"code-block\"><div class=\"code-head\"><span>go</span><button type=\"button\" class=\"copy-btn\" data-copy=\"func main() {\n    fmt.Println(&quot;hi&quot;)\n}\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-go\">func main() {\n    fmt.Println(\"hi\")\n}\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",
@@ -276,12 +276,12 @@
   {
     "helper": "render_markdown",
     "input": "```ruby\n```",
-    "html": "<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">ruby</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-ruby\"></code></pre>\n        </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>ruby</span><button type=\"button\" class=\"copy-btn\" data-copy=\"\">Copy</button></div><pre class=\"highlight\"><code class=\"language-ruby\"></code></pre></div>"
   },
   {
     "helper": "render_markdown",
     "input": "Para\n\n```\n<b>not html</b> & stuff\n```",
-    "html": "<p>Para</p>\n<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">plaintext</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"&lt;b&gt;not html&lt;/b&gt; &amp; stuff\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-plaintext\">&lt;b&gt;not html&lt;/b&gt; &amp; stuff\n</code></pre>\n        </div>"
+    "html": "<p>Para</p>\n<div class=\"code-block\"><div class=\"code-head\"><span>plaintext</span><button type=\"button\" class=\"copy-btn\" data-copy=\"&lt;b&gt;not html&lt;/b&gt; &amp; stuff\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-plaintext\">&lt;b&gt;not html&lt;/b&gt; &amp; stuff\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",
@@ -321,7 +321,7 @@
   {
     "helper": "render_markdown",
     "input": "```js\nconst a = 1;\n\n\nconst b = 2;\n```",
-    "html": "<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">js</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"const a = 1;\n\n\nconst b = 2;\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-js\">const a = 1;\n\n\nconst b = 2;\n</code></pre>\n        </div>"
+    "html": "<div class=\"code-block\"><div class=\"code-head\"><span>js</span><button type=\"button\" class=\"copy-btn\" data-copy=\"const a = 1;\n\n\nconst b = 2;\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-js\">const a = 1;\n\n\nconst b = 2;\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",
@@ -346,7 +346,7 @@
   {
     "helper": "render_markdown",
     "input": "a\n\n    code after para",
-    "html": "<p>a</p>\n<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">plaintext</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"code after para\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-plaintext\">code after para\n</code></pre>\n        </div>"
+    "html": "<p>a</p>\n<div class=\"code-block\"><div class=\"code-head\"><span>plaintext</span><button type=\"button\" class=\"copy-btn\" data-copy=\"code after para\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-plaintext\">code after para\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",
@@ -426,7 +426,7 @@
   {
     "helper": "render_markdown",
     "input": "Consider:\n\n```ruby\nuser&.name&.downcase\n```",
-    "html": "<p>Consider:</p>\n<div class=\"code-block relative group my-4\">\n          <div class=\"flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg\">\n            <span class=\"text-gray-400 text-xs font-mono\">ruby</span>\n            <button type=\"button\" class=\"copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1\" data-controller=\"copy\" data-action=\"click->copy#copy\" data-copy-content-value=\"user&amp;.name&amp;.downcase\n\">\n              <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>\n              Copy\n            </button>\n          </div>\n          <pre class=\"highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0\"><code class=\"language-ruby\">user&amp;.name&amp;.downcase\n</code></pre>\n        </div>"
+    "html": "<p>Consider:</p>\n<div class=\"code-block\"><div class=\"code-head\"><span>ruby</span><button type=\"button\" class=\"copy-btn\" data-copy=\"user&amp;.name&amp;.downcase\n\">Copy</button></div><pre class=\"highlight\"><code class=\"language-ruby\">user&amp;.name&amp;.downcase\n</code></pre></div>"
   },
   {
     "helper": "render_markdown",

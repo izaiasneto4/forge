@@ -17,14 +17,22 @@ function preferExactRepoDirectory(paths: string[], slug: string) {
 }
 
 // Finds the local checkout under `reposFolder` whose origin remote matches `slug`.
-export async function resolveRepoSlug(commands: CommandRunner, reposFolder: string | null, slug: string): Promise<RepoResolution> {
+// `ignoreCase` matches GitHub, where `Acme/API` and `acme/api` are the same
+// repository; the default keeps the Rails behavior for repo switching.
+export async function resolveRepoSlug(
+  commands: CommandRunner,
+  reposFolder: string | null,
+  slug: string,
+  options: { ignoreCase?: boolean } = {},
+): Promise<RepoResolution> {
+  const normalize = (value: string | null) => (options.ignoreCase ? value?.toLowerCase() : value)
   if (isBlank(reposFolder) || !isDirectory(reposFolder)) {
     return { status: 'not_found', paths: [] }
   }
 
   const repositories = await scanRepositories(commands, reposFolder)
   const matches = repositories
-    .filter((repository) => slugFromRemote(repository.remote_url) === slug)
+    .filter((repository) => normalize(slugFromRemote(repository.remote_url)) === normalize(slug))
     .map((repository) => repository.path)
 
   const [onlyMatch] = matches

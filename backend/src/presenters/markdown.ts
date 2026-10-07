@@ -11,9 +11,6 @@ import { isBlank } from '../lib/ruby'
 // Like Redcarpet without :escape_html/:filter_html, raw HTML in the markdown is
 // passed through untouched.
 
-const COPY_ICON =
-  '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>'
-
 const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 
 // ERB::Util.html_escape
@@ -26,31 +23,13 @@ function escapeCode(code: string) {
   return code.replace(/[&<>]/g, (character) => HTML_ESCAPES[character] ?? character)
 }
 
-// The language label and class are interpolated unescaped, as in the Ruby helper.
-function markdownCodeBlock(code: string, language: string) {
-  return `<div class="code-block relative group my-4">
-          <div class="flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg">
-            <span class="text-gray-400 text-xs font-mono">${language}</span>
-            <button type="button" class="copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1" data-controller="copy" data-action="click->copy#copy" data-copy-content-value="${htmlEscape(code)}">
-              ${COPY_ICON}
-              Copy
-            </button>
-          </div>
-          <pre class="highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0"><code class="language-${language}">${escapeCode(code)}</code></pre>
-        </div>`
-}
-
-function standaloneCodeBlock(code: string, language: string) {
-  return `<div class="code-block relative group">
-      <div class="flex items-center justify-between bg-gray-800 px-4 py-2 rounded-t-lg">
-        <span class="text-gray-400 text-xs font-mono">${language}</span>
-        <button type="button" class="copy-btn text-gray-400 hover:text-white text-xs flex items-center gap-1" data-controller="copy" data-action="click->copy#copy" data-copy-content-value="${htmlEscape(code)}">
-          ${COPY_ICON}
-          Copy
-        </button>
-      </div>
-      <pre class="highlight bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm m-0"><code class="language-${language}">${escapeCode(code)}</code></pre>
-    </div>`
+// One wrapper for fenced markdown blocks and standalone suggestions, styled by
+// the frontend's `.code-block` rules; its copy button reads `data-copy`. Unlike
+// the Ruby helper, the language label is escaped: it comes straight from the AI's
+// fence info string.
+function codeBlock(code: string, language: string) {
+  const label = htmlEscape(language)
+  return `<div class="code-block"><div class="code-head"><span>${label}</span><button type="button" class="copy-btn" data-copy="${htmlEscape(code)}">Copy</button></div><pre class="highlight"><code class="language-${label}">${escapeCode(code)}</code></pre></div>`
 }
 
 // Redcarpet starts every block with "\n" unless its output buffer is still
@@ -100,7 +79,7 @@ const redcarpetRenderer: RendererObject = {
   // Redcarpet hands block_code the fence body with its trailing newline.
   code({ text, lang }) {
     const language = (lang ?? '').match(/^\S+/)?.[0] ?? 'plaintext'
-    return markdownCodeBlock(text === '' ? '' : `${text}\n`, language)
+    return codeBlock(text === '' ? '' : `${text}\n`, language)
   },
   blockquote({ tokens }) {
     return `\n<blockquote>\n${blockBuffer(this.parser.parse(tokens))}</blockquote>\n`
@@ -199,7 +178,7 @@ export function renderMarkdown(text: string | null | undefined) {
 // an empty string is truthy in Ruby, so only null/undefined trigger detection.
 export function renderCodeBlock(code: string | null | undefined, language: string | null = null) {
   if (isBlank(code)) return ''
-  return standaloneCodeBlock(code, language ?? detectLanguage(code))
+  return codeBlock(code, language ?? detectLanguage(code))
 }
 
 // Ruby's trailing python branch (`def ` and `:`) is unreachable after the ruby check.
