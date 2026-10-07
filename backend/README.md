@@ -1,7 +1,7 @@
 # Forge API (Bun + Elysia)
 
 The whole server side of Forge: the `/api/v1` JSON API, the ActionCable-compatible
-WebSocket at `/cable`, the background job worker, and static serving of the built
+WebSocket at `/ws`, the background job worker, and static serving of the built
 frontend.
 
 ```sh
@@ -31,7 +31,7 @@ bun bin/forge.ts   # the forge CLI (see the root README)
   transitions, after-commit broadcasts).
 - `src/services/` — GitHub sync (`sync/`), AI review runs, submissions, summaries.
 - `src/jobs/` — SQLite-backed job queue, in-process worker, recurring maintenance.
-- `src/realtime/` — WebSocket server speaking the `actioncable-v1-json` protocol.
+- `src/realtime/` — plain JSON WebSocket server for live UI updates.
 - `src/cli/` — the `forge` CLI.
 
 ## Contract rules

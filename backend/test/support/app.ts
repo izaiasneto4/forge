@@ -1,5 +1,5 @@
 import { createApp } from '../../src/app'
-import { CableServer } from '../../src/realtime/cable-server'
+import { RealtimeServer } from '../../src/realtime/ws-server'
 import type { ApiServices } from '../../src/routes/shared'
 import type { TestContext } from './context'
 
@@ -13,10 +13,10 @@ export function unusedService(name: string): never {
 // Hosts are unrestricted unless a test asks for the real defaults (Eden Treaty
 // requests use a placeholder host).
 export function createTestApp(ctx: TestContext, services: Partial<ApiServices> = {}, options: { allowedHosts?: string[] } = {}) {
-  const cable = new CableServer(ctx.db)
+  const realtime = new RealtimeServer(ctx.db)
   return createApp({
     ctx,
-    cable,
+    realtime,
     publicDir: testPublicDir,
     allowedHosts: options.allowedHosts ?? ['*'],
     services: {

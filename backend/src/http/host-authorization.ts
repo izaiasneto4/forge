@@ -1,9 +1,9 @@
 import { isIP } from 'node:net'
 
-// Port of ActionDispatch::HostAuthorization. Like Rails, development allows
-// .localhost, .test and any IP (what stops DNS-rebinding pages from reaching the
-// API) and production allows every host. FORGE_ALLOWED_HOSTS overrides both: a
-// comma list where a leading "." also allows subdomains, or "*" for any host.
+// Development allows .localhost, .test and any IP (what stops DNS-rebinding
+// pages from reaching the API). Production allows every host.
+// FORGE_ALLOWED_HOSTS overrides both: a comma list where a leading "." also
+// allows subdomains, or "*" for any host.
 export const DEFAULT_ALLOWED_HOSTS = ['.localhost', '.test']
 export const ALLOW_ALL_HOSTS = ['*']
 
@@ -31,16 +31,14 @@ export function isAllowedHost(hostWithPort: string | null, allowedHosts: string[
   )
 }
 
-// Rails checks Host and the last X-Forwarded-Host entry.
 export function requestHostAllowed(request: Request, allowedHosts: string[]) {
   const forwarded = request.headers.get('x-forwarded-host')?.split(/,\s?/).at(-1)
   if (forwarded && !isAllowedHost(forwarded, allowedHosts)) return false
   return isAllowedHost(request.headers.get('host') ?? new URL(request.url).host, allowedHosts)
 }
 
-// ActionCable's allow_request_origin?: same origin as the Host header, plus
-// any localhost port in development (Rails' default allowed_request_origins).
-export function cableOriginAllowed(request: Request, options: { development: boolean }) {
+// Same origin as the Host header, plus any localhost port in development.
+export function websocketOriginAllowed(request: Request, options: { development: boolean }) {
   const origin = request.headers.get('origin')
   const host = request.headers.get('host')
   if (origin === null) return false

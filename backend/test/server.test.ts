@@ -12,7 +12,7 @@ describe('startServer', () => {
     if (tempDir) rmSync(tempDir, { recursive: true, force: true })
   })
 
-  test('serves the API and shuts down promptly while a cable client is connected', async () => {
+  test('serves the API and shuts down promptly while a websocket client is connected', async () => {
     tempDir = mkdtempSync(join(tmpdir(), 'forge-server-'))
     const shutdownTimeoutMs = 3000
     const config = runtimeConfig({ PORT: '0', DATABASE_PATH: join(tempDir, 'forge.sqlite3') })
@@ -21,7 +21,7 @@ describe('startServer', () => {
 
     const status = await fetch(`${origin}/api/v1/status`)
     const frames: unknown[] = []
-    const client = new WebSocket(`ws://localhost:${server.port}/cable`, { protocols: ['actioncable-v1-json'], headers: { origin } })
+    const client = new WebSocket(`ws://localhost:${server.port}/ws`, { headers: { origin } })
     const closed = new Promise<string>((resolve) => client.addEventListener('close', (event) => resolve(event.reason)))
     client.addEventListener('message', (event) => frames.push(JSON.parse(String(event.data))))
     await new Promise((resolve) => client.addEventListener('open', resolve, { once: true }))

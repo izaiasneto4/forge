@@ -8,11 +8,8 @@ import { JobQueue } from './jobs/queue'
 import { startRecurringTasks } from './jobs/recurring'
 import { jobHandlers } from './jobs/registry'
 import { startJobWorker } from './jobs/worker'
-import { CableServer } from './realtime/cable-server'
+import { RealtimeServer } from './realtime/ws-server'
 
-// How long shutdown waits for the HTTP server and running jobs. Like Solid
-// Queue's shutdown timeout: a job still running is taken back by the next
-// worker after this process exits.
 export const SHUTDOWN_TIMEOUT_MS = 5000
 
 export interface ServerOptions {
@@ -33,11 +30,11 @@ export function startServer(options: ServerOptions) {
   const db = openDatabase(config.databasePath)
   migrateDatabase(db)
 
-  const cable = new CableServer(db)
-  const ctx: AppContext = { db, events: cable, jobs: new JobQueue(db), commands: options.commands ?? bunCommandRunner }
+  const realtime = new RealtimeServer(db)
+  const ctx: AppContext = { db, events: realtime, jobs: new JobQueue(db), commands: options.commands ?? bunCommandRunner }
   const worker = options.jobWorker === false ? { stop: async () => {} } : startJobWorker(ctx.jobs, jobHandlers(ctx), { shutdownTimeoutMs })
   const recurring = startRecurringTasks(ctx)
-  const app = createApp({ ctx, cable, ...config }).listen({ port: config.port, hostname: '0.0.0.0' })
+  const app = createApp({ ctx, realtime, ...config }).listen({ port: config.port, hostname: '0.0.0.0' })
 
   return {
     app,
@@ -45,7 +42,7 @@ export function startServer(options: ServerOptions) {
     port: app.server?.port ?? config.port,
     async stop() {
       recurring.stop()
-      cable.disconnectAll()
+      realtime.disconnectAll()
       // Bun 1.2.20's server.stop() can stay pending after the server closed
       // websockets itself, so it gets the same deadline as running jobs.
       await within(shutdownTimeoutMs, app.stop(true))

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { BrowserRouter, NavLink, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 
 import { api, ApiResponseError } from './lib/api'
-import { subscribe } from './lib/cable'
+import { subscribe } from './lib/realtime'
 import { getWaitingInfo } from './lib/dateUtils'
 import { filterPullRequestColumns, type SortOption } from './lib/pullRequestFilters'
 import { queryKeys } from './lib/queryKeys'
@@ -199,7 +199,7 @@ function UiEventSubscriptions() {
   const { pushToast } = useToasts()
 
   useEffect(() => subscribe(
-    { channel: 'UiEventsChannel' },
+    { channel: 'ui_events' },
     {
       received: (raw) => {
         if (isUiEventPayload(raw)) {
@@ -210,7 +210,7 @@ function UiEventSubscriptions() {
   ), [client, pushToast])
 
   useEffect(() => subscribe(
-    { channel: 'ReviewNotificationsChannel' },
+    { channel: 'review_notifications' },
     {
       received: (raw) => {
         if (isReviewNotificationPayload(raw)) {
@@ -939,37 +939,42 @@ function ReviewLogStream({ taskId, initialLogs }: { taskId: string; initialLogs:
     setLogs(initialLogs)
   }, [initialLogs])
 
-  useEffect(() => subscribe(
-    { channel: 'ReviewTaskLogsChannel', review_task_id: taskId },
-    {
-      received: (data) => {
-        if (!data || typeof data !== 'object' || Array.isArray(data)) return
+  useEffect(() => {
+    const reviewTaskId = Number(taskId)
+    if (!Number.isInteger(reviewTaskId)) return undefined
 
-        if ('type' in data && (data.type === 'completed' || data.type === 'failed' || data.type === 'retry_scheduled' || data.type === 'preparing')) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.reviewTaskDetail(taskId) })
-          queryClient.invalidateQueries({ queryKey: queryKeys.reviewTaskBoard })
-          queryClient.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
-          return
-        }
+    return subscribe(
+      { channel: 'review_task_logs', review_task_id: reviewTaskId },
+      {
+        received: (data) => {
+          if (!data || typeof data !== 'object' || Array.isArray(data)) return
 
-        if (
-          'id' in data && typeof data.id === 'number' &&
-          'message' in data && typeof data.message === 'string' &&
-          'log_type' in data && typeof data.log_type === 'string' &&
-          (data.log_type === 'output' || data.log_type === 'error' || data.log_type === 'status') &&
-          'created_at' in data && typeof data.created_at === 'string'
-        ) {
-          const newLog: AgentLogItem = {
-            id: data.id,
-            message: data.message,
-            log_type: data.log_type,
-            created_at: data.created_at,
+          if ('type' in data && (data.type === 'completed' || data.type === 'failed' || data.type === 'retry_scheduled' || data.type === 'preparing')) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.reviewTaskDetail(taskId) })
+            queryClient.invalidateQueries({ queryKey: queryKeys.reviewTaskBoard })
+            queryClient.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
+            return
           }
-          setLogs((current) => current.concat(newLog))
-        }
+
+          if (
+            'id' in data && typeof data.id === 'number' &&
+            'message' in data && typeof data.message === 'string' &&
+            'log_type' in data && typeof data.log_type === 'string' &&
+            (data.log_type === 'output' || data.log_type === 'error' || data.log_type === 'status') &&
+            'created_at' in data && typeof data.created_at === 'string'
+          ) {
+            const newLog: AgentLogItem = {
+              id: data.id,
+              message: data.message,
+              log_type: data.log_type,
+              created_at: data.created_at,
+            }
+            setLogs((current) => current.concat(newLog))
+          }
+        },
       },
-    },
-  ), [queryClient, taskId])
+    )
+  }, [queryClient, taskId])
 
   return (
     <div className="max-h-[480px] overflow-y-auto rounded-lg border bg-[color:var(--color-bg-tertiary)] p-4">
