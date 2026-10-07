@@ -3,7 +3,9 @@ import { existsSync, statSync } from 'node:fs'
 import { join, normalize, sep } from 'node:path'
 
 // Replaces FrontendController, Rails' public file server, /up and the 404 page.
-export const SPA_ROUTES = ['/', '/review_tasks', '/review_tasks/:id', '/repositories', '/settings']
+export const SPA_ROUTES = ['/', '/review_tasks', '/review_tasks/:id', '/repositories', '/settings', '/new']
+// Mailbox views, optionally with a numeric pull request id: /inbox, /reviewing/12.
+export const MAILBOX_ROUTE = /^\/(inbox|reviewing|waiting|mine|settled)(\/\d+)?$/
 const UP_HTML = '<!DOCTYPE html><html><body style="background-color: green"></body></html>'
 
 export interface FrontendOptions {
@@ -61,10 +63,11 @@ export function frontendRoutes(options: FrontendOptions) {
   let app = new Elysia({ name: 'frontend' }).get('/up', () => new Response(UP_HTML, { headers: { 'content-type': 'text/html; charset=utf-8' } }))
   for (const route of SPA_ROUTES) app = app.get(route, ({ request }) => spaIndex(options, request))
 
-  // Static files under public/, then the public 404 page.
+  // Mailbox views (served here because their paths are dynamic), static files under public/, then the public 404 page.
   return app.all('*', ({ request }) => {
     const url = new URL(request.url)
     const isRead = request.method === 'GET' || request.method === 'HEAD'
+    if (isRead && MAILBOX_ROUTE.test(url.pathname)) return spaIndex(options, request)
     const file = isRead ? publicFilePath(options.publicDir, url.pathname) : null
     return file ? serveFile(file, cacheSeconds) : notFound(options)
   })
