@@ -8,6 +8,7 @@ import { castBoolean, idParam, InvalidParamError, mergeParams, parseInteger, pre
 import { isPresent, iso8601 } from '../lib/ruby'
 import { findPullRequestUnscoped, updatePullRequest } from '../models/pull-request'
 import {
+  COMMENT_STATUSES,
   commentsWithIds,
   findReviewComment,
   markCommentsAddressed,
@@ -68,7 +69,9 @@ async function submitReviewTask(deps: RouteDependencies, task: ReviewTaskRecord,
   const event = presentString(params, 'event')
   const summary = presentString(params, 'summary')
   const forceEmptySubmission = castBoolean(params.force_empty_submission) === true
-  const requestedIds = Array.isArray(params.comment_ids) && params.comment_ids.length > 0 ? commentIds(params.comment_ids) : null
+  // An explicit list, even an empty one, is exactly what gets sent: the reviewer
+  // excluded every finding. Only an omitted list falls back to all pending comments.
+  const requestedIds = Array.isArray(params.comment_ids) ? commentIds(params.comment_ids) : null
 
   const selected: ReviewCommentRecord[] =
     forceEmptySubmission && event === 'APPROVE'
@@ -225,9 +228,13 @@ export function reviewTaskRoutes(deps: RouteDependencies) {
         logs: logs.map((log) => ({ id: log.id, created_at: iso8601(log.createdAt), log_type: log.logType, message: log.message })),
       })
     })
-    .patch('/review_comments/:id/toggle', async ({ params: route }) => {
+    // Without a status the comment cycles pending -> addressed -> dismissed; the
+    // frontend passes one to dismiss or restore a finding in a single step.
+    .patch('/review_comments/:id/toggle', async ({ params: route, query, body }) => {
       const comment = findReviewComment(ctx.db, idParam(route.id))
-      const updated = updateReviewComment(ctx.db, comment, { status: nextCommentStatus(comment.status) })
+      const status = presentString(mergeParams(query, body), 'status') ?? nextCommentStatus(comment.status)
+      if (!COMMENT_STATUSES.some((known) => known === status)) renderError(ERROR_CODES.invalidInput, `Unknown status: ${status}`)
+      const updated = updateReviewComment(ctx.db, comment, { status })
       return ok({ detail: await reviewTaskDetailPayload(ctx, findReviewTask(ctx.db, updated.reviewTaskId)) })
     })
 }

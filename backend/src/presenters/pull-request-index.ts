@@ -1,7 +1,7 @@
-import { and, count, desc } from 'drizzle-orm'
+import { and, count, desc, exists, eq, isNotNull, ne, or } from 'drizzle-orm'
 import type { AppContext } from '../context'
-import { pullRequests } from '../db/schema'
-import { activeRemote, currentRepoCondition, withReviewStatus, type PullRequestRecord, type ReviewStatus } from '../models/pull-request'
+import { pullRequests, reviewTasks } from '../db/schema'
+import { activeRemote, currentRepoCondition, notArchived, withReviewStatus, type PullRequestRecord, type ReviewStatus } from '../models/pull-request'
 import { SettingStore } from '../models/setting'
 import { defaultSyncStatus, syncStatePayload, syncStateForRepoPath } from '../models/sync-state'
 import { recoverCurrentRepo } from '../services/current-repo-recovery'
@@ -36,6 +36,24 @@ export async function pullRequestColumns({ db, commands }: PayloadContext, repoP
     reviewed_by_others: column('reviewed_by_others'),
     review_failed: column('review_failed'),
   }
+}
+
+export const SETTLED_REVIEWS_LIMIT = 50
+
+// Reviewed PRs that were merged or closed. The default scope (notArchived)
+// already leaves out PRs the user archived or deleted.
+export async function settledReviews({ db, commands }: PayloadContext, repoPath: string | null) {
+  const repoCondition = await currentRepoCondition(commands, repoPath)
+  const reviewed = exists(db.select({ id: reviewTasks.id }).from(reviewTasks).where(eq(reviewTasks.pullRequestId, pullRequests.id)))
+  const inactive = or(ne(pullRequests.remoteState, 'open'), isNotNull(pullRequests.inactiveReason))
+
+  return db
+    .select()
+    .from(pullRequests)
+    .where(and(notArchived, inactive, reviewed, repoCondition))
+    .orderBy(desc(pullRequests.updatedAtGithub))
+    .limit(SETTLED_REVIEWS_LIMIT)
+    .all()
 }
 
 export async function pullRequestTotalCount({ db, commands }: PayloadContext, repoPath: string | null) {

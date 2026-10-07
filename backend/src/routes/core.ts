@@ -15,7 +15,7 @@ import { GithubCliError } from '../services/github-cli-client'
 import { parsePullRequestUrl } from '../services/pull-request-url-parser'
 import { slugFromPath } from '../services/repo-slug-resolver'
 import { SyncAdapterError } from '../services/sync/github-adapter'
-import { startOrQueueReview } from './pull-requests'
+import { focusParam, startOrQueueReview } from './pull-requests'
 import { renderError, rescueRecordInvalid, type RouteDependencies } from './shared'
 
 function countWhere(ctx: AppContext, table: typeof pullRequests | typeof reviewTasks, condition: ReturnType<typeof and>) {
@@ -109,6 +109,7 @@ export function coreRoutes({ ctx, services }: RouteDependencies) {
             startOrQueueReview(ctx, found.id, {
               cliClient: presentString(params, 'cli_client') ?? settings.defaultCliClient(),
               reviewType: presentString(params, 'review_type') ?? 'review',
+              focus: focusParam(params),
             }),
           422,
         )

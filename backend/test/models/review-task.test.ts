@@ -11,13 +11,19 @@ import {
   createReviewTask,
   destroyReviewTask,
   findReviewTask,
+  inProgressOrRetrying,
   markFailed,
+  markSubmitted,
+  MAX_RETRY_ATTEMPTS,
   moveBackward,
   parsedRetryHistory,
+  prepareNewRun,
   processQueueIfIdle,
   queuePosition,
   recoverOrphanedInReviewTasks,
   resetStuckTasks,
+  reviewTaskIdsWithPendingJob,
+  startReview,
   updateReviewTask,
 } from '../../src/models/review-task'
 import { STREAMS } from '../../src/realtime/broadcaster'
@@ -185,5 +191,75 @@ describe('activateSnapshot', () => {
 
     expect(reactivated.id).toBe(second.id)
     expect(ctx.jobs.unfinished('PullRequestSummaryJob').map((job) => job.payload)).toEqual([{ snapshotId: first.id }, { snapshotId: second.id }])
+  })
+})
+
+describe('ReviewTask runs', () => {
+  test('a failed task is not in progress, even right after its last retry', () => {
+    const ctx = createTestContext()
+    const recentRetry = minutesAgo(2)
+    const failed = insertReviewTask(ctx.db, { pullRequestId: insertPullRequest(ctx.db).id, state: 'failed_review', lastRetryAt: recentRetry })
+    const pending = insertReviewTask(ctx.db, { pullRequestId: insertPullRequest(ctx.db).id, state: 'pending_review', lastRetryAt: recentRetry })
+
+    expect(inProgressOrRetrying(failed)).toBe(false)
+    expect(inProgressOrRetrying(pending)).toBe(true)
+  })
+
+  test('starting a run clears the previous run\'s submission', () => {
+    const ctx = createTestContext()
+    const pending = 'pending_submission'
+    const task = insertReviewTask(ctx.db, { pullRequestId: insertPullRequest(ctx.db).id, state: 'pending_review' })
+    const submitted = markSubmitted(ctx, task, 'COMMENT')
+
+    const started = startReview(ctx, submitted)
+
+    expect(started).toMatchObject({ submissionStatus: pending, submittedAt: null, submittedEvent: null })
+  })
+
+  test('preparing a new run moves the previous findings into history and resets the retry budget', () => {
+    const ctx = createTestContext()
+    const previousOutput = 'Earlier findings'
+    const task = insertReviewTask(ctx.db, {
+      pullRequestId: insertPullRequest(ctx.db).id,
+      state: 'reviewed',
+      reviewOutput: previousOutput,
+      retryCount: MAX_RETRY_ATTEMPTS,
+      lastRetryAt: minutesAgo(1),
+    })
+    insertReviewComment(ctx.db, { reviewTaskId: task.id, severity: 'critical' })
+
+    const prepared = prepareNewRun(ctx, task)
+
+    expect(prepared).toMatchObject({ reviewOutput: null, retryCount: 0, lastRetryAt: null })
+    expect(ctx.db.select().from(reviewComments).where(eq(reviewComments.reviewTaskId, task.id)).all()).toEqual([])
+    expect(ctx.db.select().from(reviewIterations).where(eq(reviewIterations.reviewTaskId, task.id)).all().map((iteration) => iteration.reviewOutput)).toEqual([previousOutput])
+  })
+
+  test('preparing a run without findings only resets the retry budget', () => {
+    const ctx = createTestContext()
+    const failureReason = 'Network error'
+    const task = insertReviewTask(ctx.db, {
+      pullRequestId: insertPullRequest(ctx.db).id,
+      state: 'failed_review',
+      retryCount: MAX_RETRY_ATTEMPTS,
+      failureReason,
+    })
+
+    const prepared = prepareNewRun(ctx, task)
+
+    expect(prepared).toMatchObject({ retryCount: 0, failureReason: null })
+    expect(ctx.db.select().from(reviewIterations).where(eq(reviewIterations.reviewTaskId, task.id)).all()).toEqual([])
+  })
+
+  test('a review job waiting to run holds the slot and marks its task', () => {
+    const ctx = createTestContext()
+    const task = insertReviewTask(ctx.db, { pullRequestId: insertPullRequest(ctx.db).id, state: 'pending_review' })
+    const backoffSeconds = 30
+
+    expect(anyReviewRunning(ctx)).toBe(false)
+    ctx.jobs.enqueue('ReviewTaskJob', { reviewTaskId: task.id, isRetry: true }, { waitSeconds: backoffSeconds })
+
+    expect(anyReviewRunning(ctx)).toBe(true)
+    expect([...reviewTaskIdsWithPendingJob(ctx.jobs)]).toEqual([task.id])
   })
 })
