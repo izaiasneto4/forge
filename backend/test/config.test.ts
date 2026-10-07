@@ -27,23 +27,23 @@ describe('runtimeConfig', () => {
     expect(config.allowedHosts).toEqual(ALLOW_ALL_HOSTS)
   })
 
-  test('resolves a relative DATABASE_PATH from FORGE_ROOT, like database.yml', () => {
-    const appRoot = '/srv/forge'
+  test('resolves a relative DATABASE_PATH from ORDEM_ROOT, like database.yml', () => {
+    const appRoot = '/srv/ordem'
     const relativeDatabasePath = 'storage/custom.sqlite3'
 
-    const config = runtimeConfig({ FORGE_ROOT: appRoot, DATABASE_PATH: relativeDatabasePath })
+    const config = runtimeConfig({ ORDEM_ROOT: appRoot, DATABASE_PATH: relativeDatabasePath })
 
     expect(config.appRoot).toBe(appRoot)
     expect(config.databasePath).toBe(join(appRoot, relativeDatabasePath))
   })
 
   test('keeps an absolute DATABASE_PATH and reads port, hosts and the Vite URL', () => {
-    const absoluteDatabasePath = '/data/forge.sqlite3'
+    const absoluteDatabasePath = '/data/ordem.sqlite3'
     const port = 4100
     const frontendDevUrl = 'http://localhost:5174'
 
-    const config = runtimeConfig({ DATABASE_PATH: absoluteDatabasePath, PORT: String(port), FORGE_ALLOWED_HOSTS: 'forge.example.com', FRONTEND_DEV_URL: frontendDevUrl })
+    const config = runtimeConfig({ DATABASE_PATH: absoluteDatabasePath, PORT: String(port), ORDEM_ALLOWED_HOSTS: 'ordem.example.com', FRONTEND_DEV_URL: frontendDevUrl })
 
-    expect(config).toMatchObject({ databasePath: absoluteDatabasePath, port, allowedHosts: ['forge.example.com'], frontendDevUrl })
+    expect(config).toMatchObject({ databasePath: absoluteDatabasePath, port, allowedHosts: ['ordem.example.com'], frontendDevUrl })
   })
 })

@@ -1,13 +1,13 @@
-# Example Kamal configuration for a private Forge deployment.
+# Example Kamal configuration for a private Ordem deployment.
 # Replace all placeholder hosts, registry values, and secrets before use.
 # This file is not a production-ready deployment recipe as checked in.
 # Kamal is a standalone tool: install it with `gem install kamal` or use its Docker image.
 
 # Name of your application. Used to uniquely configure containers.
-service: forge
+service: ordem
 
 # Name of the container image (use your-user/app-name on external registries).
-image: forge
+image: ordem
 
 # Deploy to these servers. The Bun server runs the job worker in-process.
 servers:
@@ -38,21 +38,22 @@ env:
   clear:
     # Hosts allowed to reach the app (comma list, ".example.com" for subdomains).
     # Production allows every host when unset.
-    # FORGE_ALLOWED_HOSTS: app.example.com
+    # ORDEM_ALLOWED_HOSTS: app.example.com
 
     # Log verbosity: debug, info, warn, error.
-    # FORGE_LOG_LEVEL: info
+    # ORDEM_LOG_LEVEL: info
 
 # Aliases are triggered with "kamal <alias>".
 aliases:
   shell: app exec --interactive --reuse "bash"
   logs: app logs -f
-  forge: app exec --interactive --reuse "bun backend/bin/forge.ts"
+  ordem: app exec --interactive --reuse "bun backend/bin/ordem.ts"
 
 # Use a persistent storage volume for the SQLite database.
 # Recommended to change this to a mounted volume path that is backed up off server.
+# Existing deployments should keep their current storage volume name.
 volumes:
-  - "forge_storage:/app/storage"
+  - "ordem_storage:/app/storage"
 
 # Configure the image builder.
 builder:

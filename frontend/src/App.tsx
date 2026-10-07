@@ -178,8 +178,8 @@ function HeaderNav() {
     <header className="linear-header">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="flex items-center gap-2.5">
-          <img src="/icon.svg" alt="Forge" className="w-6 h-6" />
-          <span className="text-sm font-bold tracking-tight">Forge</span>
+          <img src="/icon.svg" alt="Ordem" className="w-6 h-6" />
+          <span className="text-sm font-bold tracking-tight">Ordem</span>
         </div>
         <div className="hidden-mobile ml-1 h-4 w-px bg-[color:var(--color-border-default)]" />
         <nav className="hidden-mobile flex items-center gap-1">

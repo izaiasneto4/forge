@@ -452,7 +452,7 @@ describe('API routes', () => {
 
       const { json } = await call('GET', '/api/v1/bootstrap')
 
-      expect(dig(json, 'app', 'name')).toBe('Forge')
+      expect(dig(json, 'app', 'name')).toBe('Ordem')
       expect(dig(json, 'settings', 'theme_preference')).toBe('dark')
       expect(dig(json, 'settings', 'github_login')).toBe('izaias')
     })

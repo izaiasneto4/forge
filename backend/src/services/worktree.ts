@@ -8,11 +8,11 @@ import { isDirectory } from './git'
 import { validateNewPath } from './path-validator'
 
 // Port of WorktreeService: checks a PR out into its own git worktree under
-// <repo>/.forge-worktrees so reviews never touch the user's working copy.
+// <repo>/.ordem-worktrees so reviews never touch the user's working copy.
 export class WorktreeServiceError extends Error {}
 export class WorktreeNetworkError extends WorktreeServiceError {}
 
-export const WORKTREES_DIR = '.forge-worktrees'
+export const WORKTREES_DIR = '.ordem-worktrees'
 export const MAX_RETRIES = 3
 export const RETRY_DELAY_SECONDS = 2
 
@@ -152,7 +152,7 @@ export class WorktreeService {
     const validatedWorktree = validateNewPath(worktreePath, this.repoPath)
     if (validatedWorktree === null) throw new WorktreeServiceError('Invalid worktree path')
 
-    const branchRef = `forge-review-pr-${pullRequest.number ?? ''}`
+    const branchRef = `ordem-review-pr-${pullRequest.number ?? ''}`
     const remoteRef = `origin/${branchName ?? ''}`
 
     const branchResult = await this.ctx.commands.run([

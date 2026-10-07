@@ -24,7 +24,7 @@ function fetchCommand() {
 }
 
 function branchWorktreeCommand(path: string, branch = branchName) {
-  return ['git', '-C', repo.path, 'worktree', 'add', path, '-b', `forge-review-pr-${pullRequest.number}`, `origin/${branch}`]
+  return ['git', '-C', repo.path, 'worktree', 'add', path, '-b', `ordem-review-pr-${pullRequest.number}`, `origin/${branch}`]
 }
 
 function fetchHeadWorktreeCommand(path: string) {

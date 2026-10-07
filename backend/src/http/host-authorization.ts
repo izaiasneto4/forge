@@ -2,7 +2,7 @@ import { isIP } from 'node:net'
 
 // Port of ActionDispatch::HostAuthorization. Like Rails, development allows
 // .localhost, .test and any IP (what stops DNS-rebinding pages from reaching the
-// API) and production allows every host. FORGE_ALLOWED_HOSTS overrides both: a
+// API) and production allows every host. ORDEM_ALLOWED_HOSTS overrides both: a
 // comma list where a leading "." also allows subdomains, or "*" for any host.
 export const DEFAULT_ALLOWED_HOSTS = ['.localhost', '.test']
 export const ALLOW_ALL_HOSTS = ['*']

@@ -9,8 +9,8 @@ describe('path validator', () => {
   let outside: string
 
   beforeEach(() => {
-    base = realpathSync(mkdtempSync(join(tmpdir(), 'forge-base-')))
-    outside = realpathSync(mkdtempSync(join(tmpdir(), 'forge-outside-')))
+    base = realpathSync(mkdtempSync(join(tmpdir(), 'ordem-base-')))
+    outside = realpathSync(mkdtempSync(join(tmpdir(), 'ordem-outside-')))
   })
 
   afterEach(() => {

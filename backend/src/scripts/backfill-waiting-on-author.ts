@@ -12,7 +12,7 @@ import {
 } from '../services/review-lifecycle-backfill'
 import { runScript, stdoutWriter } from './script-context'
 
-// rake forge:backfill_waiting_on_author
+// Port of the original waiting-on-author rake task.
 // Dry-run by default; APPLY=1 persists, LIMIT=n caps the PRs examined.
 
 // Ruby `String#to_i`: leading integer or 0.

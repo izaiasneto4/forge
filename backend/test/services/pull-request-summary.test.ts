@@ -196,7 +196,7 @@ describe('generatePullRequestSummary', () => {
     const summary = await generatePullRequestSummary(ctx, snapshot, { cliClient: 'codex' })
 
     expect(summary.mainChanges).toEqual(['from file'])
-    expect(outputPaths.every((path) => /forge-pr-summary-[0-9a-f]{12}\.md$/.test(path) && !existsSync(path))).toBe(true)
+    expect(outputPaths.every((path) => /ordem-pr-summary-[0-9a-f]{12}\.md$/.test(path) && !existsSync(path))).toBe(true)
   })
 
   test('accepts codex stdout when it fails without writing the file', async () => {

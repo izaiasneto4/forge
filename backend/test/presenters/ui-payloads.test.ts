@@ -136,7 +136,7 @@ describe('UI payloads', () => {
       const payload = await bootstrapPayload(ctx)
 
       expect(payload).toEqual({
-        app: { name: 'Forge', cli_clients: [...CLI_CLIENTS], valid_theme_preferences: [...VALID_THEME_PREFERENCES] },
+        app: { name: 'Ordem', cli_clients: [...CLI_CLIENTS], valid_theme_preferences: [...VALID_THEME_PREFERENCES] },
         current_repo: { path: repoPath, slug: repoSlug, name: repoName },
         settings: {
           default_cli_client: 'claude',

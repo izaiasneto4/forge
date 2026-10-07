@@ -1,5 +1,5 @@
 {
-  "name": "forge-backend",
+  "name": "ordem-backend",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "test": "bun test",
     "typecheck": "bun --bun tsc --noEmit",
     "migrate": "bun bin/migrate.ts",
-    "forge": "bun bin/forge.ts"
+    "ordem": "bun bin/ordem.ts"
   },
   "dependencies": {
     "@sinclair/typebox": "0.34.52",

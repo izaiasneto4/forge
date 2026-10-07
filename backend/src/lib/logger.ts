@@ -1,11 +1,11 @@
 import { literals } from './literals'
 
-// Rails.logger stand-in. Quiet under `bun test` unless FORGE_LOG_LEVEL is set.
+// Rails.logger stand-in. Quiet under `bun test` unless ORDEM_LOG_LEVEL is set.
 const LEVELS = literals('debug', 'info', 'warn', 'error', 'silent')
 type Level = (typeof LEVELS)[number]
 
 function configuredLevel(): Level {
-  const requested = process.env.FORGE_LOG_LEVEL
+  const requested = process.env.ORDEM_LOG_LEVEL
   const match = LEVELS.find((level) => level === requested)
   if (match) return match
   return process.env.NODE_ENV === 'test' ? 'silent' : 'info'

@@ -13,9 +13,9 @@ describe('startServer', () => {
   })
 
   test('serves the API and shuts down promptly while a cable client is connected', async () => {
-    tempDir = mkdtempSync(join(tmpdir(), 'forge-server-'))
+    tempDir = mkdtempSync(join(tmpdir(), 'ordem-server-'))
     const shutdownTimeoutMs = 3000
-    const config = runtimeConfig({ PORT: '0', DATABASE_PATH: join(tempDir, 'forge.sqlite3') })
+    const config = runtimeConfig({ PORT: '0', DATABASE_PATH: join(tempDir, 'ordem.sqlite3') })
     const server = startServer({ config, jobWorker: false, shutdownTimeoutMs })
     const origin = `http://localhost:${server.port}`
 

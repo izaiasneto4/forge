@@ -214,7 +214,7 @@ describe('Client', () => {
 
   test('keeps a path prefix on the base url', async () => {
     const http = okHttp()
-    const prefixedBase = `${baseUrl}/forge`
+    const prefixedBase = `${baseUrl}/ordem`
 
     await new Client({ baseUrl: prefixedBase, fetch: http.fetch }).status()
 
@@ -262,24 +262,24 @@ describe('Client', () => {
   })
 
   describe('default base url', () => {
-    const originalUrl = process.env.FORGE_API_URL
+    const originalUrl = process.env.ORDEM_API_URL
 
     beforeEach(() => {
-      delete process.env.FORGE_API_URL
+      delete process.env.ORDEM_API_URL
     })
 
     afterEach(() => {
-      if (originalUrl === undefined) delete process.env.FORGE_API_URL
-      else process.env.FORGE_API_URL = originalUrl
+      if (originalUrl === undefined) delete process.env.ORDEM_API_URL
+      else process.env.ORDEM_API_URL = originalUrl
     })
 
-    test('reads FORGE_API_URL, then falls back to the local server', async () => {
-      const envUrl = 'http://forge.test:4000'
+    test('reads ORDEM_API_URL, then falls back to the local server', async () => {
+      const envUrl = 'http://ordem.test:4000'
       const fallback = okHttp()
       const fromEnv = okHttp()
 
       await new Client({ fetch: fallback.fetch }).status()
-      process.env.FORGE_API_URL = envUrl
+      process.env.ORDEM_API_URL = envUrl
       await new Client({ fetch: fromEnv.fetch }).status()
 
       expect(fallback.requests[0]?.url.href).toBe(`${DEFAULT_API_URL}/api/v1/status`)

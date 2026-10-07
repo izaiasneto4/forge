@@ -221,7 +221,7 @@
 
 ### Notes
 
-- Current Ruby gate is intentionally narrow: `test/test_helper.rb` tracks only API controllers, a few services, and `lib/forge/**`.
+- Current Ruby gate is intentionally narrow: `test/test_helper.rb` tracks only API controllers, a few services, and `lib/ordem/**`.
 - Current JS setup can generate coverage, but CI does not enforce it.
 - There are currently many explicit skips in Ruby tests, so “100% unit tested” is blocked until those are either implemented or explicitly carved out of scope.
 
@@ -326,9 +326,9 @@
 - [x] Add API v1 routes and base controller with consistent JSON error format
 - [x] Implement API endpoints: sync, reviews, status, pull_requests, review_task_logs, repositories/switch
 - [x] Add supporting services/helpers: PR URL parser, repo resolver, API param validation
-- [x] Implement CLI executable `bin/forge` and library (`lib/forge/**`)
+- [x] Implement CLI executable `bin/ordem` and library (`lib/ordem/**`)
 - [x] Add unit tests for API controllers and CLI/service layers
-- [x] Add edge-heavy CLI integration/E2E tests invoking `bin/forge`
+- [x] Add edge-heavy CLI integration/E2E tests invoking `bin/ordem`
 - [x] Add SimpleCov + per-path 100% coverage gate for new/changed CLI/API code
 - [x] Update CI workflow to run coverage gate and CLI E2E tests
 - [x] Update README with CLI/API usage and troubleshooting

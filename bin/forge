@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-# The forge CLI (talks to the API at FORGE_API_URL, default http://127.0.0.1:3000).
-exec bun "$(dirname "$0")/../backend/bin/forge.ts" "$@"

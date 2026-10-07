@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { frontendRoutes, publicFilePath } from '../../src/http/frontend'
 
 const origin = 'http://localhost:3100'
-const indexHtml = '<!doctype html><title>Forge</title>'
+const indexHtml = '<!doctype html><title>Ordem</title>'
 const assetBody = 'console.log("app")'
 const notFoundHtml = '<h1>The page you were looking for does not exist.</h1>'
 const frontendDevUrl = 'http://localhost:5173'
@@ -15,8 +15,8 @@ describe('frontend routes', () => {
   let emptyPublicDir: string
 
   beforeAll(() => {
-    publicDir = realpathSync(mkdtempSync(join(tmpdir(), 'forge-public-')))
-    emptyPublicDir = realpathSync(mkdtempSync(join(tmpdir(), 'forge-public-empty-')))
+    publicDir = realpathSync(mkdtempSync(join(tmpdir(), 'ordem-public-')))
+    emptyPublicDir = realpathSync(mkdtempSync(join(tmpdir(), 'ordem-public-empty-')))
     mkdirSync(join(publicDir, 'frontend', 'assets'), { recursive: true })
     writeFileSync(join(publicDir, 'frontend', 'index.html'), indexHtml)
     writeFileSync(join(publicDir, 'frontend', 'assets', 'app.js'), assetBody)
