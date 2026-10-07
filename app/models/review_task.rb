@@ -322,13 +322,17 @@ class ReviewTask < ApplicationRecord
     )
   end
 
-  # Moves the previous run's output and findings into history so a new run starts clean.
+  # Moves the previous run's output and findings into history and gives the new run
+  # a fresh retry budget, so it starts clean.
   def prepare_new_run!
-    return unless persisted? && (review_output.present? || review_comments.any?)
+    return unless persisted?
 
     transaction do
-      archive_current_review!
-      reset_for_new_review!
+      if review_output.present? || review_comments.any?
+        archive_current_review!
+        reset_for_new_review!
+      end
+      reset_retry_state!
     end
   end
 

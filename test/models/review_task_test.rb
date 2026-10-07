@@ -189,6 +189,20 @@ class ReviewTaskTest < ActiveSupport::TestCase
     end
   end
 
+  test "prepare_new_run! gives a failed run a fresh retry budget" do
+    fresh_count = 0
+    @task.save!
+    @task.update!(state: "failed_review", retry_count: ReviewTask::MAX_RETRY_ATTEMPTS, last_retry_at: 10.minutes.ago, failure_reason: "Network error")
+
+    @task.prepare_new_run!
+    @task.reload
+
+    assert_equal fresh_count, @task.retry_count
+    assert_nil @task.last_retry_at
+    assert_nil @task.failure_reason
+    assert @task.can_retry?
+  end
+
   test "start_review! clears submission metadata from the previous run" do
     pending = "pending_submission"
     @task.save!
