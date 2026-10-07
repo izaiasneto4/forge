@@ -25,10 +25,11 @@ describe('uiEvents', () => {
   it('notifies with a link to the pull request when a review completes', () => {
     const { client, invalidateQueries } = buildClient()
     const pushToast = vi.fn()
-    const openPullRequest = vi.fn()
+    const openReview = vi.fn()
     const prNumber = 382
+    const event = { type: 'review_completed', review_task_id: 41, pr_number: prNumber }
 
-    handleReviewNotification({ type: 'review_completed', pr_number: prNumber }, client, pushToast, openPullRequest)
+    handleReviewNotification(event, client, pushToast, openReview)
 
     const [message, tone, options] = pushToast.mock.calls[0]
     expect(message).toContain(`#${prNumber}`)
@@ -36,7 +37,7 @@ describe('uiEvents', () => {
     expect(options.title).toContain(`#${prNumber}`)
 
     options.onClick()
-    expect(openPullRequest).toHaveBeenCalledWith(prNumber)
+    expect(openReview).toHaveBeenCalledWith(event)
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.reviewTaskDetailRoot })
   })
 

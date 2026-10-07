@@ -8,14 +8,15 @@ type UiEventPayload = {
   error?: string
 }
 
-type ReviewNotificationPayload = {
+export type ReviewNotificationPayload = {
   type?: string
+  review_task_id?: number
   pr_number?: number
   reason?: string
 }
 
 type ToastFn = (message: string, tone: ToastType, options?: PushToastOptions) => void
-type OpenPullRequest = (prNumber: number) => void
+type OpenReview = (event: ReviewNotificationPayload) => void
 
 export function handleUiEvent(event: UiEventPayload, client: QueryClient, pushToast: ToastFn) {
   switch (event.event) {
@@ -52,10 +53,10 @@ export function handleReviewNotification(
   event: ReviewNotificationPayload,
   client: QueryClient,
   pushToast: ToastFn,
-  openPullRequest?: OpenPullRequest,
+  openReview?: OpenReview,
 ) {
   const prNumber = event.pr_number
-  const onClick = prNumber !== undefined && openPullRequest ? () => openPullRequest(prNumber) : undefined
+  const onClick = openReview ? () => openReview(event) : undefined
 
   if (event.type === 'review_completed') {
     pushToast(`Findings for #${prNumber} are ready for you to send.`, 'success', { title: `Review finished · #${prNumber}`, onClick })

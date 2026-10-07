@@ -147,6 +147,13 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
 
   const goToMailbox = useCallback((target: MailboxId) => navigate(mailboxPath(target)), [navigate])
 
+  // Mutations that move a PR out of the list return the refreshed board; apply it before
+  // advancing so auto-select can't land on the PR that was just removed.
+  const applyBoard = useCallback((response: UiMutationResponse) => {
+    const nextBoard = response.board ?? response.pull_request_board
+    if (nextBoard) queryClient.setQueryData(queryKeys.pullRequestBoard, nextBoard)
+  }, [queryClient])
+
   const openPullRequest = useCallback((id: number) => {
     const item = items.find((entry) => entry.id === id)
     const target = item && !belongsToMailbox(item, mailbox, login) ? mailboxFor(item, login) : mailbox
@@ -256,6 +263,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     archive: async (item) => {
       const response = await run(null, () => api.patch<UiMutationResponse>(`/api/v1/pull_requests/${item.id}/archive`))
       if (!response) return
+      applyBoard(response)
       advanceFrom(item.id)
       invalidateAll()
       pushToast('Click to undo.', 'info', {
@@ -280,6 +288,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       if (!confirmed) return
       const response = await run(null, () => api.delete<UiMutationResponse>('/api/v1/pull_requests/bulk_destroy', { pull_request_ids: [item.id] }))
       if (!response) return
+      applyBoard(response)
       advanceFrom(item.id)
       invalidateAll()
     },
@@ -319,6 +328,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
         delete next[item.id]
         return next
       })
+      applyBoard(response)
       advanceFrom(item.id)
       invalidateAll()
     },
@@ -362,10 +372,11 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       const taskId = item.review_task.id
       const response = await run(null, () => api.patch<UiMutationResponse>(`/api/v1/review_tasks/${taskId}/state`, { state: 'done' }))
       if (!response) return
+      applyBoard(response)
       advanceFrom(item.id)
       invalidateAll()
     },
-  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login])
+  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login, applyBoard])
 
   const maybeSync = useEffectEvent(() => {
     if (!board || document.visibilityState !== 'visible') return

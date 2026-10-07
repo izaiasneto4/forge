@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { CommandPalette } from '../components/CommandPalette'
 import { Inspector } from '../components/Inspector'
@@ -13,7 +14,7 @@ import { errorMessage } from '../lib/errors'
 import { MAILBOX_LABELS } from '../lib/lifecycle'
 import { desktopNotificationsEnabled } from '../lib/preferences'
 import { useToasts } from '../lib/toastContext'
-import { handleReviewNotification, handleUiEvent } from '../lib/uiEvents'
+import { handleReviewNotification, handleUiEvent, type ReviewNotificationPayload } from '../lib/uiEvents'
 import { useWorkspace } from './context'
 
 function isTyping(target: EventTarget | null) {
@@ -37,6 +38,7 @@ function numberField(data: Record<string, unknown>, key: string) {
 function useLiveUpdates() {
   const queryClient = useQueryClient()
   const { pushToast } = useToasts()
+  const navigate = useNavigate()
   const { items, openPullRequest } = useWorkspace()
 
   const latest = useRef({ items, openPullRequest })
@@ -44,10 +46,16 @@ function useLiveUpdates() {
     latest.current = { items, openPullRequest }
   })
 
-  const openByNumber = useCallback((prNumber: number) => {
-    const item = latest.current.items.find((entry) => entry.number === prNumber)
+  // PR numbers are only unique per repository, so prefer the task id, which also
+  // opens reviews for other repositories or closed PRs.
+  const openReview = useCallback((event: ReviewNotificationPayload) => {
+    if (event.review_task_id !== undefined) {
+      navigate(`/review_tasks/${event.review_task_id}`)
+      return
+    }
+    const item = latest.current.items.find((entry) => entry.number === event.pr_number)
     if (item) latest.current.openPullRequest(item.id)
-  }, [])
+  }, [navigate])
 
   useEffect(() => subscribe({ channel: 'UiEventsChannel' }, {
     received: (data) => {
@@ -59,8 +67,8 @@ function useLiveUpdates() {
   useEffect(() => subscribe({ channel: 'ReviewNotificationsChannel' }, {
     received: (data) => {
       if (!isPayload(data)) return
-      const event = { type: stringField(data, 'type'), pr_number: numberField(data, 'pr_number'), reason: stringField(data, 'reason') }
-      handleReviewNotification(event, queryClient, pushToast, openByNumber)
+      const event = { type: stringField(data, 'type'), review_task_id: numberField(data, 'review_task_id'), pr_number: numberField(data, 'pr_number'), reason: stringField(data, 'reason') }
+      handleReviewNotification(event, queryClient, pushToast, openReview)
 
       if (document.visibilityState === 'hidden' && desktopNotificationsEnabled() && event.pr_number !== undefined) {
         const prNumber = event.pr_number
@@ -70,11 +78,11 @@ function useLiveUpdates() {
         })
         notification.onclick = () => {
           window.focus()
-          openByNumber(prNumber)
+          openReview(event)
         }
       }
     },
-  }), [queryClient, pushToast, openByNumber])
+  }), [queryClient, pushToast, openReview])
 }
 
 function useShortcuts() {
