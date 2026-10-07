@@ -238,7 +238,7 @@ bin/setup
 bin/dev
 bin/rails test
 bin/rubocop
-npm test
+npm --prefix frontend test
 bin/ci
 ```
 

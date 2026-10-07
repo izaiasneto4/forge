@@ -3,20 +3,21 @@
 ## Project Structure & Module Organization
 Forge is a Rails 8 app with a service-oriented core.
 - `app/` — Rails MVC plus `app/services/` for workflow orchestration and `app/presenters/` for view models.
-- `app/javascript/` — Stimulus/Turbo front-end code; controllers live in `app/javascript/controllers/`.
+- `frontend/` — React + Vite single-page app (dark, macOS-style design; styles in `frontend/src/styles/forge.css`). It builds into `public/frontend/`, which `FrontendController` serves.
 - `app/assets/` and `public/` — static assets and icons.
 - `config/` — environment, routes, and database configuration.
 - `db/` — schema and migrations (SQLite).
-- `test/` — Rails Minitest suite; JS tests live in `test/javascript/`.
+- `test/` — Rails Minitest suite; frontend tests sit next to the code as `frontend/src/**/*.test.{ts,tsx}`.
 - `bin/` and `script/` — developer and CI helpers.
 
 ## Build, Test, and Development Commands
 - `bin/setup` — install dependencies and prepare the database.
-- `bin/dev` — run the dev stack (Puma + Tailwind + Solid Queue).
+- `bin/dev` — run the dev stack (Puma + Vite + Solid Queue).
 - `bin/rails test` — run all Rails tests.
 - `bin/rails test test/models/pull_request_test.rb` — run a single test file.
 - `bin/rails test test/models/pull_request_test.rb:42` — run one test by line.
-- `npm test` / `npm run test:watch` / `npm run test:coverage` — Vitest suite for JS.
+- `npm --prefix frontend test` / `npm --prefix frontend run test:watch` / `npm --prefix frontend run test:coverage` — Vitest suite for the frontend.
+- `npm --prefix frontend run build` — type-check and rebuild `public/frontend/` (commit the output).
 - `npx playwright test` — Playwright specs (expects server at `http://localhost:3000`).
 - `bin/rubocop` — Ruby style checks (Rails Omakase).
 - `bin/ci` — full CI flow (lint, security audits, tests).
@@ -29,7 +30,7 @@ Forge is a Rails 8 app with a service-oriented core.
 
 ## Testing Guidelines
 - Rails tests use Minitest with Mocha (`test/**/*_test.rb`).
-- JS tests use Vitest (`test/javascript/**/*.{test,spec}.{js,ts,jsx,tsx}`).
+- Frontend tests use Vitest + Testing Library (`frontend/src/**/*.test.{ts,tsx}`).
 - Prefer focused unit tests; add integration coverage for PR sync/review flows.
 
 ## Commit & Pull Request Guidelines

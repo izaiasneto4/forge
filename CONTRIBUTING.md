@@ -40,7 +40,7 @@ Run the smallest relevant test set first, then broader checks before opening a P
 ```bash
 bin/rails test
 bin/rails test test/models/pull_request_test.rb
-npm test
+npm --prefix frontend test
 bin/rubocop
 bin/ci
 ```
