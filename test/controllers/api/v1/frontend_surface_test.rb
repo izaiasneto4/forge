@@ -151,6 +151,29 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     assert_equal "addressed", json.dig("detail", "comments", 0, "status")
   end
 
+  test "comment toggle accepts an explicit status" do
+    dismissed = "dismissed"
+    pending = "pending"
+
+    patch "/api/v1/review_comments/#{@review_comment.id}/toggle", params: { status: dismissed }, as: :json
+
+    assert_response :success
+    assert_equal dismissed, JSON.parse(response.body).dig("detail", "comments", 0, "status")
+
+    patch "/api/v1/review_comments/#{@review_comment.id}/toggle", params: { status: pending }, as: :json
+
+    assert_equal pending, @review_comment.reload.status
+  end
+
+  test "comment toggle rejects unknown statuses" do
+    original = @review_comment.status
+
+    patch "/api/v1/review_comments/#{@review_comment.id}/toggle", params: { status: "bogus" }, as: :json
+
+    assert_response :unprocessable_entity
+    assert_equal original, @review_comment.reload.status
+  end
+
   test "settings show and update use the api envelope" do
     get "/api/v1/settings", as: :json
 

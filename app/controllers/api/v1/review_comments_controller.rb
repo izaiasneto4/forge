@@ -2,7 +2,12 @@ class Api::V1::ReviewCommentsController < Api::V1::BaseController
   before_action :set_review_comment
 
   def toggle
-    @review_comment.update!(status: next_status(@review_comment.status))
+    status = params[:status].presence || next_status(@review_comment.status)
+    unless ReviewComment::STATUSES.include?(status)
+      return render_error("invalid_input", "Unknown status: #{status}", :unprocessable_entity)
+    end
+
+    @review_comment.update!(status: status)
 
     render_ok(
       {
