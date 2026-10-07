@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { ConfirmSheet } from '../components/ConfirmSheet'
 import { api } from '../lib/api'
 import { errorMessage } from '../lib/errors'
+import { singlePane } from '../lib/layout'
 import {
   belongsToMailbox,
   flattenBoard,
@@ -188,7 +189,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
   }, [visibleIds, mailbox, navigate])
 
   useEffect(() => {
-    if (route.kind !== 'mailbox' || route.id !== null || !board) return
+    if (route.kind !== 'mailbox' || route.id !== null || !board || singlePane()) return
     const first = visibleIds[0]
     if (first !== undefined) navigate(mailboxPath(route.mailbox, first), { replace: true })
   }, [route, board, visibleIds, navigate])
@@ -313,7 +314,8 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       const task = item.review_task
       if (!task) return
 
-      if (bootstrap?.settings.auto_submit_enabled) {
+      // Confirm unless the setting is known to be off; it may not have loaded yet.
+      if (bootstrap?.settings.auto_submit_enabled ?? true) {
         const count = input.commentIds.length
         const confirmed = await confirm({
           title: 'Submit review to GitHub?',

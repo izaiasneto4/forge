@@ -177,6 +177,7 @@ export function Workspace() {
   const classes = ['window']
   if (!sidebarOpen) classes.push('no-sidebar')
   if (showInspector) classes.push('with-inspector')
+  if (route.kind !== 'mailbox' || route.id !== null) classes.push('has-selection')
 
   return (
     <>

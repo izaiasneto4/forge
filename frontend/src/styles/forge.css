@@ -497,9 +497,18 @@ h1.pr-title { font-size: 23px; line-height: 1.22; font-weight: 700; letter-spaci
   .window, .window.no-sidebar { --sb: 0px; --lw: 280px; }
   .window:not(.no-sidebar) .sidebar { position: absolute; top: 0; left: 0; bottom: 0; width: 236px; z-index: 21; box-shadow: var(--shadow-pop); }
 }
+.back-btn { display: none; }
+/* Phone widths: the list and the open PR take turns filling the window. */
 @media (max-width: 640px) {
-  .window, .window.no-sidebar { --lw: 220px; }
-  .page { padding-left: 20px; padding-right: 20px; }
+  .window, .window.no-sidebar { grid-template-columns: 0px minmax(0, 1fr) 0px 0px; transition: none; }
+  .window.has-selection, .window.has-selection.no-sidebar { grid-template-columns: 0px 0px minmax(0, 1fr) 0px; }
+  .window > .detail { display: none; }
+  .window.has-selection > .list { display: none; }
+  .window.has-selection > .detail { display: flex; }
+  .back-btn { display: inline-flex; }
+  .page { padding-left: 16px; padding-right: 16px; }
+  .composer-wrap { padding: 28px 12px 12px; }
+  .composer-hint { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 

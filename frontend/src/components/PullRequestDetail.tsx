@@ -22,6 +22,7 @@ import type {
 } from '../types/api'
 import { useWorkspace } from '../workspace/context'
 import { useLiveLogs, useTaskDetail } from '../workspace/useTaskDetail'
+import { BackToList } from './BackToList'
 import { Composer } from './Composer'
 import { AgentIcon, Avatar, CheckBadge, Spinner, StatusGlyph } from './Glyphs'
 import { Html } from './Html'
@@ -539,6 +540,7 @@ function DetailToolbar({ item }: { item: PullRequestItem }) {
 
   return (
     <div className="toolbar">
+      <BackToList />
       <div className="crumbs">
         <span>{item.repo_name}</span>
         <Icon name="chevRight" size={12} />

@@ -5,6 +5,7 @@ import { relativeAge } from '../lib/format'
 import { isAuthoredBy } from '../lib/lifecycle'
 import { splitPullRequestInput } from '../lib/pullRequestInput'
 import { useWorkspace } from '../workspace/context'
+import { BackToList } from './BackToList'
 import { ReviewPills } from './Composer'
 import { Icon } from './Icon'
 
@@ -35,6 +36,7 @@ export function NewReview() {
   return (
     <main className="detail">
       <div className="toolbar" style={{ borderBottomColor: 'transparent' }}>
+        <BackToList />
         {!sidebarOpen ? <button type="button" className="tb-btn" onClick={toggleSidebar}><Icon name="sidebar" /></button> : null}
         <div className="crumbs"><b>New review</b></div>
       </div>
