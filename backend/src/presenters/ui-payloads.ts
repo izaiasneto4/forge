@@ -2,6 +2,7 @@ import { asc, desc } from 'drizzle-orm'
 import type { Db } from '../db/client'
 import { reviewTasks } from '../db/schema'
 import { RecordNotFoundError } from '../lib/errors'
+import { JobQueue } from '../jobs/queue'
 import { isBlank, isPresent, iso8601 } from '../lib/ruby'
 import { agentLogPayload, recentLogs } from '../models/agent-log'
 import {
@@ -15,7 +16,7 @@ import {
   type PullRequestRecord,
 } from '../models/pull-request'
 import type { AiSummary } from '../models/pull-request-snapshot'
-import { commentLocation, commentsBySeverity, isActionable, type ReviewCommentRecord } from '../models/review-comment'
+import { commentLocation, commentsBySeverity, isActionable, pendingComments, type ReviewCommentRecord } from '../models/review-comment'
 import { iterationDurationSeconds, type ReviewIterationRecord } from '../models/review-iteration'
 import {
   canRetry,
@@ -25,6 +26,7 @@ import {
   queuePosition,
   REVIEW_TASK_STATES,
   reviewHistory,
+  reviewTaskIdsWithPendingJob,
   SUBMITTED_EVENTS,
   tasksInState,
   type ReviewTaskRecord,
@@ -32,12 +34,13 @@ import {
 } from '../models/review-task'
 import { CLI_CLIENTS, SettingStore, VALID_THEME_PREFERENCES } from '../models/setting'
 import { recoverCurrentRepo } from '../services/current-repo-recovery'
+import { hasNewCommits, pullRequestLifecycle, type Lifecycle } from '../services/pull-request-lifecycle'
 import { scanRepositories, type ScannedRepository } from '../services/repo-scanner'
 import { slugFromPath, slugFromRemote } from '../services/repo-slug-resolver'
 import { parseReviewOutput, type ReviewItem } from '../services/review-output-parser'
 import { headerInReviewCount, headerPendingCount, repoDirectoryName } from './header'
 import { renderCodeBlock, renderMarkdown } from './markdown'
-import { indexCurrentRepo, pullRequestColumns, pullRequestTotalCount, syncStatusPayload, type PayloadContext } from './pull-request-index'
+import { indexCurrentRepo, pullRequestColumns, pullRequestTotalCount, settledReviews, syncStatusPayload, type PayloadContext } from './pull-request-index'
 import { codeSuggestion, detectLanguageFromFile, formatReviewDuration, severityEmoji } from './review-tasks-helper'
 
 // Port of Api::V1::UiPayloads (Bootstrap, PullRequestBoard, ReviewTaskBoard,
@@ -178,6 +181,8 @@ export function reviewTaskPayload(db: Db, task: ReviewTaskRecord, options: { inc
     has_review_history: hasReviewHistory(db, task),
     current_iteration_number: currentIterationNumber(db, task),
     swarm_review: task.reviewType === 'swarm',
+    review_focus: task.reviewFocus,
+    pending_comment_count: pendingComments(db, task.id).length,
     pull_request_snapshot_id: task.pullRequestSnapshotId,
     analysis_status: taskAnalysisStatus(db, analysisStale, pullRequest),
     snapshot_current: !analysisStale,
@@ -185,8 +190,34 @@ export function reviewTaskPayload(db: Db, task: ReviewTaskRecord, options: { inc
   }
 }
 
-export function pullRequestPayload(db: Db, pullRequest: PullRequestRecord) {
+// What the lifecycle needs beyond the PR itself, computed once per payload.
+export interface LifecycleContext {
+  githubLogin: string | null
+  pendingReviewJobTaskIds: Set<number>
+}
+
+export function lifecycleContext(db: Db): LifecycleContext {
+  return {
+    githubLogin: new SettingStore(db).githubLogin(),
+    pendingReviewJobTaskIds: reviewTaskIdsWithPendingJob(new JobQueue(db)),
+  }
+}
+
+function lifecycleFields(db: Db, pullRequest: PullRequestRecord, task: ReviewTaskRecord | undefined, context: LifecycleContext) {
+  const inputs = {
+    pullRequest,
+    task,
+    githubLogin: context.githubLogin,
+    analysisStale: task ? reviewTaskAnalysisStale(db, task) : false,
+    reviewJobPending: task ? context.pendingReviewJobTaskIds.has(task.id) : false,
+  }
+  const lifecycle: Lifecycle = pullRequestLifecycle(inputs)
+  return { lifecycle, has_new_commits: hasNewCommits(inputs) }
+}
+
+export function pullRequestPayload(db: Db, pullRequest: PullRequestRecord, context: LifecycleContext) {
   const reviewTask = reviewTaskFor(db, pullRequest.id)
+  const { lifecycle, has_new_commits: newCommits } = lifecycleFields(db, pullRequest, reviewTask, context)
 
   return {
     id: pullRequest.id,
@@ -220,6 +251,8 @@ export function pullRequestPayload(db: Db, pullRequest: PullRequestRecord) {
     changed_files: pullRequest.changedFiles,
     ai_summary: aiSummaryPayload(aiSummaryForDisplay(db, pullRequest)),
     review_requested_for_me: pullRequest.reviewRequestedForMe,
+    lifecycle,
+    has_new_commits: newCommits,
     review_task: reviewTask ? reviewTaskPayload(db, reviewTask, { includePullRequest: false }) : null,
   }
 }
@@ -322,7 +355,10 @@ export async function pullRequestBoardPayload(ctx: PayloadContext) {
   // PullRequestBoard#initialize builds the index presenter (and its repo) first.
   const boardRepo = await indexCurrentRepo(ctx)
   const columns = await pullRequestColumns(ctx, boardRepo)
+  const settled = await settledReviews(ctx, boardRepo)
   const settingStore = new SettingStore(db)
+  const context = lifecycleContext(db)
+  const toPayload = (pullRequest: PullRequestRecord) => pullRequestPayload(db, pullRequest, context)
 
   return {
     current_repo: await currentRepoPayload(ctx),
@@ -342,13 +378,15 @@ export async function pullRequestBoardPayload(ctx: PayloadContext) {
     },
     total_count: await pullRequestTotalCount(ctx, boardRepo),
     columns: {
-      pending_review: columns.pending_review.map((pullRequest) => pullRequestPayload(db, pullRequest)),
-      in_review: columns.in_review.map((pullRequest) => pullRequestPayload(db, pullRequest)),
-      reviewed_by_me: columns.reviewed_by_me.map((pullRequest) => pullRequestPayload(db, pullRequest)),
-      waiting_implementation: columns.waiting_implementation.map((pullRequest) => pullRequestPayload(db, pullRequest)),
-      reviewed_by_others: columns.reviewed_by_others.map((pullRequest) => pullRequestPayload(db, pullRequest)),
-      review_failed: columns.review_failed.map((pullRequest) => pullRequestPayload(db, pullRequest)),
+      pending_review: columns.pending_review.map(toPayload),
+      in_review: columns.in_review.map(toPayload),
+      reviewed_by_me: columns.reviewed_by_me.map(toPayload),
+      waiting_implementation: columns.waiting_implementation.map(toPayload),
+      reviewed_by_others: columns.reviewed_by_others.map(toPayload),
+      review_failed: columns.review_failed.map(toPayload),
     },
+    // Reviewed PRs that were merged or closed, so their findings stay reachable from Settled.
+    settled_reviews: settled.map(toPayload),
   }
 }
 
@@ -434,6 +472,8 @@ export async function reviewTaskDetailPayload(ctx: PayloadContext, task: ReviewT
   return {
     current_repo: await currentRepoPayload(ctx),
     task: reviewTaskPayload(db, task),
+    // The full PR, so reviews whose PR isn't on the board (merged, closed, other repository) still open.
+    pull_request: pullRequestPayload(db, pullRequestOfTask(db, task), lifecycleContext(db)),
     submission: submissionPayload(new SettingStore(db), comments),
     comments: comments.map(reviewCommentPayload),
     review_history: reviewHistory(db, task).map(reviewIterationPayload),

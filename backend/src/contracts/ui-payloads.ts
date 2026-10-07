@@ -15,6 +15,16 @@ export const ThemePreference = t.Union([t.Literal('light'), t.Literal('dark')])
 
 export const AnalysisStatus = t.Union([t.Literal('none'), t.Literal('pending'), t.Literal('current'), t.Literal('stale')])
 export const SnapshotStatus = t.Union([t.Literal('missing'), t.Literal('current'), t.Literal('stale')])
+export const Lifecycle = t.Union([
+  t.Literal('needs_review'),
+  t.Literal('queued'),
+  t.Literal('reviewing'),
+  t.Literal('ready'),
+  t.Literal('failed'),
+  t.Literal('waiting'),
+  t.Literal('settled'),
+  t.Literal('authored'),
+])
 
 export const CurrentRepo = t.Object({
   path: NullableString,
@@ -94,6 +104,8 @@ export const ReviewTaskItem = t.Object({
   has_review_history: t.Boolean(),
   current_iteration_number: t.Integer(),
   swarm_review: t.Boolean(),
+  review_focus: NullableString,
+  pending_comment_count: t.Integer(),
   pull_request_snapshot_id: NullableInteger,
   analysis_status: AnalysisStatus,
   snapshot_current: t.Boolean(),
@@ -145,6 +157,8 @@ export const PullRequestItem = t.Object({
   changed_files: NullableInteger,
   ai_summary: AiSummary,
   review_requested_for_me: t.Boolean(),
+  lifecycle: Lifecycle,
+  has_new_commits: t.Boolean(),
   review_task: t.Nullable(ReviewTaskItem),
 })
 
@@ -182,6 +196,7 @@ export const PullRequestBoard = t.Object({
   counts: byPullRequestStatus(t.Integer()),
   total_count: t.Integer(),
   columns: byPullRequestStatus(t.Array(PullRequestItem)),
+  settled_reviews: t.Array(PullRequestItem),
 })
 
 export const ReviewTaskBoard = t.Object({
@@ -254,6 +269,7 @@ const SeverityCounts = t.Object({
 export const ReviewTaskDetail = t.Object({
   current_repo: CurrentRepo,
   task: ReviewTaskItem,
+  pull_request: PullRequestItem,
   submission: t.Object({
     auto_submit_enabled: t.Boolean(),
     pending_comment_count: t.Integer(),

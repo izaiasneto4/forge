@@ -25,6 +25,8 @@ export const REVIEW_TASK_STATES = literals(
   'failed_review',
 )
 export type ReviewTaskState = (typeof REVIEW_TASK_STATES)[number]
+// States in which a run is queued or under way.
+export const ACTIVE_RUN_STATES = literals('queued', 'pending_review', 'in_review')
 export const REVIEW_TYPES = ['review', 'swarm']
 export const SUBMISSION_STATUSES = ['pending_submission', 'submitted', 'submission_failed']
 export const SUBMITTED_EVENTS = literals('COMMENT', 'APPROVE', 'REQUEST_CHANGES')
@@ -99,6 +101,9 @@ export function updateReviewTask(ctx: AppContext, task: ReviewTaskRecord, change
 }
 
 export function inProgressOrRetrying(task: ReviewTaskRecord, now = new Date()) {
+  // A failed task has no retry pending (failing is terminal), so a recent
+  // last_retry_at must not block starting it again.
+  if (task.state === 'failed_review') return false
   if (task.state === 'in_review') return true
   if (task.state === 'pending_review' && task.retryCount > 0) return true
   return task.lastRetryAt !== null && task.lastRetryAt > secondsAgo(5 * 60, now)
@@ -172,8 +177,21 @@ export function claimedReviewJobExists(ctx: AppContext) {
   return ctx.jobs.hasClaimed('ReviewTaskJob')
 }
 
+// Tasks with a ReviewTaskJob waiting, scheduled (retry backoff) or running.
+// pending_review alone doesn't mean a job exists: dequeued, re-requested and
+// recovered tasks sit there without one.
+export function reviewTaskIdsWithPendingJob(jobs: Pick<AppContext['jobs'], 'unfinished'>) {
+  const ids = new Set<number>()
+  for (const job of jobs.unfinished('ReviewTaskJob')) {
+    if (job.name === 'ReviewTaskJob') ids.add(job.payload.reviewTaskId)
+  }
+  return ids
+}
+
+// A waiting or scheduled review job holds the slot too; otherwise back-to-back
+// starts each get their own job and run concurrently against the same repo.
 export function anyReviewRunning(ctx: AppContext) {
-  return existsInState(ctx.db, 'in_review') || claimedReviewJobExists(ctx)
+  return existsInState(ctx.db, 'in_review') || ctx.jobs.unfinished('ReviewTaskJob').length > 0
 }
 
 // Atomically moves the oldest queued task to pending_review and starts its job.
@@ -202,8 +220,15 @@ function pullRequestOf(db: Db, task: ReviewTaskRecord) {
   return pullRequest
 }
 
+// A new run hasn't been submitted, even if the previous one was.
 export function startReview(ctx: AppContext, task: ReviewTaskRecord) {
-  const started = updateReviewTask(ctx, task, { state: 'in_review', startedAt: new Date() })
+  const started = updateReviewTask(ctx, task, {
+    state: 'in_review',
+    startedAt: new Date(),
+    submissionStatus: 'pending_submission',
+    submittedAt: null,
+    submittedEvent: null,
+  })
   const pullRequest = pullRequestOf(ctx.db, started)
   if (pullRequest.reviewStatus === 'pending_review' || pullRequest.reviewStatus === 'review_failed') {
     updatePullRequest(ctx, pullRequest, { reviewStatus: 'in_review' })
@@ -332,6 +357,17 @@ export function resetForNewReview(ctx: AppContext, task: ReviewTaskRecord) {
     retryCount: 0,
     retryHistory: null,
   })
+}
+
+// Before a new run: the previous output and findings move into history (so a
+// re-review never appends to stale findings) and the run gets a fresh retry budget.
+export function prepareNewRun(ctx: AppContext, task: ReviewTaskRecord) {
+  let prepared = task
+  if (isPresent(task.reviewOutput) || hasComments(ctx.db, task.id)) {
+    archiveCurrentReview(ctx.db, task)
+    prepared = resetForNewReview(ctx, task)
+  }
+  return resetRetryState(ctx, prepared)
 }
 
 // Moves backward while keeping the current review as history.

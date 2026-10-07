@@ -229,6 +229,8 @@ export const reviewTasks = sqliteTable(
     queuedAt: railsDatetime('queued_at'),
     retryCount: integer('retry_count').default(0).notNull(),
     retryHistory: text('retry_history'),
+    // Bun-era: the reviewer's free-text focus, passed into the review prompt.
+    reviewFocus: text('review_focus'),
     reviewOutput: text('review_output'),
     reviewType: text('review_type').default('review').notNull(),
     startedAt: railsDatetime('started_at'),

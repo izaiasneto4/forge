@@ -20,9 +20,12 @@ import {
 } from '../../models/review-task'
 import { SettingStore } from '../../models/setting'
 import { STREAMS } from '../../realtime/broadcaster'
+import { repoFullName } from '../../realtime/ui-events'
 import { CodeReviewService } from '../../services/code-review'
 import type { GithubCliClient } from '../../services/github-cli-client'
 import { UNKNOWN_MODEL } from '../../services/model-detector'
+import { resolveRepoSlug } from '../../services/repo-switch-resolver'
+import { slugFromPath } from '../../services/repo-slug-resolver'
 import { persistCommentsForReviewTask } from '../../services/review-comment-builder'
 import { classifyError, PermanentError, TransientError, ValidationError } from '../../services/review-errors'
 import { WorktreeNetworkError, WorktreeService } from '../../services/worktree'
@@ -81,9 +84,11 @@ function broadcastCompletion(ctx: AppContext, task: ReviewTaskRecord, pullReques
     state: task.state,
   })
 
-  // Global toast notifications.
+  // Global toast notifications. The task id lets a click open this exact review:
+  // PR numbers are only unique per repository.
   ctx.events.broadcast(STREAMS.reviewNotifications, {
     type: failed ? 'review_failed' : 'review_completed',
+    review_task_id: task.id,
     pr_number: pullRequest.number,
     pr_title: pullRequest.title,
     reason: failed && task.failureReason !== null ? truncate(task.failureReason, 100) : null,
@@ -166,13 +171,33 @@ function handleFailure(ctx: AppContext, task: ReviewTaskRecord, pullRequest: Pul
   return handleUnknownError(ctx, task, pullRequest, error)
 }
 
+// The selected repository can change while a review waits in the queue, and PR
+// numbers are only unique per repository, so always check out the PR's own one.
+// Without a selected repository it is looked up in the repositories folder.
+// Null when no local checkout of it exists there.
+async function checkoutFor(ctx: AppContext, pullRequest: PullRequestRecord, currentRepo: string | null) {
+  const slug = repoFullName(pullRequest)
+  if (isPresent(currentRepo)) {
+    const currentSlug = await slugFromPath(ctx.commands, currentRepo)
+    if (currentSlug === null || currentSlug.toLowerCase() === slug.toLowerCase()) return currentRepo
+  }
+
+  const resolution = await resolveRepoSlug(ctx.commands, new SettingStore(ctx.db).reposFolder(), slug, { ignoreCase: true })
+  return resolution.status === 'ok' ? resolution.path : null
+}
+
 export async function reviewTaskJob(ctx: AppContext, payload: ReviewTaskJobPayload, deps: ReviewJobDependencies): Promise<void> {
   const { reviewTaskId, isRetry } = payload
   let task = findReviewTask(ctx.db, reviewTaskId)
   const pullRequest = pullRequestOf(ctx, task)
-  const repoPath = new SettingStore(ctx.db).currentRepo()
-
-  if (!isPresent(repoPath)) return
+  // A missing checkout fails the task instead of leaving it in pending_review,
+  // which would block the queue behind it.
+  const repoPath = await checkoutFor(ctx, pullRequest, new SettingStore(ctx.db).currentRepo())
+  if (repoPath === null) {
+    handlePermanentError(ctx, task, pullRequest, new PermanentError(`No local checkout of ${repoFullName(pullRequest)} in the repositories folder`))
+    ctx.jobs.enqueue('ProcessReviewQueueJob', {})
+    return
+  }
 
   // Fresh runs start with an empty log; retries keep the earlier attempts'.
   if (!isRetry) clearLogs(ctx.db, task)
@@ -196,6 +221,7 @@ export async function reviewTaskJob(ctx: AppContext, payload: ReviewTaskJobPaylo
       worktreePath,
       pullRequest,
       reviewType: task.reviewType,
+      focus: task.reviewFocus,
       githubClientFor: (path) => deps.githubClientFor(path),
     })
 

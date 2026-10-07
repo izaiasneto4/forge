@@ -255,6 +255,17 @@ describe('prompts', () => {
     expect(prompt).toContain('JSON array wrapped in ```json')
   })
 
+  test('adds the reviewer focus to both prompts when one is set', async () => {
+    const focus = 'check the migration is safe to run online'
+
+    const focused = await buildService({ focus })
+    const unfocused = await buildService()
+
+    expect(focused.standardReviewPrompt()).toContain(`## Reviewer Focus\n\nThe reviewer asked you to pay special attention to:\n\n${focus}`)
+    expect(focused.swarmReviewPrompt()).toContain(focus)
+    expect(unfocused.standardReviewPrompt()).not.toContain('## Reviewer Focus')
+  })
+
   test('standard_review_prompt includes PR information', async () => {
     const prompt = (await buildService()).standardReviewPrompt()
 
