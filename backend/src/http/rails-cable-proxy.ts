@@ -55,6 +55,24 @@ export function upstreamCableOrigin({ origin, host, scheme }: BrowserHandshake, 
   return host !== undefined && origin === `${scheme}://${host}` ? new URL(railsUrl).origin : origin
 }
 
+// Vouching for an origin is only safe while Rails still judges the browser's
+// hostname: X-Forwarded-Host feeds HostAuthorization (config.hosts), which is what
+// rejects DNS-rebound hostnames. X-Forwarded-Proto is deliberately not sent, or
+// ActionCable would expect an https Origin for Rails' own http address.
+export function upstreamCableHeaders(handshake: BrowserHandshake, railsUrl: string) {
+  const headers: Record<string, string> = {}
+  const origin = upstreamCableOrigin(handshake, railsUrl)
+  if (origin !== undefined) headers.origin = origin
+  if (handshake.host !== undefined) headers['x-forwarded-host'] = handshake.host
+  return headers
+}
+
+// Bun reads backpressure settings per server, not per route, so the app that
+// mounts the relay must pass these to `new Elysia({ websocket })`.
+export function cableServerWebSocketOptions(limits: CableRelayLimits = DEFAULT_CABLE_RELAY_LIMITS) {
+  return { backpressureLimit: limits.maxBufferedBytes, closeOnBackpressureLimit: true }
+}
+
 function browserScheme(requestUrl: string, forwardedProto: string | undefined) {
   const proxiedScheme = forwardedProto?.split(',')[0]?.trim()
   return proxiedScheme || new URL(requestUrl).protocol.replace(':', '')
@@ -75,13 +93,10 @@ export function railsCableProxy(railsUrl: string, limits: CableRelayLimits = DEF
   const relays = new Map<string, CableRelay>()
 
   return new Elysia({ name: 'rails-cable-proxy' }).ws('/cable', {
-    backpressureLimit: limits.maxBufferedBytes,
-    closeOnBackpressureLimit: true,
     open(ws) {
       const { origin, host } = ws.data.headers
       const scheme = browserScheme(ws.data.request.url, ws.data.headers['x-forwarded-proto'])
-      const forwardedOrigin = upstreamCableOrigin({ origin, host, scheme }, railsUrl)
-      const headers: Record<string, string> = forwardedOrigin === undefined ? {} : { origin: forwardedOrigin }
+      const headers = upstreamCableHeaders({ origin, host, scheme }, railsUrl)
 
       const upstream = new WebSocket(cableUrl, { protocols: [ACTION_CABLE_PROTOCOL], headers })
       const handshakeTimer = setTimeout(

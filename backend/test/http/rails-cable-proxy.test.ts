@@ -1,11 +1,14 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
+import { connect, isIP } from 'node:net'
 import { Elysia } from 'elysia'
 import { createApp } from '../../src/app'
 import {
   ACTION_CABLE_PROTOCOL,
+  cableServerWebSocketOptions,
   CLOSE_CODES,
   DEFAULT_CABLE_RELAY_LIMITS,
   railsCableProxy,
+  upstreamCableHeaders,
   upstreamCableOrigin,
   type CableRelayLimits,
 } from '../../src/http/rails-cable-proxy'
@@ -17,23 +20,33 @@ interface UpstreamConnection {
 }
 
 const localOrigin = 'http://localhost:3100'
+const echoPrefix = 'echo:'
+const welcomeFrame = JSON.stringify({ type: 'welcome' })
 
 // Bun 1.2.20: server.stop() never resolves once the server has closed a websocket
 // itself, so stops are fired without awaiting.
 function stopServer(server: { stop: (closeActiveConnections?: boolean) => unknown }) {
   void server.stop(true)
 }
-const echoPrefix = 'echo:'
-const welcomeFrame = JSON.stringify({ type: 'welcome' })
 
-// Mirrors ActionCable::Connection::Base#allow_request_origin? with
-// allow_same_origin_as_host and no allowed_request_origins.
+// Rails' development config.hosts: .localhost, .test and any IP address.
+function isAllowedDevelopmentHost(hostWithPort: string) {
+  const hostname = hostWithPort.replace(/:\d+$/, '').replace(/^\[|\]$/g, '')
+  return hostname === 'localhost' || hostname.endsWith('.localhost') || hostname.endsWith('.test') || isIP(hostname) !== 0
+}
+
+// Mirrors Rails in development: HostAuthorization checks Host and X-Forwarded-Host,
+// then ActionCable's allow_request_origin? compares Origin with the raw Host.
 function startFakeRailsCable(options: { closeOnOpen?: { code: number; reason: string } } = {}) {
   return Bun.serve<UpstreamConnection>({
     port: 0,
     fetch(request, server) {
       const origin = request.headers.get('origin')
       const host = request.headers.get('host')
+      const forwardedHost = request.headers.get('x-forwarded-host')?.split(/,\s?/).at(-1)
+      if (!isAllowedDevelopmentHost(host ?? '') || (forwardedHost && !isAllowedDevelopmentHost(forwardedHost))) {
+        return new Response('Blocked hosts', { status: 403 })
+      }
       if (origin !== `http://${host}` && origin !== localOrigin) {
         return new Response('Request origin not allowed', { status: 404 })
       }
@@ -62,7 +75,58 @@ function startStalledUpstream() {
 }
 
 function listenRelay(railsUrl: string, limits: Partial<CableRelayLimits> = {}) {
-  return new Elysia().use(railsCableProxy(railsUrl, { ...DEFAULT_CABLE_RELAY_LIMITS, ...limits })).listen(0)
+  const relayLimits = { ...DEFAULT_CABLE_RELAY_LIMITS, ...limits }
+  return new Elysia({ websocket: cableServerWebSocketOptions(relayLimits) })
+    .use(railsCableProxy(railsUrl, relayLimits))
+    .listen(0)
+}
+
+// Floods the relay without waiting for it, until the relay hangs up.
+function startFloodingRailsCable(totalBytes: number) {
+  const chunk = 'x'.repeat(256 * 1024)
+  const closed = Promise.withResolvers<void>()
+  let sentBytes = 0
+  const server = Bun.serve({
+    port: 0,
+    fetch: (request, bunServer) => (bunServer.upgrade(request) ? undefined : new Response('Expected websocket', { status: 400 })),
+    websocket: {
+      backpressureLimit: totalBytes * 2,
+      open(ws) {
+        const timer = setInterval(() => {
+          if (sentBytes >= totalBytes || ws.readyState !== WebSocket.OPEN) return clearInterval(timer)
+          ws.send(chunk)
+          sentBytes += chunk.length
+        }, 1)
+      },
+      message() {},
+      close() {
+        closed.resolve()
+      },
+    },
+  })
+  return { server, closed: closed.promise }
+}
+
+// A browser that completes the handshake, then stops reading its socket.
+function connectStalledBrowser(port: number) {
+  const socket = connect(port, 'localhost', () => {
+    socket.write(
+      [
+        'GET /cable HTTP/1.1',
+        `Host: localhost:${port}`,
+        'Connection: Upgrade',
+        'Upgrade: websocket',
+        'Sec-WebSocket-Version: 13',
+        'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==',
+        `Sec-WebSocket-Protocol: ${ACTION_CABLE_PROTOCOL}`,
+        `Origin: ${localOrigin}`,
+        '',
+        '',
+      ].join('\r\n'),
+    )
+  })
+  socket.once('data', () => socket.pause())
+  return socket
 }
 
 function connectBrowser(port: number) {
@@ -141,6 +205,21 @@ describe('upstreamCableOrigin', () => {
   })
 })
 
+describe('upstreamCableHeaders', () => {
+  const railsUrl = 'http://127.0.0.1:3000'
+  const host = 'forge.example.test'
+
+  test("forwards the browser's host so Rails can still reject unknown hostnames", () => {
+    const headers = upstreamCableHeaders({ origin: `http://${host}`, host, scheme: 'http' }, railsUrl)
+
+    expect(headers).toEqual({ origin: new URL(railsUrl).origin, 'x-forwarded-host': host })
+  })
+
+  test('sends neither header when the browser sent neither', () => {
+    expect(upstreamCableHeaders({ origin: undefined, host: undefined, scheme: 'http' }, railsUrl)).toEqual({})
+  })
+})
+
 describe('rails cable relay', () => {
   let fakeRails: ReturnType<typeof startFakeRailsCable>
   let app: ReturnType<typeof createApp>
@@ -197,6 +276,18 @@ describe('rails cable relay', () => {
     expect(frames).toContain(welcomeFrame)
   })
 
+  test("is rejected by Rails' host check for a DNS-rebound attacker hostname", async () => {
+    const attackerHost = 'attacker.example:3100'
+
+    const { frames } = await rawHandshake(appPort, {
+      Host: attackerHost,
+      Origin: `http://${attackerHost}`,
+      'Sec-WebSocket-Protocol': ACTION_CABLE_PROTOCOL,
+    })
+
+    expect(frames).not.toContain(welcomeFrame)
+  })
+
   test('is still rejected by Rails for a cross-origin browser', async () => {
     const publicHost = 'forge.example.test'
 
@@ -247,6 +338,19 @@ describe('rails cable relay failure handling', () => {
 
     expect(closed.code).toBe(CLOSE_CODES.upstreamFailed)
   })
+
+  test('disconnects a browser that stops reading instead of buffering Rails frames without bound', async () => {
+    const floodBytes = 12 * DEFAULT_CABLE_RELAY_LIMITS.maxBufferedBytes
+    const floodingRails = startFloodingRailsCable(floodBytes)
+    const relay = createApp({ db: createTestDatabase(), railsUrl: floodingRails.server.url.origin }).listen(0)
+    servers.push(floodingRails.server, relay)
+    const browser = connectStalledBrowser(relay.server?.port ?? 0)
+
+    const outcome = await Promise.race([floodingRails.closed.then(() => 'relay hung up'), Bun.sleep(5000).then(() => 'still open')])
+
+    browser.destroy()
+    expect(outcome).toBe('relay hung up')
+  }, 10_000)
 
   test('closes instead of buffering without bound while Rails is connecting', async () => {
     const maxPendingBytes = 1024

@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia'
 import type { Db } from './db/client'
 import { errorHandling } from './http/envelope'
-import { railsCableProxy } from './http/rails-cable-proxy'
+import { cableServerWebSocketOptions, railsCableProxy } from './http/rails-cable-proxy'
 import { railsProxy } from './http/rails-proxy'
 import { settingsRoutes } from './routes/settings'
 
@@ -11,7 +11,7 @@ export interface AppOptions {
 }
 
 export function createApp({ db, railsUrl }: AppOptions) {
-  return new Elysia()
+  return new Elysia({ websocket: cableServerWebSocketOptions() })
     .use(errorHandling)
     .use(settingsRoutes(db))
     .use(railsCableProxy(railsUrl))
