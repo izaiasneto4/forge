@@ -267,7 +267,13 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     reviewAllRequested: async () => {
       const client = bootstrap?.settings.default_cli_client ?? 'claude'
       for (const item of requestedItems) {
-        await run('start', () => createReview(item, { client, depth: 'review', focus: '' }))
+        const started = await run('start', () => createReview(item, { client, depth: 'review', focus: '' }))
+        // Stop at the first failure: one error toast, and the reviewer stays where they are.
+        // The refresh still shows the reviews that did start.
+        if (!started) {
+          invalidateAll()
+          return
+        }
       }
       invalidateAll()
       navigate(mailboxPath('reviewing'))
