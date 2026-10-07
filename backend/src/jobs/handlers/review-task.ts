@@ -179,7 +179,7 @@ async function checkoutFor(ctx: AppContext, pullRequest: PullRequestRecord, curr
   const slug = repoFullName(pullRequest)
   if (currentSlug === null || currentSlug.toLowerCase() === slug.toLowerCase()) return currentRepo
 
-  const resolution = await resolveRepoSlug(ctx.commands, new SettingStore(ctx.db).reposFolder(), slug)
+  const resolution = await resolveRepoSlug(ctx.commands, new SettingStore(ctx.db).reposFolder(), slug, { ignoreCase: true })
   return resolution.status === 'ok' ? resolution.path : null
 }
 

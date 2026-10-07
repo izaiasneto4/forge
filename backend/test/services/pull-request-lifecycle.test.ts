@@ -78,6 +78,19 @@ describe('pullRequestLifecycle with a review task', () => {
     expect(pullRequestLifecycle(withTask(pending, { reviewJobPending: false }))).toBe('needs_review')
   })
 
+  test('a review still queued or running stays visible after its pull request closes', () => {
+    const merged = insertPullRequest(ctx.db, { remoteState: 'merged', inactiveReason: 'merged' })
+    const runningTask = insertReviewTask(ctx.db, { pullRequestId: merged.id, state: 'in_review' })
+    const closed = insertPullRequest(ctx.db, { remoteState: 'closed', inactiveReason: 'closed' })
+    const queuedTask = insertReviewTask(ctx.db, { pullRequestId: closed.id, state: 'queued' })
+    const finished = insertPullRequest(ctx.db, { remoteState: 'merged', inactiveReason: 'merged' })
+    const reviewedTask = insertReviewTask(ctx.db, { pullRequestId: finished.id, state: 'reviewed' })
+
+    expect(pullRequestLifecycle(inputs(merged, { task: runningTask }))).toBe('reviewing')
+    expect(pullRequestLifecycle(inputs(closed, { task: queuedTask }))).toBe('queued')
+    expect(pullRequestLifecycle(inputs(finished, { task: reviewedTask }))).toBe('settled')
+  })
+
   test('archived tasks are settled', () => {
     const expected = 'settled'
 

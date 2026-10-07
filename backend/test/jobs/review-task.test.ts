@@ -529,6 +529,32 @@ describe('reviewTaskJob review context', () => {
     }
   })
 
+  test('finds the pull request\'s checkout regardless of remote casing', async () => {
+    const reposFolder = createTempFolder()
+    try {
+      stubGitRepository(ctx.commands, repo.path, 'acme/web')
+      const upperCaseSlug = `${pullRequest.repoOwner ?? ''}/${pullRequest.repoName ?? ''}`.toUpperCase()
+      const otherCheckout = createGitRepository(ctx.commands, reposFolder.path, 'api', upperCaseSlug)
+      new SettingStore(ctx.db).setReposFolder(reposFolder.path)
+      ctx.commands.on(['gh', 'pr', 'view'], { stdout: JSON.stringify({ headRefName: 'feature/test' }) })
+      ctx.commands.on(['git', '-C', otherCheckout, 'fetch'], { success: true })
+      ctx.commands.on(['git', '-C', otherCheckout, 'worktree', 'add'], (command) => {
+        const path = command[5]
+        if (path !== undefined) mkdirSync(path, { recursive: true })
+        return { success: true }
+      })
+      ctx.commands.on(['git', '-C', otherCheckout, 'worktree', 'remove'], { success: true })
+      scriptReview(reviewOutput)
+
+      await run()
+
+      expect(reloaded().state).toBe('reviewed')
+      expect(ctx.commands.commandsMatching(['git', '-C', otherCheckout, 'fetch']).length).toBeGreaterThan(0)
+    } finally {
+      reposFolder.remove()
+    }
+  })
+
   test('fails clearly when the pull request\'s repository has no local checkout', async () => {
     const failed = 'failed_review'
     stubGitRepository(ctx.commands, repo.path, 'acme/web')

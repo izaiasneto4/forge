@@ -53,8 +53,19 @@ function taskLifecycle(task: ReviewTaskRecord, inputs: LifecycleInputs): Lifecyc
   }
 }
 
+// A review that is queued or running keeps showing as such even if the PR was
+// merged or closed meanwhile: the job still runs and its progress should stay visible.
+function activeRunLifecycle(task: ReviewTaskRecord | undefined, reviewJobPending: boolean): Lifecycle | null {
+  if (!task || task.archived) return null
+  if (task.state === 'queued') return 'queued'
+  if (task.state === 'in_review' || (task.state === 'pending_review' && reviewJobPending)) return 'reviewing'
+  return null
+}
+
 export function pullRequestLifecycle(inputs: LifecycleInputs): Lifecycle {
   const { pullRequest, task, githubLogin } = inputs
+  const activeRun = activeRunLifecycle(task, inputs.reviewJobPending)
+  if (activeRun) return activeRun
   if (!isActiveRemote(pullRequest)) return 'settled'
   if (task) return taskLifecycle(task, inputs)
   if (authoredBy(pullRequest, githubLogin)) return 'authored'
