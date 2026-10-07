@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildBoard, buildComment, buildPullRequest, buildTask } from '../test/factories'
+import type { ReviewTaskDetailResponse } from '../types/api'
 import {
   belongsToMailbox,
   defaultSelection,
@@ -122,15 +123,23 @@ describe('sortPullRequests', () => {
 describe('review suggestions', () => {
   it('suggests requesting changes when a blocker is pending', () => {
     const comments = [buildComment({ severity: 'major' }), buildComment({ severity: 'nitpick' })]
-    expect(suggestedEvent(comments)).toBe('REQUEST_CHANGES')
+    expect(suggestedEvent(comments, 'comments')).toBe('REQUEST_CHANGES')
   })
 
   it('suggests commenting for minor notes and approving when nothing is pending', () => {
     const minorOnly = [buildComment({ severity: 'minor' })]
     const allSent = [buildComment({ severity: 'critical', status: 'addressed' })]
 
-    expect(suggestedEvent(minorOnly)).toBe('COMMENT')
-    expect(suggestedEvent(allSent)).toBe('APPROVE')
+    expect(suggestedEvent(minorOnly, 'comments')).toBe('COMMENT')
+    expect(suggestedEvent(allSent, 'comments')).toBe('APPROVE')
+  })
+
+  it('never suggests a verdict when the findings were not parsed into comments', () => {
+    const unparsedModes: Array<ReviewTaskDetailResponse['content_mode']> = ['raw_output', 'parsed_review_items', 'empty']
+
+    for (const mode of unparsedModes) {
+      expect(suggestedEvent([], mode)).toBeNull()
+    }
   })
 
   it('pre-selects pending findings that matter and skips nits', () => {

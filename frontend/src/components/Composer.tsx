@@ -194,14 +194,20 @@ function SubmitComposer({ item }: { item: PullRequestItem }) {
   const textareaRef = useAutosize(draft.summary)
   const comments = detail?.comments ?? []
   const selection = task ? selectionFor(task.id, comments) : new Set<number>()
-  const suggested = suggestedEvent(comments)
-  const event: ReviewEvent = draft.event ?? suggested
+  const suggested = detail ? suggestedEvent(comments, detail.content_mode) : null
+  const event: ReviewEvent | null = draft.event ?? suggested
   const included = selection.size
   const nothingIncluded = included === 0 && event !== 'APPROVE'
-  const blocked = !detail || pending.submit || nothingIncluded
+  const blocked = !detail || pending.submit || event === null || nothingIncluded
+  const hasPendingFindings = comments.some((comment) => comment.status === 'pending')
+  const blockedReason = event === null
+    ? 'Choose a verdict first'
+    : nothingIncluded
+      ? hasPendingFindings ? 'Include a finding or approve' : 'No findings to send. Approve, or reply on GitHub.'
+      : undefined
 
   const submit = () => {
-    if (blocked) return
+    if (blocked || event === null) return
     void actions.submit(item, { event, summary: draft.summary.trim(), commentIds: [...selection] })
   }
 
@@ -232,11 +238,11 @@ function SubmitComposer({ item }: { item: PullRequestItem }) {
             }]}
             onSelect={(key) => { if (isReviewEvent(key)) updateDraft(item.id, { event: key }) }}
           >
-            <span className="swatch" style={{ '--c': EVENTS[event].color }} />{EVENTS[event].label}<Icon name="chevDown" size={12} className="chev" />
+            <span className="swatch" style={{ '--c': event ? EVENTS[event].color : 'var(--t4)' }} />{event ? EVENTS[event].label : 'Choose verdict'}<Icon name="chevDown" size={12} className="chev" />
           </MenuButton>
           <span className="vsep opt2" />
           <span className="pill opt2" style={{ pointerEvents: 'none' }}><Icon name="message" size={14} />{pluralize(included, 'inline comment')}</span>
-          <button type="button" className="send wide" disabled={blocked} title={nothingIncluded ? 'Include a finding or approve' : undefined} onClick={submit}>
+          <button type="button" className="send wide" disabled={blocked} title={blockedReason} onClick={submit}>
             {pending.submit ? 'Submitting…' : 'Submit review'}<kbd>⌘↵</kbd>
           </button>
         </div>

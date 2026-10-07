@@ -343,6 +343,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       const response = await run('sync', () => api.post<UiMutationResponse>('/api/v1/repositories/switch', { repo: slug }))
       if (!response) return
       pushToast(response.message ?? `Switched to ${slug}`, 'success', { title: 'Repository switched' })
+      applyBoard(response)
       queryClient.invalidateQueries({ queryKey: queryKeys.repositories })
       invalidateAll()
       navigate(mailboxPath('inbox'))

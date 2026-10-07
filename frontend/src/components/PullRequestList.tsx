@@ -33,7 +33,7 @@ function RowTag({ item }: { item: PullRequestItem }) {
     case 'ready':
       return task && task.pending_comment_count > 0
         ? <span className="chip strong">{pluralize(task.pending_comment_count, 'finding')}</span>
-        : <span className="chip">No findings</span>
+        : <span className="chip">Needs a verdict</span>
     case 'reviewing':
       return <LiveClock since={task?.started_at ?? null} />
     case 'queued':

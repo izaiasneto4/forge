@@ -213,13 +213,20 @@ function Verdict({ item, detail }: { item: PullRequestItem; detail: ReviewTaskDe
     const addressed = comments.filter((comment) => comment.status === 'addressed').length
     reason = comments.length ? `${addressed} of ${pluralize(comments.length, 'finding')} sent or addressed.` : 'No inline comments were attached.'
   } else {
-    const event = suggestedEvent(comments)
+    const event = suggestedEvent(comments, detail.content_mode)
     const blocker = pendingComments(comments).find((comment) => comment.severity === 'critical' || comment.severity === 'major')
     const pendingCount = pendingComments(comments).length
-    headline = <>{agentLabel(task.cli_client)} suggests <em>{EVENTS[event].label.toLowerCase()}</em></>
-    reason = blocker
-      ? `${blocker.title ?? 'A blocking issue'}${pendingCount > 1 ? ', plus a few smaller things.' : '.'}`
-      : pendingCount > 0 ? 'No blockers — a few things worth mentioning.' : detail.content_mode === 'comments' || detail.content_mode === 'empty' ? 'No issues found in the changed code.' : 'See the agent output below.'
+    if (event) {
+      headline = <>{agentLabel(task.cli_client)} suggests <em>{EVENTS[event].label.toLowerCase()}</em></>
+      reason = blocker
+        ? `${blocker.title ?? 'A blocking issue'}${pendingCount > 1 ? ', plus a few smaller things.' : '.'}`
+        : pendingCount > 0 ? 'No blockers — a few things worth mentioning.' : 'No issues found in the changed code.'
+    } else {
+      headline = <>{agentLabel(task.cli_client)} didn’t return structured findings</>
+      reason = detail.content_mode === 'empty'
+        ? 'There’s no output to go on. Run the review again or pick a verdict yourself.'
+        : 'Read the agent output below, then pick a verdict yourself.'
+    }
   }
 
   const meta = [

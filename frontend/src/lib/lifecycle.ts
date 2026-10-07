@@ -4,6 +4,7 @@ import type {
   PullRequestItem,
   ReviewCommentItem,
   ReviewEvent,
+  ReviewTaskDetailResponse,
 } from '../types/api'
 
 export type MailboxId = 'inbox' | 'reviewing' | 'waiting' | 'mine' | 'settled'
@@ -191,7 +192,10 @@ export function pendingComments(comments: ReviewCommentItem[]) {
   return comments.filter((comment) => comment.status === 'pending')
 }
 
-export function suggestedEvent(comments: ReviewCommentItem[]): ReviewEvent {
+// Only findings parsed into comments can back a suggestion. Prose or unparsed output may still
+// describe blockers, so the reviewer has to pick the verdict (never a silent approve).
+export function suggestedEvent(comments: ReviewCommentItem[], contentMode: ReviewTaskDetailResponse['content_mode']): ReviewEvent | null {
+  if (contentMode !== 'comments') return null
   const pending = pendingComments(comments)
   if (pending.some((comment) => comment.severity === 'critical' || comment.severity === 'major')) return 'REQUEST_CHANGES'
   if (pending.length > 0) return 'COMMENT'
