@@ -1,4 +1,4 @@
-import { useEffect, type MouseEvent, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 
 import { agentLabel, DEPTHS, EVENTS, isReviewEvent } from '../lib/agents'
 import { elapsedClock, formatCount, mergeVerb, pluralize, relativeAgo } from '../lib/format'
@@ -23,6 +23,7 @@ import { useWorkspace } from '../workspace/context'
 import { useLiveLogs, useTaskDetail } from '../workspace/useTaskDetail'
 import { Composer } from './Composer'
 import { AgentIcon, Avatar, CheckBadge, Spinner, StatusGlyph } from './Glyphs'
+import { Html } from './Html'
 import { Icon, type IconName } from './Icon'
 import { MenuButton, type MenuItem } from './Menu'
 
@@ -43,26 +44,6 @@ const RUN_STEPS = ['Prepare worktree', 'Run the review', 'Write findings']
 function InlineCode({ text }: { text: string }) {
   const parts = text.split(/(`[^`]+`)/g)
   return <>{parts.map((part, index) => (part.startsWith('`') && part.endsWith('`') && part.length > 2 ? <code key={index}>{part.slice(1, -1)}</code> : part))}</>
-}
-
-const COPIED_RESET_MS = 1200
-
-// Code blocks come pre-rendered from the server with a .copy-btn carrying the raw code.
-function copyCodeBlock(event: MouseEvent<HTMLDivElement>) {
-  if (!(event.target instanceof Element)) return
-  const button = event.target.closest('.copy-btn')
-  if (!(button instanceof HTMLButtonElement) || button.dataset.copy === undefined) return
-  event.stopPropagation()
-  const showLabel = (label: string) => {
-    button.textContent = label
-    window.setTimeout(() => { button.textContent = 'Copy' }, COPIED_RESET_MS)
-  }
-  void navigator.clipboard?.writeText(button.dataset.copy).then(() => showLabel('Copied'), () => showLabel('Copy failed'))
-}
-
-function Html({ html, className = 'md' }: { html: string | null; className?: string }) {
-  if (!html) return null
-  return <div className={className} onClick={copyCodeBlock} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 function Block({ title, aside, children, delay = 0 }: { title: string; aside?: ReactNode; children: ReactNode; delay?: number }) {

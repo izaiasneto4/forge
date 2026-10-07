@@ -1,11 +1,12 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { agentLabel, EVENTS, isReviewEvent } from '../lib/agents'
 import { formatDuration, pluralize, relativeAgo } from '../lib/format'
-import type { PullRequestItem, ReviewTaskDetailResponse } from '../types/api'
+import type { PullRequestItem, ReviewIterationItem, ReviewTaskDetailResponse } from '../types/api'
 import { useWorkspace, type InspectorTab } from '../workspace/context'
 import { useLiveLogs, useTaskDetail } from '../workspace/useTaskDetail'
 import { AgentIcon } from './Glyphs'
+import { Html } from './Html'
 import { Icon, type IconName } from './Icon'
 
 const TABS: Array<[InspectorTab, string]> = [
@@ -83,25 +84,53 @@ function Log({ item, detail }: { item: PullRequestItem; detail: ReviewTaskDetail
   )
 }
 
+function HistoryRun({ iteration }: { iteration: ReviewIterationItem }) {
+  const [open, setOpen] = useState(false)
+  const hasOutput = iteration.output_mode !== 'empty'
+
+  return (
+    <div className={open ? 'history-item open' : 'history-item'}>
+      <button type="button" className="history-head" disabled={!hasOutput} aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+        <div className="what">
+          <AgentIcon client={iteration.cli_client} size={13} />Run {iteration.iteration_number} · {agentLabel(iteration.cli_client)}
+          {hasOutput ? <Icon name="chevRight" size={12} className="chev" /> : null}
+        </div>
+        <div className="when">
+          {[
+            iteration.review_type === 'swarm' ? 'Swarm' : 'Standard',
+            formatDuration(iteration.duration_seconds),
+            iteration.parsed_review_items.length ? pluralize(iteration.parsed_review_items.length, 'finding') : null,
+            relativeAgo(iteration.completed_at),
+          ].filter(Boolean).join(' · ')}
+        </div>
+      </button>
+      {open ? (
+        <div className="history-body">
+          {iteration.output_mode === 'parsed_review_items'
+            ? iteration.parsed_review_items.map((entry, index) => (
+              <div key={`${entry.location}:${index}`} className="history-finding">
+                <div className="top">
+                  <span className="f-title">{entry.title ?? 'Finding'}</span>
+                  <span className="f-loc" title={entry.location}>{entry.location}</span>
+                </div>
+                <div className="sev">{entry.severity}</div>
+                <Html html={entry.comment_html} />
+              </div>
+            ))
+            : <Html html={iteration.raw_output_html} />}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function History({ detail }: { detail: ReviewTaskDetailResponse | undefined }) {
   const iterations = detail?.review_history ?? []
   if (iterations.length === 0) return <div className="insp-empty">Past review runs show up here.</div>
 
   return (
     <div>
-      {[...iterations].reverse().map((iteration) => (
-        <div key={iteration.id} className="history-item">
-          <div className="what"><AgentIcon client={iteration.cli_client} size={13} />Run {iteration.iteration_number} · {agentLabel(iteration.cli_client)}</div>
-          <div className="when">
-            {[
-              iteration.review_type === 'swarm' ? 'Swarm' : 'Standard',
-              formatDuration(iteration.duration_seconds),
-              iteration.parsed_review_items.length ? pluralize(iteration.parsed_review_items.length, 'finding') : null,
-              relativeAgo(iteration.completed_at),
-            ].filter(Boolean).join(' · ')}
-          </div>
-        </div>
-      ))}
+      {[...iterations].reverse().map((iteration) => <HistoryRun key={iteration.id} iteration={iteration} />)}
     </div>
   )
 }
