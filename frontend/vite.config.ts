@@ -19,7 +19,7 @@ export default defineConfig({
         target: apiTarget,
         changeOrigin: true,
       },
-      '/cable': {
+      '/ws': {
         target: apiTarget,
         changeOrigin: true,
         ws: true,

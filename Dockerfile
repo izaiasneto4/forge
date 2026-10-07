@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Production image for Kamal or plain docker:
+# Production image:
 #   docker build -t ordem .
 #   docker run -d -p 80:80 -v forge_storage:/app/storage --name ordem ordem
 # Keep the existing storage identifier when upgrading; new installs may use ordem_storage.

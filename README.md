@@ -71,7 +71,7 @@ Common variables:
 - `ORDEM_DISABLE_JOB_WORKER=1`: queue background jobs without running them
 - `ANTHROPIC_MODEL` or `CLAUDE_MODEL`
 
-When upgrading an existing installation, use `bin/ordem` for CLI commands. The previous `FORGE_*` environment variables remain supported as fallbacks; `ORDEM_*` values take precedence. Keep your existing SQLite file at `DATABASE_PATH`. For Docker or Kamal, mount your existing storage volume at `/app/storage`; the Kamal example retains the existing volume identifier by default, while new installations may use `ordem_storage`. Existing review worktree directories and browser preferences also remain supported.
+When upgrading an existing installation, use `bin/ordem` for CLI commands. The previous `FORGE_*` environment variables remain supported as fallbacks; `ORDEM_*` values take precedence. Keep your existing SQLite file at `DATABASE_PATH`. For Docker, mount your existing storage volume at `/app/storage`; the Docker example retains the existing volume identifier by default, while new installations may use `ordem_storage`. Existing review worktree directories and browser preferences also remain supported.
 
 External credentials are typically provided by the tools Ordem shells out to:
 
@@ -242,17 +242,16 @@ bun run --cwd backend typecheck
 npm --prefix frontend test     # frontend tests
 ```
 
-The API lives in `backend/` (see [backend/README.md](backend/README.md)). Background jobs (reviews, syncs, AI summaries) run inside the API process. The database schema is managed by the migrations in `backend/drizzle/`, applied automatically on startup; an existing database created by the former Rails app is adopted in place.
+The API lives in `backend/` (see [backend/README.md](backend/README.md)). Background jobs (reviews, syncs, AI summaries) run inside the API process. The database schema is managed by the migrations in `backend/drizzle/`, applied automatically on startup.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution expectations and [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
 ## Production notes
 
-The repository includes Docker and Kamal configuration, but the checked-in deploy config should be treated as an example starting point rather than a production-ready template.
+A production `Dockerfile` is included. Treat it as a starting point, not a finished deploy recipe.
 
 Before a real deployment:
 
-- set real hosts, registry, and secrets
 - enable TLS and set `ORDEM_ALLOWED_HOSTS`
 - decide how you will authenticate access to the app
 - back up the persistent `storage/` volume

@@ -10,7 +10,7 @@ function tableNames(db: Db) {
   return db.all<{ name: string }>(sql`SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name`).map((row) => row.name)
 }
 
-// What `bin/rails db:prepare` leaves behind: the Rails tables plus schema_migrations.
+// Pre-Bun databases: baseline tables plus a schema_migrations version row.
 function createRailsDatabase(version: string) {
   const db = openDatabase(':memory:')
   for (const statement of baselineSql.split('--> statement-breakpoint')) db.run(sql.raw(statement))

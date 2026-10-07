@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 Ordem is a Bun + Elysia API with a React frontend.
-- `backend/src/` — the API: `routes/` (HTTP endpoints under `/api/v1`), `presenters/` and `contracts/` (JSON payloads and their TypeBox schemas), `services/` (GitHub sync, AI review runs, submissions), `models/` (Drizzle data access and domain rules), `jobs/` (persistent job queue and handlers), `realtime/` (ActionCable-compatible WebSocket server at `/cable`).
+- `backend/src/` — the API: `routes/` (HTTP endpoints under `/api/v1`), `presenters/` and `contracts/` (JSON payloads and their TypeBox schemas), `services/` (GitHub sync, AI review runs, submissions), `models/` (Drizzle data access and domain rules), `jobs/` (persistent job queue and handlers), `realtime/` (plain WebSocket server at `/ws`).
 - `backend/drizzle/` — SQL migrations; `backend/src/db/schema.ts` is the Drizzle schema.
 - `backend/test/` — Bun tests; `backend/test/support/` has the in-memory test context and factories.
 - `backend/bin/` — `ordem` CLI and `migrate` entrypoints.
@@ -50,6 +50,6 @@ This app requires authenticated CLI tools: `gh` (GitHub CLI) and an AI review CL
 ## Cursor Cloud specific instructions
 
 - `bin/setup` installs dependencies and migrates the database, then replaces itself with `bin/dev` unless you pass `--skip-server`.
-- `bin/dev` starts the Bun API at `http://127.0.0.1:3000` (job worker in-process) and Vite at `http://127.0.0.1:5173/frontend/`. Vite proxies `/api` and `/cable` to `ORDEM_API_URL` or `http://localhost:3000`. When `public/frontend/index.html` exists, the API serves that build; otherwise development requests redirect to Vite.
+- `bin/dev` starts the Bun API at `http://127.0.0.1:3000` (job worker in-process) and Vite at `http://127.0.0.1:5173/frontend/`. Vite proxies `/api` and `/ws` to `ORDEM_API_URL` or `http://localhost:3000`. When `public/frontend/index.html` exists, the API serves that build; otherwise development requests redirect to Vite.
 - The folder picker uses macOS `osascript`. On Linux, set Repos Folder in Settings to an existing directory. Ordem lists immediate child directories that contain a `.git` entry.
 - `gh` is on `PATH`. Cloud Agent integration tokens can read this repository's pull requests, but `gh api user` returns HTTP 403, so switching a repository and syncing fails until a user-scoped GitHub credential is available. `claude`, `codex`, and `opencode` are not required to boot the app or run the test suite.

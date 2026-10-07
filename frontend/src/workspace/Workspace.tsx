@@ -9,7 +9,7 @@ import { PullRequestDetail, DetailEmpty } from '../components/PullRequestDetail'
 import { PullRequestList } from '../components/PullRequestList'
 import { SettingsSheet } from '../components/SettingsSheet'
 import { Sidebar } from '../components/Sidebar'
-import { subscribe } from '../lib/cable'
+import { subscribe } from '../lib/realtime'
 import { errorMessage } from '../lib/errors'
 import { MAILBOX_LABELS } from '../lib/lifecycle'
 import { desktopNotificationsEnabled } from '../lib/preferences'
@@ -57,14 +57,14 @@ function useLiveUpdates() {
     if (item) latest.current.openPullRequest(item.id)
   }, [navigate])
 
-  useEffect(() => subscribe({ channel: 'UiEventsChannel' }, {
+  useEffect(() => subscribe({ channel: 'ui_events' }, {
     received: (data) => {
       if (!isPayload(data)) return
       handleUiEvent({ event: stringField(data, 'event'), error: stringField(data, 'error') }, queryClient, pushToast)
     },
   }), [queryClient, pushToast])
 
-  useEffect(() => subscribe({ channel: 'ReviewNotificationsChannel' }, {
+  useEffect(() => subscribe({ channel: 'review_notifications' }, {
     received: (data) => {
       if (!isPayload(data)) return
       const event = { type: stringField(data, 'type'), review_task_id: numberField(data, 'review_task_id'), pr_number: numberField(data, 'pr_number'), reason: stringField(data, 'reason') }

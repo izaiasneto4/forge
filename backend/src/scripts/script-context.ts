@@ -17,14 +17,11 @@ export const stdoutWriter: OutputWriter = {
   },
 }
 
-// The cable server lives inside the web process, so a standalone script has no
-// subscribers to reach (Rails delivered rake-task broadcasts via solid_cable).
+// Standalone scripts run outside the web process, so broadcasts have no live subscribers.
 const detachedBroadcaster: Broadcaster = {
   broadcast() {},
 }
 
-// Opens the database exactly as the server does (from the app root, migrated),
-// like a rake task loading `:environment`.
 export function openScriptContext(env: Record<string, string | undefined> = process.env): AppContext {
   const config = runtimeConfig(env)
   process.chdir(config.appRoot)
