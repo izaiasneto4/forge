@@ -85,3 +85,18 @@ describe('CableServer', () => {
     server.stop()
   })
 })
+
+describe('CableServer shutdown', () => {
+  test('tells every client to reconnect and closes its socket', () => {
+    const server = new CableServer(createTestDatabase())
+    const frames: unknown[] = []
+    const closes: Array<[number, string]> = []
+    server.open('connection-1', (frame) => frames.push(JSON.parse(frame)), (code, reason) => closes.push([code, reason]))
+
+    server.disconnectAll()
+
+    expect(frames).toContainEqual({ type: 'disconnect', reason: 'server_restart', reconnect: true })
+    expect(closes).toEqual([[1001, 'server_restart']])
+    expect(server.connectionCount()).toBe(0)
+  })
+})

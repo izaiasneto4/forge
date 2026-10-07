@@ -7,9 +7,11 @@ import { STREAMS, type BroadcastMessage, type Broadcaster } from './broadcaster'
 // Native ActionCable server: speaks the `actioncable-v1-json` protocol the
 // React app's @rails/actioncable consumer expects.
 export const PING_INTERVAL_MS = 3000
+const GOING_AWAY = 1001
 
 interface CableConnection {
   send(frame: string): void
+  close(code: number, reason: string): void
   // Subscription identifier (as sent by the client) -> streams it listens to.
   subscriptions: Map<string, string[]>
 }
@@ -85,8 +87,8 @@ export class CableServer implements Broadcaster {
     return this.connections.size
   }
 
-  open(id: string, send: (frame: string) => void) {
-    this.connections.set(id, { send, subscriptions: new Map() })
+  open(id: string, send: (frame: string) => void, close: (code: number, reason: string) => void = () => {}) {
+    this.connections.set(id, { send, close, subscriptions: new Map() })
     send(JSON.stringify({ type: 'welcome' }))
     this.startPinging()
   }
@@ -108,6 +110,17 @@ export class CableServer implements Broadcaster {
   stop() {
     this.stopPinging()
     this.connections.clear()
+  }
+
+  // ActionCable's restart: tell each client to reconnect, then close its socket.
+  // Open sockets would otherwise keep the HTTP server from shutting down.
+  disconnectAll(reason = 'server_restart') {
+    const frame = JSON.stringify({ type: 'disconnect', reason, reconnect: true })
+    for (const connection of this.connections.values()) {
+      connection.send(frame)
+      connection.close(GOING_AWAY, reason)
+    }
+    this.stop()
   }
 
   private subscribe(connection: CableConnection, identifier: string) {
@@ -153,9 +166,13 @@ export function cableServerWebSocketOptions(limits: CableLimits = DEFAULT_CABLE_
 export function cablePlugin(server: CableServer) {
   return new Elysia({ name: 'cable' }).ws('/cable', {
     open(ws) {
-      server.open(ws.id, (frame) => {
-        ws.send(frame)
-      })
+      server.open(
+        ws.id,
+        (frame) => {
+          ws.send(frame)
+        },
+        (code, reason) => ws.raw.close(code, reason),
+      )
     },
     message(ws, message) {
       server.receive(ws.id, message)
