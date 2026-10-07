@@ -158,20 +158,24 @@ class Api::V1::PullRequestsController < Api::V1::BaseController
       return render_error("conflict", "Review already in progress for PR ##{pull_request.number}", :conflict)
     end
 
-    review_task.prepare_new_run!
-    review_task.cli_client = cli_client
-    review_task.review_type = review_type
-    review_task.review_focus = params[:focus].to_s.strip.presence
-    review_task.pull_request_snapshot = pull_request.current_snapshot_or_create!
-
-    if ReviewTask.any_review_running?
-      review_task.state = "queued"
-      review_task.queued_at = Time.current
+    queued = ReviewTask.any_review_running?
+    ReviewTask.transaction do
+      review_task.prepare_new_run!
+      review_task.assign_attributes(
+        cli_client: cli_client,
+        review_type: review_type,
+        review_focus: params[:focus].to_s.strip.presence,
+        pull_request_snapshot: pull_request.current_snapshot_or_create!,
+        archived: false,
+        state: queued ? "queued" : "pending_review"
+      )
+      review_task.queued_at = Time.current if queued
       review_task.save!
+    end
+
+    if queued
       message = "Review queued (##{review_task.queue_position}) for PR ##{pull_request.number}"
     else
-      review_task.state = "pending_review"
-      review_task.save!
       ReviewTaskJob.perform_later(review_task.id)
       message = "Review started for PR ##{pull_request.number}"
     end

@@ -1055,6 +1055,12 @@ class ReviewTaskTest < ActiveSupport::TestCase
     assert ReviewTask.any_review_running?
   end
 
+  test "any_review_running? counts a review job that is waiting to start" do
+    ReviewTask.stubs(:review_job_pending_anywhere?).returns(true)
+
+    assert ReviewTask.any_review_running?
+  end
+
   test "any_review_running? returns false when no in_review task exists" do
     @task.save!
 

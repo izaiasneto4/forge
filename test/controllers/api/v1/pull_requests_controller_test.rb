@@ -218,4 +218,33 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     refute PullRequest.unscoped.find(pull_request.id).archived?
   end
+
+  test "a rejected re-review keeps the previous findings" do
+    previous_output = "Earlier findings"
+    pull_request = PullRequest.find_by!(number: 1)
+    task = pull_request.create_review_task!(state: "reviewed", review_output: previous_output)
+    comment = task.review_comments.create!(file_path: "app/a.rb", body: "Still relevant", severity: "major", status: "pending")
+    ReviewTask.stubs(:any_review_running?).returns(false)
+    ReviewTaskJob.expects(:perform_later).never
+
+    post "/api/v1/pull_requests/#{pull_request.id}/review_task", params: { cli_client: "not-a-client" }, as: :json
+
+    assert_response :unprocessable_entity
+    task.reload
+    assert_equal [ comment.id ], task.review_comments.map(&:id)
+    assert_equal previous_output, task.review_output
+    assert_empty task.review_iterations
+  end
+
+  test "re-reviewing an archived task brings it back" do
+    pull_request = PullRequest.find_by!(number: 1)
+    task = pull_request.create_review_task!(state: "reviewed", archived: true)
+    ReviewTask.stubs(:any_review_running?).returns(false)
+    ReviewTaskJob.stubs(:perform_later)
+
+    post "/api/v1/pull_requests/#{pull_request.id}/review_task", as: :json
+
+    assert_response :created
+    refute task.reload.archived?
+  end
 end

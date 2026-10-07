@@ -121,8 +121,10 @@ class ReviewTask < ApplicationRecord
     self.class.queued.where("queued_at < ?", queued_at).count + 1
   end
 
+  # A waiting or scheduled review job holds the slot too; otherwise back-to-back
+  # starts each get their own job and run concurrently against the same repo.
   def self.any_review_running?
-    in_review.exists? || pending_review_with_active_job?
+    in_review.exists? || review_job_pending_anywhere?
   end
 
   # True while a ReviewTaskJob for this task is waiting, scheduled or running.
@@ -132,28 +134,26 @@ class ReviewTask < ApplicationRecord
   end
 
   def self.ids_with_pending_review_job
-    return Set.new unless defined?(SolidQueue::Job)
-    return Set.new unless SolidQueue::Job.table_exists?
+    jobs = pending_review_jobs
+    return Set.new unless jobs
 
-    SolidQueue::Job
-      .where(class_name: "ReviewTaskJob", finished_at: nil)
-      .where.missing(:failed_execution)
-      .map { |job| Array(job.arguments["arguments"]).first }
-      .to_set
+    jobs.map { |job| Array(job.arguments["arguments"]).first }.to_set
   rescue ActiveRecord::StatementInvalid
     Set.new
   end
 
-  def self.pending_review_with_active_job?
-    return false unless defined?(SolidQueue::ClaimedExecution)
-    return false unless SolidQueue::ClaimedExecution.table_exists?
-
-    SolidQueue::ClaimedExecution
-      .joins(:job)
-      .where("solid_queue_jobs.class_name = ?", "ReviewTaskJob")
-      .exists?
+  def self.review_job_pending_anywhere?
+    pending_review_jobs&.exists? || false
   rescue ActiveRecord::StatementInvalid
     false
+  end
+
+  # Unfinished, non-failed ReviewTaskJobs; nil when Solid Queue isn't the backend.
+  def self.pending_review_jobs
+    return nil unless defined?(SolidQueue::Job)
+    return nil unless SolidQueue::Job.table_exists?
+
+    SolidQueue::Job.where(class_name: "ReviewTaskJob", finished_at: nil).where.missing(:failed_execution)
   end
 
   # Atomically claim the next queued task for processing
