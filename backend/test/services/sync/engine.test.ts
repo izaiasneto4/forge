@@ -11,7 +11,7 @@ import { runSync } from '../../../src/services/sync/engine'
 import { SyncAdapterError } from '../../../src/services/sync/github-adapter'
 import { createTestContext, type TestContext } from '../../support/context'
 import { insertPullRequest, insertReviewTask } from '../../support/factories'
-import { createGitRepository, createTempFolder } from '../../support/git'
+import { createCheckoutFolder, stubGitRepository, createTempFolder } from '../../support/git'
 import {
   FakeSyncAdapter,
   fixtureOwner,
@@ -42,7 +42,7 @@ describe('runSync (Sync::Engine)', () => {
   let ctx: TestContext
 
   beforeAll(async () => {
-    repoPath = await createGitRepository(tempFolder.path, fixtureRepo, fixtureSlug)
+    repoPath = createCheckoutFolder(tempFolder.path, fixtureRepo)
     unlinkedPath = `${tempFolder.path}/not-a-repo`
   })
 
@@ -50,6 +50,7 @@ describe('runSync (Sync::Engine)', () => {
 
   beforeEach(() => {
     ctx = createTestContext()
+    stubGitRepository(ctx.commands, repoPath, fixtureSlug)
     setSystemTime(new Date('2026-03-08T09:00:00Z'))
   })
 

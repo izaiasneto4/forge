@@ -37,13 +37,13 @@ import { slugFromPath, slugFromRemote } from '../services/repo-slug-resolver'
 import { parseReviewOutput, type ReviewItem } from '../services/review-output-parser'
 import { headerInReviewCount, headerPendingCount, repoDirectoryName } from './header'
 import { renderCodeBlock, renderMarkdown } from './markdown'
-import { dbOf, indexCurrentRepo, pullRequestColumns, pullRequestTotalCount, syncStatusPayload, type PayloadSource } from './pull-request-index'
+import { indexCurrentRepo, pullRequestColumns, pullRequestTotalCount, syncStatusPayload, type PayloadContext } from './pull-request-index'
 import { codeSuggestion, detectLanguageFromFile, formatReviewDuration, severityEmoji } from './review-tasks-helper'
 
 // Port of Api::V1::UiPayloads (Bootstrap, PullRequestBoard, ReviewTaskBoard,
 // ReviewTaskDetail, Repositories; Settings lives in ./settings).
 
-export { syncSkippedMessage, syncStatusPayload, type PayloadContext, type PayloadSource } from './pull-request-index'
+export { syncSkippedMessage, syncStatusPayload, type PayloadContext } from './pull-request-index'
 
 function markdownHtml(text: string | null) {
   if (isBlank(text)) return null
@@ -55,12 +55,12 @@ function codeBlockHtml(text: string, language: string | null) {
   return renderCodeBlock(text, language)
 }
 
-export async function currentRepoPayload(source: PayloadSource) {
-  const repoPath = await indexCurrentRepo(dbOf(source))
+export async function currentRepoPayload(ctx: PayloadContext) {
+  const repoPath = await indexCurrentRepo(ctx)
 
   return {
     path: repoPath,
-    slug: await slugFromPath(repoPath),
+    slug: await slugFromPath(ctx.commands, repoPath),
     name: isPresent(repoPath) ? repoDirectoryName(repoPath) : null,
   }
 }
@@ -76,18 +76,17 @@ function repositoryPayload(repository: ScannedRepository, currentRepoPath: strin
   }
 }
 
-export async function repositoriesPayload(source: PayloadSource) {
-  const db = dbOf(source)
-  await recoverCurrentRepo(db)
-  const settingStore = new SettingStore(db)
+export async function repositoriesPayload(ctx: PayloadContext) {
+  await recoverCurrentRepo(ctx)
+  const settingStore = new SettingStore(ctx.db)
   const reposFolder = settingStore.reposFolder()
-  const repositories = isPresent(reposFolder) ? await scanRepositories(reposFolder) : []
+  const repositories = isPresent(reposFolder) ? await scanRepositories(ctx.commands, reposFolder) : []
   const currentRepoPath = settingStore.currentRepo()
 
   return {
     repos_folder: reposFolder,
     current_repo_path: currentRepoPath,
-    current_repo_slug: await slugFromPath(currentRepoPath),
+    current_repo_slug: await slugFromPath(ctx.commands, currentRepoPath),
     items: repositories.map((repository) => repositoryPayload(repository, currentRepoPath)),
   }
 }
@@ -289,12 +288,12 @@ export function reviewIterationPayload(iteration: ReviewIterationRecord) {
   }
 }
 
-export async function bootstrapPayload(source: PayloadSource) {
-  const db = dbOf(source)
+export async function bootstrapPayload(ctx: PayloadContext) {
+  const { db } = ctx
   const settingStore = new SettingStore(db)
   // HeaderPresenter.new captures Setting.current_repo before recovery runs.
   const headerRepo = settingStore.currentRepo()
-  const currentRepo = await currentRepoPayload(db)
+  const currentRepo = await currentRepoPayload(ctx)
 
   return {
     app: {
@@ -311,28 +310,28 @@ export async function bootstrapPayload(source: PayloadSource) {
       github_login: settingStore.githubLogin(),
     },
     counts: {
-      pending_review: await headerPendingCount(db, headerRepo),
-      in_review: await headerInReviewCount(db, headerRepo),
+      pending_review: await headerPendingCount(ctx, headerRepo),
+      in_review: await headerInReviewCount(ctx, headerRepo),
     },
-    sync_status: await syncStatusPayload(db),
+    sync_status: await syncStatusPayload(ctx),
   }
 }
 
-export async function pullRequestBoardPayload(source: PayloadSource) {
-  const db = dbOf(source)
+export async function pullRequestBoardPayload(ctx: PayloadContext) {
+  const { db } = ctx
   // PullRequestBoard#initialize builds the index presenter (and its repo) first.
-  const boardRepo = await indexCurrentRepo(db)
-  const columns = await pullRequestColumns(db, boardRepo)
+  const boardRepo = await indexCurrentRepo(ctx)
+  const columns = await pullRequestColumns(ctx, boardRepo)
   const settingStore = new SettingStore(db)
 
   return {
-    current_repo: await currentRepoPayload(db),
-    repositories: await repositoriesPayload(db),
+    current_repo: await currentRepoPayload(ctx),
+    repositories: await repositoriesPayload(ctx),
     settings: {
       only_requested_reviews: settingStore.onlyRequestedReviews(),
       current_user_login: settingStore.githubLogin(),
     },
-    sync_status: await syncStatusPayload(db),
+    sync_status: await syncStatusPayload(ctx),
     counts: {
       pending_review: columns.pending_review.length,
       in_review: columns.in_review.length,
@@ -341,7 +340,7 @@ export async function pullRequestBoardPayload(source: PayloadSource) {
       reviewed_by_others: columns.reviewed_by_others.length,
       review_failed: columns.review_failed.length,
     },
-    total_count: await pullRequestTotalCount(db, boardRepo),
+    total_count: await pullRequestTotalCount(ctx, boardRepo),
     columns: {
       pending_review: columns.pending_review.map((pullRequest) => pullRequestPayload(db, pullRequest)),
       in_review: columns.in_review.map((pullRequest) => pullRequestPayload(db, pullRequest)),
@@ -361,8 +360,8 @@ function boardTasks(db: Db, state: ReviewTaskState) {
   return query.orderBy(desc(reviewTasks.createdAt)).all()
 }
 
-export async function reviewTaskBoardPayload(source: PayloadSource) {
-  const db = dbOf(source)
+export async function reviewTaskBoardPayload(ctx: PayloadContext) {
+  const { db } = ctx
   const grouped = {
     queued: boardTasks(db, 'queued'),
     pending_review: boardTasks(db, 'pending_review'),
@@ -375,7 +374,7 @@ export async function reviewTaskBoardPayload(source: PayloadSource) {
   const toPayload = (task: ReviewTaskRecord) => reviewTaskPayload(db, task)
 
   return {
-    current_repo: await currentRepoPayload(db),
+    current_repo: await currentRepoPayload(ctx),
     counts: {
       queued: grouped.queued.length,
       pending_review: grouped.pending_review.length,
@@ -426,14 +425,14 @@ function contentMode(task: ReviewTaskRecord, comments: ReviewCommentRecord[], pa
   return 'empty'
 }
 
-export async function reviewTaskDetailPayload(source: PayloadSource, task: ReviewTaskRecord) {
-  const db = dbOf(source)
+export async function reviewTaskDetailPayload(ctx: PayloadContext, task: ReviewTaskRecord) {
+  const { db } = ctx
   const comments = commentsBySeverity(db, task.id)
   const parsedItems = isBlank(task.reviewOutput) ? [] : parseReviewOutput(task.reviewOutput)
   const logs = recentLogs(db, task.id)
 
   return {
-    current_repo: await currentRepoPayload(db),
+    current_repo: await currentRepoPayload(ctx),
     task: reviewTaskPayload(db, task),
     submission: submissionPayload(new SettingStore(db), comments),
     comments: comments.map(reviewCommentPayload),

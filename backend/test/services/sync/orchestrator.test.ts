@@ -3,7 +3,7 @@ import { SettingStore } from '../../../src/models/setting'
 import { isSyncModeActive, withSyncMode } from '../../../src/services/sync-mode'
 import { runOrchestratedSync } from '../../../src/services/sync/orchestrator'
 import { createTestContext } from '../../support/context'
-import { createGitRepository, createTempFolder } from '../../support/git'
+import { createCheckoutFolder, stubGitRepository, createTempFolder } from '../../support/git'
 import { fixtureRepo, fixtureSlug, ghJson } from '../../support/github-fixtures'
 
 describe('runOrchestratedSync (Sync::Orchestrator)', () => {
@@ -11,13 +11,14 @@ describe('runOrchestratedSync (Sync::Orchestrator)', () => {
   let repoPath: string
 
   beforeAll(async () => {
-    repoPath = await createGitRepository(tempFolder.path, fixtureRepo, fixtureSlug)
+    repoPath = createCheckoutFolder(tempFolder.path, fixtureRepo)
   })
 
   afterAll(() => tempFolder.remove())
 
   test('runs the sync engine for the current repo inside sync mode', async () => {
     const ctx = createTestContext()
+    stubGitRepository(ctx.commands, repoPath, fixtureSlug)
     const settings = new SettingStore(ctx.db)
     settings.setCurrentRepo(repoPath)
     settings.setGithubLogin('izaias')

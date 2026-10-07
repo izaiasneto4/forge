@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { createGithubAdapter, PR_FETCH_LIMIT, PR_FIELDS, SyncAdapterError } from '../../../src/services/sync/github-adapter'
 import { createTestContext, type TestContext } from '../../support/context'
-import { createGitRepository, createTempFolder } from '../../support/git'
+import { createCheckoutFolder, stubGitRepository, createTempFolder } from '../../support/git'
 import { fixtureOwner, fixtureRepo, fixtureSlug, ghJson, ghPullRequest, githubIdFor, pullRequestUrl } from '../../support/github-fixtures'
 
 describe('GithubAdapter (Sync::GithubAdapter)', () => {
@@ -11,13 +11,14 @@ describe('GithubAdapter (Sync::GithubAdapter)', () => {
   let ctx: TestContext
 
   beforeAll(async () => {
-    repoPath = await createGitRepository(tempFolder.path, fixtureRepo, fixtureSlug)
+    repoPath = createCheckoutFolder(tempFolder.path, fixtureRepo)
   })
 
   afterAll(() => tempFolder.remove())
 
   beforeEach(() => {
     ctx = createTestContext()
+    stubGitRepository(ctx.commands, repoPath, fixtureSlug)
   })
 
   function adapter() {
@@ -30,7 +31,7 @@ describe('GithubAdapter (Sync::GithubAdapter)', () => {
 
       expect(built.repoSlug).toBe(fixtureSlug)
       expect(built.githubLogin).toBe(login)
-      expect(ctx.commands.calls).toEqual([])
+      expect(ctx.commands.commandsMatching(['gh'])).toEqual([])
     })
 
     test('asks gh for the login, inside the checkout, when none is known', async () => {
@@ -40,7 +41,7 @@ describe('GithubAdapter (Sync::GithubAdapter)', () => {
       const built = await createGithubAdapter(ctx, { repoPath, githubLogin: '  ' })
 
       expect(built.githubLogin).toBe(fetchedLogin)
-      expect(ctx.commands.calls[0]?.options.cwd).toBe(repoPath)
+      expect(ctx.commands.commandsMatching(['gh'])[0]?.options.cwd).toBe(repoPath)
     })
   })
 
@@ -54,8 +55,8 @@ describe('GithubAdapter (Sync::GithubAdapter)', () => {
 
       const fetched = await (await adapter()).fetchOpenPullRequests()
 
-      expect(ctx.commands.calls[0]?.command).toEqual(['gh', 'pr', 'list', '--state', 'open', '--json', PR_FIELDS.join(','), '--limit', String(PR_FETCH_LIMIT)])
-      expect(ctx.commands.calls[0]?.options.cwd).toBe(repoPath)
+      expect(ctx.commands.commandsMatching(['gh'])[0]?.command).toEqual(['gh', 'pr', 'list', '--state', 'open', '--json', PR_FIELDS.join(','), '--limit', String(PR_FETCH_LIMIT)])
+      expect(ctx.commands.commandsMatching(['gh'])[0]?.options.cwd).toBe(repoPath)
       expect(fetched.complete).toBe(true)
       expect(fetched.prs).toEqual([
         {
@@ -205,7 +206,7 @@ describe('GithubAdapter (Sync::GithubAdapter)', () => {
 
       const fetched = await (await adapter()).fetchPullRequest(number)
 
-      expect(ctx.commands.calls[0]?.command).toEqual(['gh', 'pr', 'view', String(number), '--json', PR_FIELDS.join(',')])
+      expect(ctx.commands.commandsMatching(['gh'])[0]?.command).toEqual(['gh', 'pr', 'view', String(number), '--json', PR_FIELDS.join(',')])
       expect(fetched?.github_id).toBe(githubIdFor(number))
     })
 

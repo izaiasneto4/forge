@@ -54,7 +54,7 @@ describe('UI payload contracts', () => {
   beforeEach(async () => {
     ctx = createTestContext()
     reposFolder = createTempFolder()
-    const repoPath = await createGitRepository(reposFolder.path, repoName, `${repoOwner}/${repoName}`)
+    const repoPath = createGitRepository(ctx.commands, reposFolder.path, repoName, `${repoOwner}/${repoName}`)
     const settingStore = new SettingStore(ctx.db)
     settingStore.setReposFolder(reposFolder.path)
     settingStore.setCurrentRepo(repoPath)
@@ -141,7 +141,7 @@ describe('UI payload contracts', () => {
     const emptyContext = createTestContext()
     const defaultStatus: Static<typeof SyncStatus> = await syncStatusPayload(emptyContext)
     const repoPath = new SettingStore(ctx.db).currentRepo()
-    const syncState = await syncStateForRepoPath(ctx.db, repoPath)
+    const syncState = await syncStateForRepoPath(ctx, repoPath)
     if (!syncState) throw new Error('expected a sync state')
     updateSyncState(ctx.db, syncState, { status: 'failed', lastError: 'boom', lastStartedAt: new Date(), lastFinishedAt: new Date() })
     const storedStatus: Static<typeof SyncStatus> = await syncStatusPayload(ctx)

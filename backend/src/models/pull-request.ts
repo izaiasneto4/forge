@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray, isNotNull, isNull, ne, sql, type SQL } from 'drizzle-orm'
+import type { CommandRunner } from '../commands/runner'
 import type { AppContext } from '../context'
 import type { Db } from '../db/client'
 import { pullRequestSnapshots, pullRequests, reviewComments, reviewIterations, reviewTasks } from '../db/schema'
@@ -43,9 +44,9 @@ export const withReviewStatus = (status: string) => and(activeRemote, eq(pullReq
 
 // `PullRequest.for_current_repo(repo_path)`: no repo means every PR; a repo
 // without a GitHub remote matches none.
-export async function currentRepoCondition(repoPath: string | null): Promise<SQL | undefined> {
+export async function currentRepoCondition(commands: CommandRunner, repoPath: string | null): Promise<SQL | undefined> {
   if (isBlank(repoPath)) return undefined
-  const slug = await slugFromPath(repoPath)
+  const slug = await slugFromPath(commands, repoPath)
   if (isBlank(slug)) return sql`0`
   const [owner = '', ...rest] = slug.split('/')
   return and(eq(pullRequests.repoOwner, owner), eq(pullRequests.repoName, rest.join('/')))

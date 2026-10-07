@@ -1,5 +1,5 @@
 import { and, count, desc } from 'drizzle-orm'
-import type { Db } from '../db/client'
+import type { AppContext } from '../context'
 import { pullRequests } from '../db/schema'
 import { activeRemote, currentRepoCondition, withReviewStatus, type PullRequestRecord, type ReviewStatus } from '../models/pull-request'
 import { SettingStore } from '../models/setting'
@@ -8,26 +8,18 @@ import { recoverCurrentRepo } from '../services/current-repo-recovery'
 
 // Port of PullRequestIndexPresenter.
 
-export interface PayloadContext {
-  db: Db
-}
-
-// Routes pass the AppContext; older callers (the settings presenter) pass the Db.
-export type PayloadSource = PayloadContext | Db
-
-export function dbOf(source: PayloadSource): Db {
-  return 'db' in source ? source.db : source
-}
+// What presenters read: the database, and git for the current repo's GitHub slug.
+export type PayloadContext = Pick<AppContext, 'db' | 'commands'>
 
 // `CurrentRepoRecoveryService.call || Setting.current_repo`
-export async function indexCurrentRepo(db: Db) {
-  return (await recoverCurrentRepo(db)) ?? new SettingStore(db).currentRepo()
+export async function indexCurrentRepo(ctx: PayloadContext) {
+  return (await recoverCurrentRepo(ctx)) ?? new SettingStore(ctx.db).currentRepo()
 }
 
 export type PullRequestColumns = Record<ReviewStatus, PullRequestRecord[]>
 
-export async function pullRequestColumns(db: Db, repoPath: string | null): Promise<PullRequestColumns> {
-  const repoCondition = await currentRepoCondition(repoPath)
+export async function pullRequestColumns({ db, commands }: PayloadContext, repoPath: string | null): Promise<PullRequestColumns> {
+  const repoCondition = await currentRepoCondition(commands, repoPath)
   const column = (status: ReviewStatus) =>
     db
       .select()
@@ -46,8 +38,8 @@ export async function pullRequestColumns(db: Db, repoPath: string | null): Promi
   }
 }
 
-export async function pullRequestTotalCount(db: Db, repoPath: string | null) {
-  const repoCondition = await currentRepoCondition(repoPath)
+export async function pullRequestTotalCount({ db, commands }: PayloadContext, repoPath: string | null) {
+  const repoCondition = await currentRepoCondition(commands, repoPath)
   const row = db
     .select({ total: count() })
     .from(pullRequests)
@@ -59,9 +51,8 @@ export async function pullRequestTotalCount(db: Db, repoPath: string | null) {
 export type SyncStatus = ReturnType<typeof syncStatePayload> | ReturnType<typeof defaultSyncStatus>
 
 // PullRequestIndexPresenter#sync_status
-export async function syncStatusPayload(source: PayloadSource): Promise<SyncStatus> {
-  const db = dbOf(source)
-  const state = await syncStateForRepoPath(db, await indexCurrentRepo(db))
+export async function syncStatusPayload(ctx: PayloadContext): Promise<SyncStatus> {
+  const state = await syncStateForRepoPath(ctx, await indexCurrentRepo(ctx))
   return state ? syncStatePayload(state) : defaultSyncStatus()
 }
 
@@ -72,7 +63,7 @@ export function buildSyncSkippedMessage(secondsUntilSyncAllowed: number) {
 }
 
 // PullRequestIndexPresenter#build_sync_skipped_message
-export async function syncSkippedMessage(source: PayloadSource) {
-  const status = await syncStatusPayload(source)
+export async function syncSkippedMessage(ctx: PayloadContext) {
+  const status = await syncStatusPayload(ctx)
   return buildSyncSkippedMessage(status.seconds_until_sync_allowed)
 }

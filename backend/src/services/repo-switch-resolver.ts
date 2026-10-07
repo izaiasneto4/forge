@@ -1,4 +1,5 @@
 import { basename } from 'node:path'
+import type { CommandRunner } from '../commands/runner'
 import { isBlank } from '../lib/ruby'
 import { isDirectory } from './git'
 import { scanRepositories } from './repo-scanner'
@@ -16,12 +17,12 @@ function preferExactRepoDirectory(paths: string[], slug: string) {
 }
 
 // Finds the local checkout under `reposFolder` whose origin remote matches `slug`.
-export async function resolveRepoSlug(reposFolder: string | null, slug: string): Promise<RepoResolution> {
+export async function resolveRepoSlug(commands: CommandRunner, reposFolder: string | null, slug: string): Promise<RepoResolution> {
   if (isBlank(reposFolder) || !isDirectory(reposFolder)) {
     return { status: 'not_found', paths: [] }
   }
 
-  const repositories = await scanRepositories(reposFolder)
+  const repositories = await scanRepositories(commands, reposFolder)
   const matches = repositories
     .filter((repository) => slugFromRemote(repository.remote_url) === slug)
     .map((repository) => repository.path)

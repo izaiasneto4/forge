@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import type { Db } from '../../src/db/client'
 import { headerInReviewCount, headerPendingCount, headerRepoName } from '../../src/presenters/header'
-import { createTestDatabase } from '../support/database'
+import { createTestContext, type TestContext } from '../support/context'
 import { insertPullRequest, insertReviewTask } from '../support/factories'
 import { createGitRepository, createTempFolder } from '../support/git'
 
@@ -26,11 +26,13 @@ describe('headerRepoName', () => {
 })
 
 describe('header counts', () => {
+  let ctx: TestContext
   let db: Db
   let tempFolder: ReturnType<typeof createTempFolder>
 
   beforeEach(() => {
-    db = createTestDatabase()
+    ctx = createTestContext()
+    db = ctx.db
     tempFolder = createTempFolder()
   })
 
@@ -45,23 +47,23 @@ describe('header counts', () => {
   test('are zero without pull requests', async () => {
     const emptyCount = 0
 
-    expect(await headerPendingCount(db, null)).toBe(emptyCount)
-    expect(await headerInReviewCount(db, null)).toBe(emptyCount)
+    expect(await headerPendingCount(ctx, null)).toBe(emptyCount)
+    expect(await headerInReviewCount(ctx, null)).toBe(emptyCount)
   })
 
   test('count pending and in-review pull requests across repos when none is selected', async () => {
     const pendingPullRequests = [insertPullRequest(db), insertPullRequest(db, { repoName: 'web' })]
     const inReviewPullRequests = [insertInReviewPullRequest(), insertInReviewPullRequest()]
 
-    expect(await headerPendingCount(db, null)).toBe(pendingPullRequests.length)
-    expect(await headerInReviewCount(db, null)).toBe(inReviewPullRequests.length)
+    expect(await headerPendingCount(ctx, null)).toBe(pendingPullRequests.length)
+    expect(await headerInReviewCount(ctx, null)).toBe(inReviewPullRequests.length)
   })
 
   test('reflect new pull requests immediately (no cache to invalidate)', async () => {
-    const countBefore = await headerPendingCount(db, null)
+    const countBefore = await headerPendingCount(ctx, null)
     insertPullRequest(db)
 
-    expect(await headerPendingCount(db, null)).toBe(countBefore + 1)
+    expect(await headerPendingCount(ctx, null)).toBe(countBefore + 1)
   })
 
   test('exclude soft-deleted, archived and inactive pull requests', async () => {
@@ -70,26 +72,26 @@ describe('header counts', () => {
     insertPullRequest(db, { archived: true })
     insertPullRequest(db, { remoteState: 'merged', inactiveReason: 'merged' })
 
-    expect(await headerPendingCount(db, null)).toBe(visible.length)
+    expect(await headerPendingCount(ctx, null)).toBe(visible.length)
   })
 
   test('only count pull requests of the selected repo', async () => {
     const repoOwner = 'acme'
     const repoName = 'api'
-    const repoPath = await createGitRepository(tempFolder.path, repoName, `${repoOwner}/${repoName}`)
+    const repoPath = createGitRepository(ctx.commands, tempFolder.path, repoName, `${repoOwner}/${repoName}`)
     const ownPending = [insertPullRequest(db, { repoOwner, repoName })]
     const ownInReview = [insertInReviewPullRequest({ repoOwner, repoName })]
     insertPullRequest(db, { repoOwner, repoName: 'web' })
     insertInReviewPullRequest({ repoOwner: 'other', repoName })
 
-    expect(await headerPendingCount(db, repoPath)).toBe(ownPending.length)
-    expect(await headerInReviewCount(db, repoPath)).toBe(ownInReview.length)
+    expect(await headerPendingCount(ctx, repoPath)).toBe(ownPending.length)
+    expect(await headerInReviewCount(ctx, repoPath)).toBe(ownInReview.length)
   })
 
   test('are zero for a selected repo without a GitHub remote', async () => {
     const emptyCount = 0
     insertPullRequest(db)
 
-    expect(await headerPendingCount(db, tempFolder.path)).toBe(emptyCount)
+    expect(await headerPendingCount(ctx, tempFolder.path)).toBe(emptyCount)
   })
 })

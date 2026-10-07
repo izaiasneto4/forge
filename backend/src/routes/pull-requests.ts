@@ -89,7 +89,7 @@ export function pullRequestRoutes({ ctx, services, queueKick }: RouteDependencie
         invalidInput(error)
       }
 
-      const repoCondition = await currentRepoCondition(settings.currentRepo())
+      const repoCondition = await currentRepoCondition(ctx.commands, settings.currentRepo())
       const items = ctx.db
         .select()
         .from(pullRequests)
@@ -126,7 +126,7 @@ export function pullRequestRoutes({ ctx, services, queueKick }: RouteDependencie
         invalidInput(error)
       }
 
-      const syncState = await syncStateForRepoPath(ctx.db, settings.currentRepo())
+      const syncState = await syncStateForRepoPath(ctx, settings.currentRepo())
       if (!force && syncState && !syncNeeded(syncState)) {
         return ok({
           message: await syncSkippedMessage(ctx),

@@ -4,7 +4,7 @@ import { SettingStore } from '../../src/models/setting'
 import { STREAMS } from '../../src/realtime/broadcaster'
 import { SyncAdapterError } from '../../src/services/sync/github-adapter'
 import { createTestContext, type TestContext } from '../support/context'
-import { createGitRepository, createTempFolder } from '../support/git'
+import { createCheckoutFolder, stubGitRepository, createTempFolder } from '../support/git'
 import { fixtureRepo, fixtureSlug, ghJson } from '../support/github-fixtures'
 
 describe('syncPullRequestsJob (SyncPullRequestsJob)', () => {
@@ -13,13 +13,14 @@ describe('syncPullRequestsJob (SyncPullRequestsJob)', () => {
   let ctx: TestContext
 
   beforeAll(async () => {
-    repoPath = await createGitRepository(tempFolder.path, fixtureRepo, fixtureSlug)
+    repoPath = createCheckoutFolder(tempFolder.path, fixtureRepo)
   })
 
   afterAll(() => tempFolder.remove())
 
   beforeEach(() => {
     ctx = createTestContext()
+    stubGitRepository(ctx.commands, repoPath, fixtureSlug)
     const settings = new SettingStore(ctx.db)
     settings.setCurrentRepo(repoPath)
     settings.setGithubLogin('izaias')
@@ -33,7 +34,7 @@ describe('syncPullRequestsJob (SyncPullRequestsJob)', () => {
 
     const started = ctx.events.on(STREAMS.uiEvents).find((message) => message.event === 'sync.started')
     expect(started).toMatchObject({ repo_path: repoPath, sync: { trigger } })
-    expect(ctx.commands.calls[0]?.options.cwd).toBe(repoPath)
+    expect(ctx.commands.commandsMatching(['gh'])[0]?.options.cwd).toBe(repoPath)
   })
 
   test('re-raises sync engine errors', async () => {

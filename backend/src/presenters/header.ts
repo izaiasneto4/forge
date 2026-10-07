@@ -1,8 +1,8 @@
 import { and, count } from 'drizzle-orm'
-import type { Db } from '../db/client'
 import { pullRequests } from '../db/schema'
 import { isBlank, rubyBasename } from '../lib/ruby'
 import { currentRepoCondition, withReviewStatus } from '../models/pull-request'
+import type { PayloadContext } from './pull-request-index'
 
 // Port of HeaderPresenter. Rails cached the counts for a minute; they are
 // computed fresh here, so there is nothing to invalidate.
@@ -18,9 +18,9 @@ export function headerRepoName(currentRepo: string | null) {
 }
 
 // The Ruby methods `rescue` any error into 0.
-async function countWithStatus(db: Db, currentRepo: string | null, status: string) {
+async function countWithStatus({ db, commands }: PayloadContext, currentRepo: string | null, status: string) {
   try {
-    const repoCondition = await currentRepoCondition(currentRepo)
+    const repoCondition = await currentRepoCondition(commands, currentRepo)
     const row = db
       .select({ total: count() })
       .from(pullRequests)
@@ -32,10 +32,10 @@ async function countWithStatus(db: Db, currentRepo: string | null, status: strin
   }
 }
 
-export function headerPendingCount(db: Db, currentRepo: string | null) {
-  return countWithStatus(db, currentRepo, 'pending_review')
+export function headerPendingCount(ctx: PayloadContext, currentRepo: string | null) {
+  return countWithStatus(ctx, currentRepo, 'pending_review')
 }
 
-export function headerInReviewCount(db: Db, currentRepo: string | null) {
-  return countWithStatus(db, currentRepo, 'in_review')
+export function headerInReviewCount(ctx: PayloadContext, currentRepo: string | null) {
+  return countWithStatus(ctx, currentRepo, 'in_review')
 }

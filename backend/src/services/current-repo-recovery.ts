@@ -1,4 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm'
+import type { AppContext } from '../context'
 import type { Db } from '../db/client'
 import { pullRequests } from '../db/schema'
 import { isBlank } from '../lib/ruby'
@@ -25,7 +26,7 @@ function activeRemoteRepoSlugs(db: Db) {
 
 // When the saved current repo is missing, re-points it at the only repo that
 // still has open PRs, if exactly one local checkout matches.
-export async function recoverCurrentRepo(db: Db): Promise<string | null> {
+export async function recoverCurrentRepo({ db, commands }: Pick<AppContext, 'db' | 'commands'>): Promise<string | null> {
   const settingStore = new SettingStore(db)
   const currentRepo = settingStore.currentRepo()
   if (!isBlank(currentRepo) && isDirectory(currentRepo)) {
@@ -42,7 +43,7 @@ export async function recoverCurrentRepo(db: Db): Promise<string | null> {
     return null
   }
 
-  const resolution = await resolveRepoSlug(reposFolder, onlySlug)
+  const resolution = await resolveRepoSlug(commands, reposFolder, onlySlug)
   if (resolution.status !== 'ok') {
     return null
   }

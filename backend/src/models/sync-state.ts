@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import type { AppContext } from '../context'
 import type { Db } from '../db/client'
 import { syncStates } from '../db/schema'
 import { RecordNotFoundError } from '../lib/errors'
@@ -12,8 +13,11 @@ export const SYNC_STATUSES = ['idle', 'running', 'succeeded', 'partial', 'failed
 export const POLL_INTERVAL_SECONDS = 120
 
 // `SyncState.for_repo_path`: one row per GitHub repo, created on first use.
-export async function syncStateForRepoPath(db: Db, repoPath: string | null): Promise<SyncStateRecord | null> {
-  const slug = await slugFromPath(repoPath)
+export async function syncStateForRepoPath(
+  { db, commands }: Pick<AppContext, 'db' | 'commands'>,
+  repoPath: string | null,
+): Promise<SyncStateRecord | null> {
+  const slug = await slugFromPath(commands, repoPath)
   if (isBlank(slug)) return null
 
   const scopeKey = `repo:${slug}`

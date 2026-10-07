@@ -1,3 +1,4 @@
+import type { CommandRunner } from '../commands/runner'
 import { isBlank } from '../lib/ruby'
 import { gitOutput, isDirectory } from './git'
 
@@ -18,10 +19,10 @@ export function slugFromRemote(remote: string | null): string | null {
   return `${owner}/${name}`
 }
 
-export async function slugFromPath(path: string | null): Promise<string | null> {
+export async function slugFromPath(commands: CommandRunner, path: string | null): Promise<string | null> {
   if (isBlank(path) || !isDirectory(path)) {
     return null
   }
 
-  return slugFromRemote(await gitOutput(path, ['remote', 'get-url', 'origin']))
+  return slugFromRemote(await gitOutput(commands, path, ['remote', 'get-url', 'origin']))
 }

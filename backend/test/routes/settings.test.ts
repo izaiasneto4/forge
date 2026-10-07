@@ -13,7 +13,7 @@ import {
 import { createTestApp } from '../support/app'
 import { createTestContext, type TestContext } from '../support/context'
 import { insertPullRequest } from '../support/factories'
-import { createGitRepository, createTempFolder } from '../support/git'
+import { createCheckoutFolder, createGitRepository, createTempFolder, stubGitRepository } from '../support/git'
 
 describe('GET /api/v1/settings', () => {
   let ctx: TestContext
@@ -55,7 +55,7 @@ describe('GET /api/v1/settings', () => {
   test('returns stored settings and describes the current repo from its git remote', async () => {
     const repoName = 'api'
     const repoSlug = `acme/${repoName}`
-    const repoPath = await createGitRepository(reposFolder.path, repoName, repoSlug)
+    const repoPath = createGitRepository(ctx.commands, reposFolder.path, repoName, repoSlug)
     const [, cliClient = DEFAULT_CLI_CLIENT] = CLI_CLIENTS
     const [themePreference] = VALID_THEME_PREFERENCES
     settingStore.write(SETTING_KEYS.reposFolder, reposFolder.path)
@@ -88,7 +88,7 @@ describe('GET /api/v1/settings', () => {
     const repoOwner = 'acme'
     const repoName = 'web'
     const repoSlug = `${repoOwner}/${repoName}`
-    const recoveredPath = await createGitRepository(reposFolder.path, repoName, repoSlug)
+    const recoveredPath = createGitRepository(ctx.commands, reposFolder.path, repoName, repoSlug)
     const missingPath = join(reposFolder.path, 'deleted-checkout')
     settingStore.write(SETTING_KEYS.reposFolder, reposFolder.path)
     settingStore.write(SETTING_KEYS.currentRepo, missingPath)
@@ -106,7 +106,8 @@ describe('GET /api/v1/settings', () => {
     const repoSlug = `acme/${repoName}`
     const relativeRepoPath = join(relativeReposFolder, repoName)
     mkdirSync(join(reposFolder.path, relativeReposFolder))
-    await createGitRepository(join(reposFolder.path, relativeReposFolder), repoName, repoSlug)
+    createCheckoutFolder(join(reposFolder.path, relativeReposFolder), repoName)
+    stubGitRepository(ctx.commands, relativeRepoPath, repoSlug)
     settingStore.write(SETTING_KEYS.reposFolder, relativeReposFolder)
     settingStore.write(SETTING_KEYS.currentRepo, relativeRepoPath)
     const originalWorkingDirectory = process.cwd()
@@ -127,7 +128,7 @@ describe('GET /api/v1/settings', () => {
     const secondRepoName = 'api'
     const missingDirectoryName = 'deleted-checkout'
     const missingPath = join(reposFolder.path, missingDirectoryName)
-    await createGitRepository(reposFolder.path, firstRepoName, `${repoOwner}/${firstRepoName}`)
+    createGitRepository(ctx.commands, reposFolder.path, firstRepoName, `${repoOwner}/${firstRepoName}`)
     settingStore.write(SETTING_KEYS.reposFolder, reposFolder.path)
     settingStore.write(SETTING_KEYS.currentRepo, missingPath)
     insertPullRequest(db, { repoOwner, repoName: firstRepoName })

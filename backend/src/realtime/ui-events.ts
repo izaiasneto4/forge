@@ -1,3 +1,4 @@
+import type { AppContext } from '../context'
 import { iso8601 } from '../lib/ruby'
 import { slugFromPath } from '../services/repo-slug-resolver'
 import { STREAMS, type BroadcastMessage, type Broadcaster } from './broadcaster'
@@ -42,18 +43,20 @@ export function reviewTaskUpdated(
   })
 }
 
-async function syncEvent(events: Broadcaster, event: string, repoPath: string | null, extra: BroadcastMessage) {
-  broadcastUiEvent(events, event, { repo_path: repoPath, repo: await slugFromPath(repoPath), ...extra })
+type SyncEventContext = Pick<AppContext, 'events' | 'commands'>
+
+async function syncEvent({ events, commands }: SyncEventContext, event: string, repoPath: string | null, extra: BroadcastMessage) {
+  broadcastUiEvent(events, event, { repo_path: repoPath, repo: await slugFromPath(commands, repoPath), ...extra })
 }
 
-export function syncStarted(events: Broadcaster, repoPath: string | null, sync: BroadcastMessage | null = null) {
-  return syncEvent(events, 'sync.started', repoPath, { sync })
+export function syncStarted(ctx: SyncEventContext, repoPath: string | null, sync: BroadcastMessage | null = null) {
+  return syncEvent(ctx, 'sync.started', repoPath, { sync })
 }
 
-export function syncCompleted(events: Broadcaster, repoPath: string | null, sync: BroadcastMessage | null = null) {
-  return syncEvent(events, 'sync.completed', repoPath, { sync })
+export function syncCompleted(ctx: SyncEventContext, repoPath: string | null, sync: BroadcastMessage | null = null) {
+  return syncEvent(ctx, 'sync.completed', repoPath, { sync })
 }
 
-export function syncFailed(events: Broadcaster, repoPath: string | null, error: string, sync: BroadcastMessage | null = null) {
-  return syncEvent(events, 'sync.failed', repoPath, { error, sync })
+export function syncFailed(ctx: SyncEventContext, repoPath: string | null, error: string, sync: BroadcastMessage | null = null) {
+  return syncEvent(ctx, 'sync.failed', repoPath, { error, sync })
 }

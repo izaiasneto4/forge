@@ -22,7 +22,7 @@ export function repositoryRoutes({ ctx, services }: RouteDependencies) {
       const slug = requireStringParam(mergeParams(query, body), 'repo')
       if (!REPO_SLUG.test(slug)) renderError('invalid_input', 'repo must be in org/repo format')
 
-      const resolution = await resolveRepoSlug(settings.reposFolder(), slug)
+      const resolution = await resolveRepoSlug(ctx.commands, settings.reposFolder(), slug)
       if (resolution.status === 'not_found') renderError('not_found', `No local repository matched ${slug}`, 404)
       if (resolution.status === 'ambiguous') {
         renderError('conflict', `Multiple local repositories matched ${slug}`, 409, { paths: resolution.paths })

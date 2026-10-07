@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import type { CommandRunner } from '../commands/runner'
 import { isBlank } from '../lib/ruby'
 import { gitOutput, isDirectory } from './git'
 
@@ -24,17 +25,17 @@ function isGitRepository(path: string) {
   }
 }
 
-async function describeRepository(name: string, path: string): Promise<ScannedRepository> {
+async function describeRepository(commands: CommandRunner, name: string, path: string): Promise<ScannedRepository> {
   const [remoteUrl, branch] = await Promise.all([
-    gitOutput(path, ['remote', 'get-url', 'origin']),
-    gitOutput(path, ['branch', '--show-current']),
+    gitOutput(commands, path, ['remote', 'get-url', 'origin']),
+    gitOutput(commands, path, ['branch', '--show-current']),
   ])
 
   return { name, path, remote_url: remoteUrl ?? '', branch: branch ?? '' }
 }
 
 // Lists git repositories directly under `baseFolder`, sorted case-insensitively.
-export async function scanRepositories(baseFolder: string | null): Promise<ScannedRepository[]> {
+export async function scanRepositories(commands: CommandRunner, baseFolder: string | null): Promise<ScannedRepository[]> {
   if (isBlank(baseFolder) || !isDirectory(baseFolder)) {
     return []
   }
@@ -44,7 +45,7 @@ export async function scanRepositories(baseFolder: string | null): Promise<Scann
     .map((entry) => ({ name: entry, path: join(baseFolder, entry) }))
     .filter(({ path }) => isDirectory(path) && isGitRepository(path))
 
-  const repositories = await Promise.all(repositoryEntries.map(({ name, path }) => describeRepository(name, path)))
+  const repositories = await Promise.all(repositoryEntries.map(({ name, path }) => describeRepository(commands, name, path)))
   return repositories.sort((left, right) => {
     const leftName = left.name.toLowerCase()
     const rightName = right.name.toLowerCase()

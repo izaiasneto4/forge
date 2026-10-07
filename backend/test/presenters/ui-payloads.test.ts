@@ -26,7 +26,7 @@ import {
   insertReviewTask,
   insertSnapshot,
 } from '../support/factories'
-import { createGitRepository, createTempFolder } from '../support/git'
+import { createGitRepository, createTempFolder, stubGitRepository } from '../support/git'
 
 type ContentMode = Static<typeof ReviewTaskDetail>['content_mode']
 
@@ -48,7 +48,7 @@ describe('UI payloads', () => {
     ctx = createTestContext()
     settingStore = new SettingStore(ctx.db)
     reposFolder = createTempFolder()
-    repoPath = await createGitRepository(reposFolder.path, repoName, repoSlug)
+    repoPath = createGitRepository(ctx.commands, reposFolder.path, repoName, repoSlug)
   })
 
   afterEach(() => reposFolder.remove())
@@ -107,12 +107,11 @@ describe('UI payloads', () => {
   }
 
   describe('currentRepoPayload', () => {
-    test('describes the current repo from its git remote, given a context or a database', async () => {
+    test('describes the current repo from its git remote', async () => {
       settingStore.setCurrentRepo(repoPath)
       const expected = { path: repoPath, slug: repoSlug, name: repoName }
 
       expect(await currentRepoPayload(ctx)).toEqual(expected)
-      expect(await currentRepoPayload(ctx.db)).toEqual(expected)
     })
 
     test('is all null without a current repo', async () => {
@@ -121,6 +120,7 @@ describe('UI payloads', () => {
 
     test('names a path with a trailing slash after its directory', async () => {
       const pathWithSlash = `${repoPath}/`
+      stubGitRepository(ctx.commands, pathWithSlash, repoSlug)
       settingStore.setCurrentRepo(pathWithSlash)
 
       expect(await currentRepoPayload(ctx)).toEqual({ path: pathWithSlash, slug: repoSlug, name: repoName })
@@ -262,7 +262,7 @@ describe('UI payloads', () => {
     test('lists the repos folder checkouts and flags the current one', async () => {
       const otherName = 'web'
       const otherSlug = `${repoOwner}/${otherName}`
-      const otherPath = await createGitRepository(reposFolder.path, otherName, otherSlug)
+      const otherPath = createGitRepository(ctx.commands, reposFolder.path, otherName, otherSlug)
       settingStore.setReposFolder(reposFolder.path)
       settingStore.setCurrentRepo(repoPath)
 

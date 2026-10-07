@@ -40,10 +40,10 @@ export function coreRoutes({ ctx, services }: RouteDependencies) {
 
       const running = ctx.db.select({ id: reviewTasks.id }).from(reviewTasks).where(tasksInState('in_review')).orderBy(asc(reviewTasks.id)).get()
       const currentRepo = settings.currentRepo()
-      const syncState = await syncStateForRepoPath(ctx.db, currentRepo)
+      const syncState = await syncStateForRepoPath(ctx, currentRepo)
 
       return ok({
-        repo: await slugFromPath(currentRepo),
+        repo: await slugFromPath(ctx.commands, currentRepo),
         counts: {
           pending_review: countWhere(ctx, pullRequests, withReviewStatus('pending_review')),
           in_review: countWhere(ctx, pullRequests, withReviewStatus('in_review')),
@@ -59,7 +59,7 @@ export function coreRoutes({ ctx, services }: RouteDependencies) {
     .post('/sync', async ({ query, body }) => {
       try {
         const force = parseBoolean(mergeParams(query, body).force)
-        const syncState = await syncStateForRepoPath(ctx.db, settings.currentRepo())
+        const syncState = await syncStateForRepoPath(ctx, settings.currentRepo())
 
         if (!force && syncState && !syncNeeded(syncState)) {
           return ok({
@@ -87,7 +87,7 @@ export function coreRoutes({ ctx, services }: RouteDependencies) {
       const parsed = parsePullRequestUrl(requireStringParam(params, 'pr_url'))
       if (!parsed) renderError(ERROR_CODES.invalidInput, 'pr_url must be a valid GitHub pull request URL')
 
-      const currentSlug = await slugFromPath(settings.currentRepo())
+      const currentSlug = await slugFromPath(ctx.commands, settings.currentRepo())
       if (isPresent(currentSlug) && currentSlug !== parsed.repo) {
         renderError(ERROR_CODES.invalidInput, `PR repo ${parsed.repo} does not match current repo ${currentSlug}`)
       }

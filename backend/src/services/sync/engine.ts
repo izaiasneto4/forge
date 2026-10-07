@@ -272,7 +272,7 @@ async function performSync(ctx: AppContext, adapterFor: () => Promise<SyncAdapte
 async function handleFailure(ctx: AppContext, repoPath: string | null, syncState: SyncStateRecord | null, error: unknown): Promise<never> {
   if (syncState) {
     const failed = updateSyncState(ctx.db, syncState, { status: 'failed', lastFinishedAt: new Date(), lastError: errorMessage(error) })
-    await syncFailed(ctx.events, repoPath, errorMessage(error), syncStatePayload(failed))
+    await syncFailed(ctx, repoPath, errorMessage(error), syncStatePayload(failed))
   }
   throw error
 }
@@ -300,14 +300,14 @@ export async function runSync(ctx: AppContext, options: RunSyncOptions): Promise
   let syncState: SyncStateRecord | null = null
 
   try {
-    syncState = await syncStateForRepoPath(ctx.db, repoPath)
+    syncState = await syncStateForRepoPath(ctx, repoPath)
     if (!syncState) return noRepoResult()
 
     const claim = claimSyncState(ctx.db, syncState)
     syncState = claim.state
     if (claim.alreadyRunning) return buildResult(syncState, null, true)
 
-    await syncStarted(ctx.events, repoPath, { ...syncStatePayload(syncState), trigger })
+    await syncStarted(ctx, repoPath, { ...syncStatePayload(syncState), trigger })
 
     const result = await performSync(ctx, lazyAdapter(ctx, repoPath, options.adapter), pullRequestNumber)
     const finishedAt = new Date()
@@ -323,7 +323,7 @@ export async function runSync(ctx: AppContext, options: RunSyncOptions): Promise
     })
 
     new SettingStore(ctx.db).touchLastSynced()
-    await syncCompleted(ctx.events, repoPath, syncStatePayload(syncState))
+    await syncCompleted(ctx, repoPath, syncStatePayload(syncState))
 
     return buildResult(syncState, result, false)
   } catch (error) {

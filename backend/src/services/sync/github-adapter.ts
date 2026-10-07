@@ -246,7 +246,7 @@ export async function createGithubAdapter(
   ctx: AppContext,
   options: { repoPath: string | null; githubLogin?: string | null },
 ): Promise<GithubAdapter> {
-  const repoSlug = await slugFromPath(options.repoPath)
+  const repoSlug = await slugFromPath(ctx.commands, options.repoPath)
   const githubLogin = isPresent(options.githubLogin)
     ? options.githubLogin
     : (await runGh(ctx, options.repoPath, ['api', 'user', '--jq', '.login'])).trim()

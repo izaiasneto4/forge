@@ -89,7 +89,7 @@ describe('API routes', () => {
   }
 
   async function useCurrentRepo(repoSlug = slug) {
-    const repoPath = await createGitRepository(tempFolder.path, repoSlug.split('/')[1] ?? repoName, repoSlug)
+    const repoPath = createGitRepository(ctx.commands, tempFolder.path, repoSlug.split('/')[1] ?? repoName, repoSlug)
     new SettingStore(ctx.db).setCurrentRepo(repoPath)
     return repoPath
   }
@@ -131,7 +131,7 @@ describe('API routes', () => {
     })
 
     test('board recovers the current repo from the repos folder', async () => {
-      const repoPath = await createGitRepository(tempFolder.path, repoName, slug)
+      const repoPath = createGitRepository(ctx.commands, tempFolder.path, repoName, slug)
       const settings = new SettingStore(ctx.db)
       settings.setReposFolder(tempFolder.path)
       insertPullRequest(ctx.db, { repoOwner: owner, repoName })
@@ -461,8 +461,8 @@ describe('API routes', () => {
   describe('repositories and settings', () => {
     test('switching validates the slug and reports resolver outcomes', async () => {
       new SettingStore(ctx.db).setReposFolder(tempFolder.path)
-      await createGitRepository(tempFolder.path, 'one', 'acme/dup')
-      await createGitRepository(tempFolder.path, 'two', 'acme/dup')
+      createGitRepository(ctx.commands, tempFolder.path, 'one', 'acme/dup')
+      createGitRepository(ctx.commands, tempFolder.path, 'two', 'acme/dup')
 
       const badFormat = await call('POST', '/api/v1/repositories/switch', { repo: 'acme' })
       const missing = await call('POST', '/api/v1/repositories/switch', {})
@@ -478,7 +478,7 @@ describe('API routes', () => {
 
     test('switching sets the current repo and syncs it', async () => {
       new SettingStore(ctx.db).setReposFolder(tempFolder.path)
-      const repoPath = await createGitRepository(tempFolder.path, repoName, slug)
+      const repoPath = createGitRepository(ctx.commands, tempFolder.path, repoName, slug)
       const triggers: string[] = []
       services.runSync = async (_ctx, options) => {
         triggers.push(options.trigger)
@@ -495,7 +495,7 @@ describe('API routes', () => {
 
     test('a sync failure after switching is reported', async () => {
       new SettingStore(ctx.db).setReposFolder(tempFolder.path)
-      await createGitRepository(tempFolder.path, repoName, slug)
+      createGitRepository(ctx.commands, tempFolder.path, repoName, slug)
       services.runSync = async () => {
         throw new SyncAdapterError('boom')
       }

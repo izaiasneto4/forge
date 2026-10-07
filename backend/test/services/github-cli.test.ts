@@ -12,7 +12,7 @@ import { GithubCliError, type GithubCliClient } from '../../src/services/github-
 import type { ListedPullRequest } from '../../src/services/sync/pull-request-attributes'
 import { createTestContext, type TestContext } from '../support/context'
 import { insertPullRequest, insertReviewComment, insertReviewTask } from '../support/factories'
-import { createGitRepository, createTempFolder } from '../support/git'
+import { createCheckoutFolder, stubGitRepository, createTempFolder } from '../support/git'
 import { fixtureRepo, fixtureSlug, ghJson, ghListedPullRequest } from '../support/github-fixtures'
 
 const username = 'testuser'
@@ -251,9 +251,11 @@ describe('GithubCli (GithubCliService)', () => {
   describe('syncToDatabase', () => {
     let repoPath: string
 
-    beforeAll(async () => {
-      repoPath = await createGitRepository(tempFolder.path, fixtureRepo, fixtureSlug)
+    beforeAll(() => {
+      repoPath = createCheckoutFolder(tempFolder.path, fixtureRepo)
     })
+
+    beforeEach(() => stubGitRepository(ctx.commands, repoPath, fixtureSlug))
 
     test('delegates to the sync engine for the service repo', async () => {
       const number = 5
