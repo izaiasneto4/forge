@@ -1,7 +1,5 @@
 export type BroadcastMessage = Record<string, unknown>
 
-// ActionCable.server.broadcast(stream, message). The cable server delivers each
-// message to every subscription streaming from `stream`.
 export interface Broadcaster {
   broadcast(stream: string, message: BroadcastMessage): void
 }

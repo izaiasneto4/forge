@@ -15,7 +15,7 @@ Core CLI commands for terminal workflow:
 | `forge logs <task-id>` | View review logs |
 | `forge repo switch <org/repo>` | Switch repos |
 
-Implementation: Thin CLI wrapper (Thor/GLI) that talks to Rails app via REST API.
+Implementation: Thin CLI wrapper that talks to the Bun API via REST.
 
 ---
 
@@ -36,7 +36,7 @@ Automated sync/review on a schedule:
 
 - Cron-style scheduling (e.g., "every morning at 9am")
 - Configurable per-repo schedules
-- Background jobs via SolidQueue
+- Background jobs via the in-process Bun job worker
 
 ---
 

@@ -144,12 +144,10 @@ export class JobQueue {
       .all().length
   }
 
-  // SolidQueue::ClaimedExecution joined on class_name.
   hasClaimed(name: JobName) {
     return this.exists(name, [JOB_STATES.claimed])
   }
 
-  // SolidQueue::ReadyExecution: due now and not yet claimed.
   hasReady(name: JobName, now = new Date()) {
     const row = this.db
       .select({ id: jobs.id })

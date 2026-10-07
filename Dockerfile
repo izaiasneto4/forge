@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Production image for Kamal or plain docker:
+# Production image:
 #   docker build -t forge .
 #   docker run -d -p 80:80 -v forge_storage:/app/storage --name forge forge
 

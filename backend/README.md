@@ -1,9 +1,8 @@
 # Forge API (Bun + Elysia)
 
 The whole server side of Forge: the `/api/v1` JSON API, the ActionCable-compatible
-WebSocket at `/cable`, the background job worker, and static serving of the built
-frontend. It replaced the original Rails app with the same contract, so the React app
-and the `forge` CLI work unchanged.
+WebSocket at `/ws`, the background job worker, and static serving of the built
+frontend.
 
 ```sh
 bun install
@@ -32,7 +31,7 @@ bun bin/forge.ts   # the forge CLI (see the root README)
   transitions, after-commit broadcasts).
 - `src/services/` — GitHub sync (`sync/`), AI review runs, submissions, summaries.
 - `src/jobs/` — SQLite-backed job queue, in-process worker, recurring maintenance.
-- `src/realtime/` — WebSocket server speaking the `actioncable-v1-json` protocol.
+- `src/realtime/` — plain JSON WebSocket server for live UI updates.
 - `src/cli/` — the `forge` CLI.
 
 ## Contract rules
@@ -43,6 +42,6 @@ bun bin/forge.ts   # the forge CLI (see the root README)
 ## Database
 
 Migrations live in `drizzle/` and run on startup. `0000_rails_baseline.sql` is the
-schema the Rails app left behind: a database created by Rails is adopted in place
-(the baseline is recorded as applied and only newer migrations run). Add new
-migrations as numbered SQL files with a matching entry in `drizzle/meta/_journal.json`.
+initial schema; databases that already have those tables record the baseline as
+applied and only run newer migrations. Add new migrations as numbered SQL files
+with a matching entry in `drizzle/meta/_journal.json`.

@@ -3,7 +3,6 @@ import { iso8601 } from '../lib/ruby'
 import { slugFromPath } from '../services/repo-slug-resolver'
 import { STREAMS, type BroadcastMessage, type Broadcaster } from './broadcaster'
 
-// Port of UiEventBroadcaster: app-wide events the React app listens to on UiEventsChannel.
 export function broadcastUiEvent(events: Broadcaster, event: string, payload: BroadcastMessage = {}) {
   events.broadcast(STREAMS.uiEvents, { ...payload, event, timestamp: iso8601(new Date()) })
 }

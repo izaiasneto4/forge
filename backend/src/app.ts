@@ -2,8 +2,8 @@ import { Elysia } from 'elysia'
 import type { AppContext } from './context'
 import { errorHandling } from './http/envelope'
 import { frontendRoutes } from './http/frontend'
-import { blockedHostResponse, cableOriginAllowed, DEFAULT_ALLOWED_HOSTS, requestHostAllowed } from './http/host-authorization'
-import { cablePlugin, cableServerWebSocketOptions, CableServer } from './realtime/cable-server'
+import { blockedHostResponse, DEFAULT_ALLOWED_HOSTS, requestHostAllowed, websocketOriginAllowed } from './http/host-authorization'
+import { realtimePlugin, realtimeWebSocketOptions, RealtimeServer, WS_PATH } from './realtime/ws-server'
 import { coreRoutes } from './routes/core'
 import { pullRequestRoutes } from './routes/pull-requests'
 import { repositoryRoutes } from './routes/repositories'
@@ -22,7 +22,7 @@ export const defaultServices: ApiServices = {
 
 export interface AppOptions {
   ctx: AppContext
-  cable: CableServer
+  realtime: RealtimeServer
   services?: ApiServices
   publicDir: string
   development?: boolean
@@ -30,8 +30,8 @@ export interface AppOptions {
   frontendDevUrl?: string
 }
 
-function isCableHandshake(request: Request) {
-  return new URL(request.url).pathname === '/cable' && request.headers.get('upgrade')?.toLowerCase() === 'websocket'
+function isWebsocketHandshake(request: Request) {
+  return new URL(request.url).pathname === WS_PATH && request.headers.get('upgrade')?.toLowerCase() === 'websocket'
 }
 
 export function createApp(options: AppOptions) {
@@ -41,16 +41,16 @@ export function createApp(options: AppOptions) {
 
   // normalize: false keeps Elysia from silently dropping payload keys a
   // response schema doesn't list; schemas still reject missing/mistyped keys.
-  return new Elysia({ normalize: false, websocket: cableServerWebSocketOptions() })
+  return new Elysia({ normalize: false, websocket: realtimeWebSocketOptions() })
     .onRequest(({ request }) => {
       if (!requestHostAllowed(request, allowedHosts)) return blockedHostResponse(request)
-      if (isCableHandshake(request) && !cableOriginAllowed(request, { development })) {
+      if (isWebsocketHandshake(request) && !websocketOriginAllowed(request, { development })) {
         return new Response('Request origin not allowed', { status: 404 })
       }
       return undefined
     })
     .use(errorHandling)
-    .use(cablePlugin(options.cable))
+    .use(realtimePlugin(options.realtime))
     .use(coreRoutes(deps))
     .use(settingsRoutes(deps))
     .use(pullRequestRoutes(deps))

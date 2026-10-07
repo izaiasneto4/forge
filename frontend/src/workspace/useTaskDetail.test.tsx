@@ -8,7 +8,7 @@ import { useLiveLogs } from './useTaskDetail'
 
 const handlers: Array<(data: unknown) => void> = []
 
-vi.mock('../lib/cable', () => ({
+vi.mock('../lib/realtime', () => ({
   subscribe: (_params: unknown, callbacks: { received: (data: unknown) => void }) => {
     handlers.push(callbacks.received)
     return () => {}

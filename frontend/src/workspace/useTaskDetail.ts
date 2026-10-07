@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 
 import { api } from '../lib/api'
-import { subscribe } from '../lib/cable'
+import { subscribe } from '../lib/realtime'
 import { queryKeys } from '../lib/queryKeys'
 import type { AgentLogItem, ReviewTaskDetailResponse } from '../types/api'
 
@@ -51,7 +51,7 @@ export function useLiveLogs(taskId: number | null | undefined, initialLogs: Agen
     if (taskId == null || !live) return
 
     return subscribe(
-      { channel: 'ReviewTaskLogsChannel', review_task_id: String(taskId) },
+      { channel: 'review_task_logs', review_task_id: taskId },
       {
         received: (data) => {
           const event = lifecycleEvent(data)

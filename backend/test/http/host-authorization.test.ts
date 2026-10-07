@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { allowedHostsFromEnv, cableOriginAllowed, DEFAULT_ALLOWED_HOSTS, isAllowedHost, requestHostAllowed } from '../../src/http/host-authorization'
+import { allowedHostsFromEnv, DEFAULT_ALLOWED_HOSTS, isAllowedHost, requestHostAllowed, websocketOriginAllowed } from '../../src/http/host-authorization'
 
-function requestWith(headers: Record<string, string>, url = 'http://localhost:3100/cable') {
+function requestWith(headers: Record<string, string>, url = 'http://localhost:3100/ws') {
   return new Request(url, { headers })
 }
 
@@ -29,14 +29,14 @@ describe('host authorization', () => {
     expect(requestHostAllowed(request, DEFAULT_ALLOWED_HOSTS)).toBe(false)
   })
 
-  test('accepts same-origin cable requests, and localhost ports only in development', () => {
-    const sameOrigin = requestWith({ host: 'forge.example.com', origin: 'http://forge.example.com' }, 'http://forge.example.com/cable')
+  test('accepts same-origin websocket requests, and localhost ports only in development', () => {
+    const sameOrigin = requestWith({ host: 'forge.example.com', origin: 'http://forge.example.com' }, 'http://forge.example.com/ws')
     const viteDevServer = requestWith({ host: 'localhost:3100', origin: 'http://localhost:5173' })
     const crossSite = requestWith({ host: 'localhost:3100', origin: 'https://evil.example' })
 
-    expect(cableOriginAllowed(sameOrigin, { development: false })).toBe(true)
-    expect(cableOriginAllowed(viteDevServer, { development: true })).toBe(true)
-    expect(cableOriginAllowed(viteDevServer, { development: false })).toBe(false)
-    expect(cableOriginAllowed(crossSite, { development: true })).toBe(false)
+    expect(websocketOriginAllowed(sameOrigin, { development: false })).toBe(true)
+    expect(websocketOriginAllowed(viteDevServer, { development: true })).toBe(true)
+    expect(websocketOriginAllowed(viteDevServer, { development: false })).toBe(false)
+    expect(websocketOriginAllowed(crossSite, { development: true })).toBe(false)
   })
 })

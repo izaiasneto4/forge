@@ -82,8 +82,8 @@ function processRunning(pid: number) {
 
 // A worker is dead once it misses heartbeats for the alive threshold. On this
 // host a crash shows sooner: its pid is gone, or it is our own pid from an
-// earlier run. Kamal and Docker give every container its own hostname, so pids
-// are only compared within one host.
+// earlier run. Docker containers each get their own hostname, so pids are only
+// compared within one host.
 function isDead(worker: JobWorkerRecord, self: JobWorkerIdentity, now: Date, aliveThresholdMs: number) {
   if (now.getTime() - worker.heartbeatAt.getTime() > aliveThresholdMs) return true
   if (worker.hostname !== self.hostname) return false
