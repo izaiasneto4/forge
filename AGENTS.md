@@ -1,36 +1,34 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-Forge is a Rails 8 app with a service-oriented core.
-- `app/` — Rails MVC plus `app/services/` for workflow orchestration and `app/presenters/` for view models.
-- `app/javascript/` — Stimulus/Turbo front-end code; controllers live in `app/javascript/controllers/`.
-- `app/assets/` and `public/` — static assets and icons.
-- `config/` — environment, routes, and database configuration.
-- `db/` — schema and migrations (SQLite).
-- `test/` — Rails Minitest suite; JS tests live in `test/javascript/`.
-- `bin/` and `script/` — developer and CI helpers.
+Forge is a Bun + Elysia API with a React frontend.
+- `backend/src/` — the API: `routes/` (HTTP endpoints under `/api/v1`), `presenters/` and `contracts/` (JSON payloads and their TypeBox schemas), `services/` (GitHub sync, AI review runs, submissions), `models/` (Drizzle data access and domain rules), `jobs/` (persistent job queue and handlers), `realtime/` (ActionCable-compatible WebSocket server at `/cable`).
+- `backend/drizzle/` — SQL migrations; `backend/src/db/schema.ts` is the Drizzle schema.
+- `backend/test/` — Bun tests; `backend/test/support/` has the in-memory test context and factories.
+- `backend/bin/` — `forge` CLI and `migrate` entrypoints.
+- `frontend/` — React + Vite app; its production build is served from `public/frontend`.
+- `public/` — static assets and error pages served by the API.
+- `storage/` — SQLite databases.
+- `bin/` — developer helpers (`setup`, `dev`, `forge`).
 
 ## Build, Test, and Development Commands
 - `bin/setup` — install dependencies and prepare the database.
-- `bin/dev` — run the dev stack (Puma + Tailwind + Solid Queue).
-- `bin/rails test` — run all Rails tests.
-- `bin/rails test test/models/pull_request_test.rb` — run a single test file.
-- `bin/rails test test/models/pull_request_test.rb:42` — run one test by line.
-- `npm --prefix frontend run test` / `npm --prefix frontend run test:watch` / `npm --prefix frontend run test:coverage` — Vitest suite for the React app in `frontend/`.
-- `npx playwright test` — Playwright specs (expects server at `http://localhost:3000`).
-- `bin/rubocop` — Ruby style checks (Rails Omakase).
-- `bin/ci` — full CI flow (lint, security audits, tests).
+- `bin/dev` — run the API (port 3000, with its in-process job worker) and the Vite dev server.
+- `bun run --cwd backend test` — run all API tests.
+- `bun test backend/test/models/pull-request.test.ts` — run a single test file.
+- `bun run --cwd backend typecheck` — strict TypeScript check.
+- `npm --prefix frontend test` / `npm --prefix frontend run build` — frontend tests and build.
 
 ## Coding Style & Naming Conventions
-- Ruby follows `rubocop-rails-omakase`; run `bin/rubocop` before PRs.
-- Indentation is 2 spaces (Ruby and JS).
-- Ruby classes/modules are `CamelCase`; files and methods are `snake_case`.
-- Service objects belong in `app/services/` and should be named after their responsibility (e.g., `SyncService`).
+- TypeScript is strict: no `any`, no type assertions (`as`, including `as const`), no non-null `!`. Narrow `unknown` with type guards or TypeBox. For literal constants use `literals(...)` (`backend/src/lib/literals.ts`) or `Object.freeze({...})`.
+- 2-space indentation, single quotes, no semicolons.
+- Files are `kebab-case.ts`; functions and variables `camelCase`; types and classes `PascalCase`. JSON payloads keep the API's `snake_case` keys.
+- Services take the `AppContext` (`{ db, events, jobs, commands }`) explicitly; subprocesses go through `ctx.commands.run`, never `Bun.spawn` directly.
 
 ## Testing Guidelines
-- Rails tests use Minitest with Mocha (`test/**/*_test.rb`).
-- JS tests use Vitest (`test/javascript/**/*.{test,spec}.{js,ts,jsx,tsx}`).
-- Prefer focused unit tests; add integration coverage for PR sync/review flows.
+- Tests use `bun:test` with `createTestContext()` (in-memory SQLite, recording broadcaster, fake command runner).
+- Declare inputs as named variables and assert against them; no network and no real `gh`/AI CLIs in tests.
+- Route tests go through the real app (`createTestApp`) so contracts and error envelopes are exercised.
 
 ## Commit & Pull Request Guidelines
 - Commit subjects are short, imperative, and capitalized (e.g., “Add worktree service tests”).
@@ -38,22 +36,19 @@ Forge is a Rails 8 app with a service-oriented core.
 - Add screenshots or short clips for UI changes.
 
 ## Configuration Notes
-This app requires authenticated CLI tools: `gh` (GitHub CLI) and `claude` (Claude CLI). Ensure both are on your `PATH` before running reviews or syncs.
+This app requires authenticated CLI tools: `gh` (GitHub CLI) and an AI review CLI (`claude`, `codex` or `opencode`). Ensure they are on your `PATH` before running reviews or syncs.
 
 ## Review Queue Troubleshooting
-- If a review stays in `pending_review` with no logs, first verify the jobs worker is running.
-- Default dev flow: use `bin/dev` (it starts web + css + jobs via `Procfile.dev`).
-- If running services manually, run `bin/jobs` in a separate terminal.
+- Jobs run inside the API process; a review stuck in `pending_review` with no logs usually means the server was started with `FORGE_DISABLE_JOB_WORKER=1` or crashed mid-run.
 - Quick queue check:
-  - `bin/rails runner 'puts({ready: SolidQueue::ReadyExecution.count, claimed: SolidQueue::ClaimedExecution.count, failed: SolidQueue::FailedExecution.count}.to_json)'`
-  - If `ready > 0` and `claimed = 0`, worker is offline or not consuming.
-- Quick task check:
-  - `bin/rails runner 't=ReviewTask.find(<ID>); puts({state:t.state,started_at:t.started_at,worktree_path:t.worktree_path,logs:t.agent_logs.count}.to_json)'`
-  - `pending_review` + `started_at=nil` + `logs=0` usually means job never started.
+  - `bun -e 'import {Database} from "bun:sqlite"; console.log(new Database("storage/development.sqlite3").query("select name, state, count(*) n from jobs group by 1,2").all())'`
+  - Jobs stuck in `ready` with none `claimed` means the worker is not running.
+- Quick task check: `bin/forge logs <TASK_ID>` or `GET /api/v1/review_tasks/<ID>/logs`.
+- Tasks left `in_review` by a crash are recovered automatically (on page loads and every 5 minutes).
 
 ## Cursor Cloud specific instructions
 
-- `bin/setup` prepares dependencies and the database, then replaces itself with `bin/dev` unless you pass `--skip-server`.
-- `bin/dev` starts Rails at `http://127.0.0.1:3000`, the Vite dev server at `http://127.0.0.1:5173/frontend/`, and Solid Queue via `bin/jobs`. Rails serves `public/frontend` when that build is present. Vite proxies `/api` and `/cable` to Rails.
+- `bin/setup` installs dependencies and migrates the database, then replaces itself with `bin/dev` unless you pass `--skip-server`.
+- `bin/dev` starts the Bun API at `http://127.0.0.1:3000` (job worker in-process) and Vite at `http://127.0.0.1:5173/frontend/`. Vite proxies `/api` and `/cable` to `FORGE_API_URL` or `http://localhost:3000`. When `public/frontend/index.html` exists, the API serves that build; otherwise development requests redirect to Vite.
 - The folder picker uses macOS `osascript`. On Linux, set Repos Folder in Settings to an existing directory. Forge lists immediate child directories that contain a `.git` entry.
 - `gh` is on `PATH`. Cloud Agent integration tokens can read this repository's pull requests, but `gh api user` returns HTTP 403, so switching a repository and syncing fails until a user-scoped GitHub credential is available. `claude`, `codex`, and `opencode` are not required to boot the app or run the test suite.

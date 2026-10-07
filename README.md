@@ -4,7 +4,7 @@
 
 # Forge
 
-Forge is a local-first Rails application for automated GitHub pull request review. It syncs PR metadata via GitHub CLI and runs code review agents through supported local CLIs such as Claude CLI, Codex, and OpenCode.
+Forge is a local-first application for automated GitHub pull request review: a Bun + Elysia API with a React frontend. It syncs PR metadata via GitHub CLI and runs code review agents through supported local CLIs such as Claude CLI, Codex, and OpenCode.
 
 ## Status
 
@@ -22,9 +22,9 @@ If you want to expose a running Forge instance publicly, add authentication, TLS
 
 Tested assumptions in the repository:
 
-- Ruby `3.4.2`
-- SQLite
-- Node/npm for frontend tests
+- [Bun](https://bun.sh) `1.2.20` (runs the API, the job worker and the `forge` CLI)
+- SQLite (bundled with Bun)
+- Node/npm for the frontend dev server, tests and builds
 - [GitHub CLI](https://cli.github.com/) (`gh`) authenticated against GitHub
 - at least one supported review CLI on your `PATH`
   - [Claude CLI](https://github.com/anthropics/claude-code) (`claude`)
@@ -33,7 +33,7 @@ Tested assumptions in the repository:
 
 Platform notes:
 
-- The core app is Rails and can run anywhere the dependencies are available.
+- The core app runs anywhere Bun and the CLIs above are available.
 - The folder picker UI uses `osascript`, so the interactive folder-picking flow is currently macOS-specific.
 - On non-macOS systems, configure the repositories folder directly in settings or through persisted app state instead of relying on the picker dialog.
 
@@ -63,14 +63,13 @@ Runtime configuration is intentionally small. See [.env.example](.env.example) f
 
 Common variables:
 
-- `FORGE_API_URL`
-  Default: `http://127.0.0.1:3000`
-- `RAILS_MAX_THREADS`
-- `JOB_CONCURRENCY`
-- `WEB_CONCURRENCY`
-- `RAILS_LOG_LEVEL`
+- `PORT`: API port. Default: `3000`
+- `FORGE_API_URL`: where the `forge` CLI finds the API. Default: `http://127.0.0.1:3000`
+- `DATABASE_PATH`: SQLite file. Default: `storage/development.sqlite3` (`storage/production.sqlite3` when `NODE_ENV=production`)
+- `FORGE_ALLOWED_HOSTS`: hosts allowed to reach the app. Default: localhost, `.localhost`, `.test` and IPs in development; any host in production
+- `FORGE_LOG_LEVEL`: `debug`, `info`, `warn` or `error`
+- `FORGE_DISABLE_JOB_WORKER=1`: queue background jobs without running them
 - `ANTHROPIC_MODEL` or `CLAUDE_MODEL`
-- `RAILS_MASTER_KEY` for production
 
 External credentials are typically provided by the tools Forge shells out to:
 
@@ -234,13 +233,14 @@ bin/forge repo switch acme/api --json
 Useful commands:
 
 ```bash
-bin/setup
-bin/dev
-bin/rails test
-bin/rubocop
-npm test
-bin/ci
+bin/setup                      # install dependencies, prepare the database
+bin/dev                        # API on :3000 plus the Vite dev server
+bun run --cwd backend test     # API tests
+bun run --cwd backend typecheck
+npm --prefix frontend test     # frontend tests
 ```
+
+The API lives in `backend/` (see [backend/README.md](backend/README.md)). Background jobs (reviews, syncs, AI summaries) run inside the API process. The database schema is managed by the migrations in `backend/drizzle/`, applied automatically on startup; an existing database created by the former Rails app is adopted in place.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution expectations and [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
@@ -251,8 +251,7 @@ The repository includes Docker and Kamal configuration, but the checked-in deplo
 Before a real deployment:
 
 - set real hosts, registry, and secrets
-- enable TLS and host protection
-- review `config/environments/production.rb`
+- enable TLS and set `FORGE_ALLOWED_HOSTS`
 - decide how you will authenticate access to the app
 - back up the persistent `storage/` volume
 

@@ -1,7 +1,3 @@
-#!/usr/bin/env ruby
-
-$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
-
-require "forge/cli"
-
-exit Forge::CLI.start(ARGV)
+#!/usr/bin/env sh
+# The forge CLI (talks to the API at FORGE_API_URL, default http://127.0.0.1:3000).
+exec bun "$(dirname "$0")/../backend/bin/forge.ts" "$@"
