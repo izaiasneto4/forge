@@ -259,4 +259,3 @@ class Api::V1::PullRequestsControllerTest < ActionDispatch::IntegrationTest
     assert deleted.archived?
   end
 end
-

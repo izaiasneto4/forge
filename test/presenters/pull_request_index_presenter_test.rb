@@ -180,4 +180,3 @@ class PullRequestIndexPresenterTest < ActiveSupport::TestCase
     )
   end
 end
-
