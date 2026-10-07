@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { logger } from '../../src/lib/logger'
+import { CLI_CLIENTS } from '../../src/models/setting'
 import { CLIENTS, CodeReviewError, CodeReviewService, type CodeReviewOptions } from '../../src/services/code-review'
 import type { GithubCliClient, PullRequestComment } from '../../src/services/github-cli-client'
 import { FakeCommandRunner } from '../support/context'
@@ -43,7 +44,7 @@ afterEach(() => {
 })
 
 describe('CodeReviewService.for', () => {
-  test.each(['claude', 'codex', 'opencode'] as const)('creates service with %s client config', async (cliClient) => {
+  test.each([...CLI_CLIENTS])('creates service with %s client config', async (cliClient) => {
     const expected = CLIENTS[cliClient]
 
     const service = await buildService({ cliClient })

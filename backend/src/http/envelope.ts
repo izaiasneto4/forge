@@ -4,20 +4,20 @@ import { logger } from '../lib/logger'
 import { InvalidParamError } from './params'
 
 // Mirrors Api::V1::BaseController#render_ok / #render_error.
-export function ok<Payload extends object>(payload: Payload) {
-  return { ...payload, ok: true as const }
+export function ok<Payload extends object>(payload: Payload): Payload & { ok: true } {
+  return { ...payload, ok: true }
 }
 
 export function okSchema<Properties extends Record<string, TSchema>>(properties: Properties) {
   return t.Object({ ...properties, ok: t.Literal(true) })
 }
 
-export const ERROR_CODES = {
+export const ERROR_CODES = Object.freeze({
   invalidInput: 'invalid_input',
   notFound: 'not_found',
   internal: 'internal_error',
   upstreamUnavailable: 'upstream_unavailable',
-} as const
+})
 
 const INTERNAL_ERROR_MESSAGE = 'Internal server error'
 
@@ -55,8 +55,8 @@ function domainErrorResponse(error: unknown, set: { status?: number | string }) 
   return undefined
 }
 
-function errorBody(code: string, message: string, details?: unknown) {
-  return { ok: false as const, error: details === undefined ? { code, message } : { code, message, details } }
+function errorBody(code: string, message: string, details?: unknown): typeof ErrorEnvelope.static {
+  return { ok: false, error: details === undefined ? { code, message } : { code, message, details } }
 }
 
 export const errorHandling = new Elysia({ name: 'error-handling' })

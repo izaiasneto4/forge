@@ -17,7 +17,7 @@ import { createTestContext, type TestContext } from '../support/context'
 import { insertPullRequest, insertReviewTask } from '../support/factories'
 import { createTempFolder } from '../support/git'
 
-const ENV_KEYS = ['HOME', 'ANTHROPIC_MODEL', 'CLAUDE_MODEL'] as const
+const ENV_KEYS = ['HOME', 'ANTHROPIC_MODEL', 'CLAUDE_MODEL']
 const originalEnv = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]))
 
 const aiModel = 'claude-3.5-sonnet'

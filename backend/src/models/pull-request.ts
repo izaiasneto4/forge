@@ -3,6 +3,7 @@ import type { AppContext } from '../context'
 import type { Db } from '../db/client'
 import { pullRequestSnapshots, pullRequests, reviewComments, reviewIterations, reviewTasks } from '../db/schema'
 import { RecordNotFoundError } from '../lib/errors'
+import { literals } from '../lib/literals'
 import { isBlank, isPresent, truncate } from '../lib/ruby'
 import { pullRequestUpdated, repoFullName } from '../realtime/ui-events'
 import { slugFromPath } from '../services/repo-slug-resolver'
@@ -15,14 +16,14 @@ export type PullRequestRecord = typeof pullRequests.$inferSelect
 export type PullRequestValues = Omit<typeof pullRequests.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>
 export type PullRequestChanges = Partial<PullRequestValues>
 
-export const REVIEW_STATUSES = [
+export const REVIEW_STATUSES = literals(
   'pending_review',
   'in_review',
   'reviewed_by_me',
   'waiting_implementation',
   'reviewed_by_others',
   'review_failed',
-] as const
+)
 export const REVIEW_STATUSES_REQUIRING_TASK = ['in_review', 'reviewed_by_me', 'waiting_implementation', 'review_failed']
 export const REMOTE_STATES = ['open', 'closed', 'merged', 'inaccessible']
 export const INACTIVE_REASONS = ['merged', 'closed', 'out_of_scope', 'inaccessible', 'unknown']

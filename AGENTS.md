@@ -20,7 +20,7 @@ Forge is a Bun + Elysia API with a React frontend.
 - `npm --prefix frontend test` / `npm --prefix frontend run build` — frontend tests and build.
 
 ## Coding Style & Naming Conventions
-- TypeScript is strict: no `any`, no type assertions (`as`), no non-null `!`. Narrow `unknown` with type guards or TypeBox.
+- TypeScript is strict: no `any`, no type assertions (`as`, including `as const`), no non-null `!`. Narrow `unknown` with type guards or TypeBox. For literal constants use `literals(...)` (`backend/src/lib/literals.ts`) or `Object.freeze({...})`.
 - 2-space indentation, single quotes, no semicolons.
 - Files are `kebab-case.ts`; functions and variables `camelCase`; types and classes `PascalCase`. JSON payloads keep the API's `snake_case` keys.
 - Services take the `AppContext` (`{ db, events, jobs, commands }`) explicitly; subprocesses go through `ctx.commands.run`, never `Bun.spawn` directly.

@@ -24,12 +24,12 @@ export type DecodedJob =
 
 export type JobRecord = typeof jobs.$inferSelect
 
-export const JOB_STATES = {
+export const JOB_STATES = Object.freeze({
   ready: 'ready',
   claimed: 'claimed',
   finished: 'finished',
   failed: 'failed',
-} as const
+})
 
 export class InvalidJobError extends Error {}
 

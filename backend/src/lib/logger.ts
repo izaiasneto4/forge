@@ -1,5 +1,7 @@
+import { literals } from './literals'
+
 // Rails.logger stand-in. Quiet under `bun test` unless FORGE_LOG_LEVEL is set.
-const LEVELS = ['debug', 'info', 'warn', 'error', 'silent'] as const
+const LEVELS = literals('debug', 'info', 'warn', 'error', 'silent')
 type Level = (typeof LEVELS)[number]
 
 function configuredLevel(): Level {

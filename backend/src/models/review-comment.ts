@@ -2,13 +2,14 @@ import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { Db } from '../db/client'
 import { reviewComments } from '../db/schema'
 import { RecordNotFoundError } from '../lib/errors'
+import { literals } from '../lib/literals'
 import { Validator } from './record'
 
 export type ReviewCommentRecord = typeof reviewComments.$inferSelect
 export type ReviewCommentValues = Omit<typeof reviewComments.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>
 
-export const SEVERITIES = ['critical', 'major', 'minor', 'suggestion', 'nitpick'] as const
-export const COMMENT_STATUSES = ['pending', 'addressed', 'dismissed'] as const
+export const SEVERITIES = literals('critical', 'major', 'minor', 'suggestion', 'nitpick')
+export const COMMENT_STATUSES = literals('pending', 'addressed', 'dismissed')
 export const ACTIONABLE_SEVERITIES = ['critical', 'major', 'minor']
 
 export type Severity = (typeof SEVERITIES)[number]

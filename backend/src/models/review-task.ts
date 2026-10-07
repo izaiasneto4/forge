@@ -3,6 +3,7 @@ import type { AppContext } from '../context'
 import type { Db } from '../db/client'
 import { agentLogs, reviewComments, reviewIterations, reviewTasks } from '../db/schema'
 import { RecordNotFoundError } from '../lib/errors'
+import { literals } from '../lib/literals'
 import { isPresent, iso8601, secondsAgo } from '../lib/ruby'
 import { reviewTaskUpdated } from '../realtime/ui-events'
 import { createAgentLog, type LogType } from './agent-log'
@@ -14,7 +15,7 @@ export type ReviewTaskRecord = typeof reviewTasks.$inferSelect
 export type ReviewTaskValues = Omit<typeof reviewTasks.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>
 export type ReviewTaskChanges = Partial<ReviewTaskValues>
 
-export const REVIEW_TASK_STATES = [
+export const REVIEW_TASK_STATES = literals(
   'queued',
   'pending_review',
   'in_review',
@@ -22,11 +23,11 @@ export const REVIEW_TASK_STATES = [
   'waiting_implementation',
   'done',
   'failed_review',
-] as const
+)
 export type ReviewTaskState = (typeof REVIEW_TASK_STATES)[number]
 export const REVIEW_TYPES = ['review', 'swarm']
 export const SUBMISSION_STATUSES = ['pending_submission', 'submitted', 'submission_failed']
-export const SUBMITTED_EVENTS = ['COMMENT', 'APPROVE', 'REQUEST_CHANGES'] as const
+export const SUBMITTED_EVENTS = literals('COMMENT', 'APPROVE', 'REQUEST_CHANGES')
 export const MAX_RETRY_ATTEMPTS = 3
 export const BACKOFF_BASE_SECONDS = 2
 // Workflow order for detecting backward moves; failed_review sits outside it.

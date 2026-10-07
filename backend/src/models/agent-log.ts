@@ -3,12 +3,13 @@ import type { AppContext } from '../context'
 import type { Db } from '../db/client'
 import { agentLogs } from '../db/schema'
 import { iso8601 } from '../lib/ruby'
+import { literals } from '../lib/literals'
 import { STREAMS } from '../realtime/broadcaster'
 import { Validator } from './record'
 
 export type AgentLogRecord = typeof agentLogs.$inferSelect
 
-export const LOG_TYPES = ['output', 'error', 'status'] as const
+export const LOG_TYPES = literals('output', 'error', 'status')
 export type LogType = (typeof LOG_TYPES)[number]
 
 export function agentLogPayload(log: AgentLogRecord) {

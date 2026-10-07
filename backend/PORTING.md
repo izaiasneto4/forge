@@ -7,8 +7,9 @@ enqueued jobs, subprocess calls). Read the Ruby source **and** its Ruby tests
 
 ## Rules
 
-- TypeScript strict. No `any`, no type assertions (`as`), no non-null `!`. Narrow
-  `unknown` with type guards or TypeBox (`@sinclair/typebox`).
+- TypeScript strict. No `any`, no type assertions (`as`, including `as const`), no
+  non-null `!`. Narrow `unknown` with type guards or TypeBox (`@sinclair/typebox`).
+  Literal constants use `literals(...)` (`src/lib/literals.ts`) or `Object.freeze({...})`.
 - Style: 2 spaces, single quotes, no semicolons, small functions, sparse comments
   that explain *why* (a Rails quirk, a deliberate deviation).
 - Tests (`bun:test`): declare inputs as named variables and assert against them;

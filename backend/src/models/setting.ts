@@ -1,10 +1,11 @@
 import { eq } from 'drizzle-orm'
 import type { Db } from '../db/client'
 import { settings } from '../db/schema'
+import { literals } from '../lib/literals'
 import { isBlank, isPresent, iso8601, secondsBetween } from '../lib/ruby'
 
-export const CLI_CLIENTS = ['claude', 'codex', 'opencode'] as const
-export const VALID_THEME_PREFERENCES = ['light', 'dark'] as const
+export const CLI_CLIENTS = literals('claude', 'codex', 'opencode')
+export const VALID_THEME_PREFERENCES = literals('light', 'dark')
 export const DEFAULT_CLI_CLIENT = 'claude'
 export const SYNC_DEBOUNCE_SECONDS = 300
 export const DEFAULT_AUTO_REVIEW_DELAY_MIN = 5
@@ -13,7 +14,7 @@ export const DEFAULT_AUTO_REVIEW_DELAY_MAX = 30
 export type CliClient = (typeof CLI_CLIENTS)[number]
 export type ThemePreference = (typeof VALID_THEME_PREFERENCES)[number]
 
-export const SETTING_KEYS = {
+export const SETTING_KEYS = Object.freeze({
   reposFolder: 'repos_folder',
   currentRepo: 'current_repo',
   defaultCliClient: 'default_cli_client',
@@ -25,7 +26,7 @@ export const SETTING_KEYS = {
   autoReviewDelayMax: 'auto_review_delay_max',
   autoSubmitEnabled: 'auto_submit_enabled',
   themePreference: 'theme_preference',
-} as const
+})
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS]
 
