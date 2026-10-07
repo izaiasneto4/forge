@@ -148,15 +148,10 @@ export function cableServerWebSocketOptions(limits: CableLimits = DEFAULT_CABLE_
   return { backpressureLimit: limits.maxBufferedBytes, closeOnBackpressureLimit: true }
 }
 
-// Mounts the cable at /cable. `isAllowedOrigin` mirrors ActionCable's
-// allow_request_origin?; refused handshakes get a 404 like Rails.
-export function cablePlugin(server: CableServer, isAllowedOrigin: (request: Request) => boolean) {
+// Mounts the cable at /cable. The origin check (ActionCable's
+// allow_request_origin?) runs earlier, in the app's onRequest hook.
+export function cablePlugin(server: CableServer) {
   return new Elysia({ name: 'cable' }).ws('/cable', {
-    beforeHandle({ request, set }) {
-      if (isAllowedOrigin(request)) return undefined
-      set.status = 404
-      return 'Request origin not allowed'
-    },
     open(ws) {
       server.open(ws.id, (frame) => {
         ws.send(frame)

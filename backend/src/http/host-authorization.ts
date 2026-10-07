@@ -1,13 +1,14 @@
 import { isIP } from 'node:net'
 
-// Port of ActionDispatch::HostAuthorization with Rails' development defaults
-// (.localhost, .test and any IP). It is what stops DNS-rebinding pages from
-// reaching the API. FORGE_ALLOWED_HOSTS overrides it: a comma list where a
-// leading "." also allows subdomains, or "*" to allow every host.
+// Port of ActionDispatch::HostAuthorization. Like Rails, development allows
+// .localhost, .test and any IP (what stops DNS-rebinding pages from reaching the
+// API) and production allows every host. FORGE_ALLOWED_HOSTS overrides both: a
+// comma list where a leading "." also allows subdomains, or "*" for any host.
 export const DEFAULT_ALLOWED_HOSTS = ['.localhost', '.test']
+export const ALLOW_ALL_HOSTS = ['*']
 
-export function allowedHostsFromEnv(value: string | undefined) {
-  if (value === undefined || value.trim() === '') return DEFAULT_ALLOWED_HOSTS
+export function allowedHostsFromEnv(value: string | undefined, development = true) {
+  if (value === undefined || value.trim() === '') return development ? DEFAULT_ALLOWED_HOSTS : ALLOW_ALL_HOSTS
   return value
     .split(',')
     .map((host) => host.trim().toLowerCase())
@@ -21,8 +22,8 @@ export function hostnameOf(hostWithPort: string) {
 }
 
 export function isAllowedHost(hostWithPort: string | null, allowedHosts: string[]) {
-  if (hostWithPort === null || hostWithPort === '') return false
   if (allowedHosts.includes('*')) return true
+  if (hostWithPort === null || hostWithPort === '') return false
   const hostname = hostnameOf(hostWithPort)
   if (isIP(hostname) !== 0) return true
   return allowedHosts.some((allowed) =>
@@ -34,7 +35,7 @@ export function isAllowedHost(hostWithPort: string | null, allowedHosts: string[
 export function requestHostAllowed(request: Request, allowedHosts: string[]) {
   const forwarded = request.headers.get('x-forwarded-host')?.split(/,\s?/).at(-1)
   if (forwarded && !isAllowedHost(forwarded, allowedHosts)) return false
-  return isAllowedHost(request.headers.get('host'), allowedHosts)
+  return isAllowedHost(request.headers.get('host') ?? new URL(request.url).host, allowedHosts)
 }
 
 // ActionCable's allow_request_origin?: same origin as the Host header, plus

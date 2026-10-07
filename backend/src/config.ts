@@ -1,24 +1,32 @@
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { allowedHostsFromEnv } from './http/host-authorization'
 
-const DEFAULT_RAILS_ROOT = fileURLToPath(new URL('../..', import.meta.url))
+const DEFAULT_APP_ROOT = fileURLToPath(new URL('../..', import.meta.url))
 
 export interface RuntimeConfig {
   port: number
-  railsUrl: string
-  railsRoot: string
+  appRoot: string
   databasePath: string
+  publicDir: string
+  development: boolean
+  allowedHosts: string[]
+  frontendDevUrl: string
 }
 
-// Relative paths resolve from the Rails root, as they do in Rails: settings may
-// hold repo paths relative to it, and database.yml's paths are relative to it.
+// Relative paths resolve from the app root (where storage/ and public/ live),
+// as they did under Rails; stored repo paths may be relative to it too.
 export function runtimeConfig(env: Record<string, string | undefined>): RuntimeConfig {
-  const railsRoot = resolve(env.RAILS_ROOT ?? DEFAULT_RAILS_ROOT)
+  const appRoot = resolve(env.FORGE_ROOT ?? env.RAILS_ROOT ?? DEFAULT_APP_ROOT)
+  const development = env.NODE_ENV !== 'production'
 
   return {
-    port: Number(env.PORT ?? 3100),
-    railsUrl: env.RAILS_URL ?? 'http://localhost:3000',
-    railsRoot,
-    databasePath: resolve(railsRoot, env.DATABASE_PATH ?? 'storage/development.sqlite3'),
+    port: Number(env.PORT ?? 3000),
+    appRoot,
+    databasePath: resolve(appRoot, env.DATABASE_PATH ?? `storage/${development ? 'development' : 'production'}.sqlite3`),
+    publicDir: resolve(appRoot, 'public'),
+    development,
+    allowedHosts: allowedHostsFromEnv(env.FORGE_ALLOWED_HOSTS, development),
+    frontendDevUrl: env.FRONTEND_DEV_URL ?? 'http://localhost:5173',
   }
 }

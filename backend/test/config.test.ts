@@ -1,40 +1,49 @@
 import { describe, expect, test } from 'bun:test'
 import { join, resolve } from 'node:path'
 import { runtimeConfig } from '../src/config'
+import { ALLOW_ALL_HOSTS, DEFAULT_ALLOWED_HOSTS } from '../src/http/host-authorization'
 
 const repositoryRoot = resolve(import.meta.dir, '../..')
 
 describe('runtimeConfig', () => {
-  test('defaults to the repository root and the Rails development database', () => {
+  test('defaults to the repository root, port 3000 and the development database', () => {
     const config = runtimeConfig({})
 
-    expect(config.railsRoot).toBe(repositoryRoot)
-    expect(config.databasePath).toBe(join(repositoryRoot, 'storage', 'development.sqlite3'))
+    expect(config).toMatchObject({
+      port: 3000,
+      appRoot: repositoryRoot,
+      databasePath: join(repositoryRoot, 'storage', 'development.sqlite3'),
+      publicDir: join(repositoryRoot, 'public'),
+      development: true,
+      allowedHosts: DEFAULT_ALLOWED_HOSTS,
+    })
   })
 
-  test('resolves a relative DATABASE_PATH from RAILS_ROOT, like database.yml', () => {
-    const railsRoot = '/srv/forge'
-    const relativeDatabasePath = 'storage/production.sqlite3'
+  test('uses the production database in production', () => {
+    const config = runtimeConfig({ NODE_ENV: 'production' })
 
-    const config = runtimeConfig({ RAILS_ROOT: railsRoot, DATABASE_PATH: relativeDatabasePath })
-
-    expect(config.railsRoot).toBe(railsRoot)
-    expect(config.databasePath).toBe(join(railsRoot, relativeDatabasePath))
+    expect(config.development).toBe(false)
+    expect(config.databasePath).toBe(join(repositoryRoot, 'storage', 'production.sqlite3'))
+    expect(config.allowedHosts).toEqual(ALLOW_ALL_HOSTS)
   })
 
-  test('keeps an absolute DATABASE_PATH as given', () => {
+  test('resolves a relative DATABASE_PATH from FORGE_ROOT, like database.yml', () => {
+    const appRoot = '/srv/forge'
+    const relativeDatabasePath = 'storage/custom.sqlite3'
+
+    const config = runtimeConfig({ FORGE_ROOT: appRoot, DATABASE_PATH: relativeDatabasePath })
+
+    expect(config.appRoot).toBe(appRoot)
+    expect(config.databasePath).toBe(join(appRoot, relativeDatabasePath))
+  })
+
+  test('keeps an absolute DATABASE_PATH and reads port, hosts and the Vite URL', () => {
     const absoluteDatabasePath = '/data/forge.sqlite3'
-
-    expect(runtimeConfig({ DATABASE_PATH: absoluteDatabasePath }).databasePath).toBe(absoluteDatabasePath)
-  })
-
-  test('reads port and Rails URL from the environment', () => {
     const port = 4100
-    const railsUrl = 'http://rails.internal:3000'
+    const frontendDevUrl = 'http://localhost:5174'
 
-    const config = runtimeConfig({ PORT: String(port), RAILS_URL: railsUrl })
+    const config = runtimeConfig({ DATABASE_PATH: absoluteDatabasePath, PORT: String(port), FORGE_ALLOWED_HOSTS: 'forge.example.com', FRONTEND_DEV_URL: frontendDevUrl })
 
-    expect(config.port).toBe(port)
-    expect(config.railsUrl).toBe(railsUrl)
+    expect(config).toMatchObject({ databasePath: absoluteDatabasePath, port, allowedHosts: ['forge.example.com'], frontendDevUrl })
   })
 })

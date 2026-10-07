@@ -2,7 +2,6 @@ import { treaty } from '@elysiajs/eden'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { createApp } from '../../src/app'
 import type { Db } from '../../src/db/client'
 import {
   CLI_CLIENTS,
@@ -11,19 +10,20 @@ import {
   SettingStore,
   VALID_THEME_PREFERENCES,
 } from '../../src/models/setting'
-import { createTestDatabase } from '../support/database'
+import { createTestApp } from '../support/app'
+import { createTestContext, type TestContext } from '../support/context'
 import { insertPullRequest } from '../support/factories'
 import { createGitRepository, createTempFolder } from '../support/git'
 
-const unreachableRailsUrl = 'http://127.0.0.1:1'
-
 describe('GET /api/v1/settings', () => {
+  let ctx: TestContext
   let db: Db
   let settingStore: SettingStore
   let reposFolder: ReturnType<typeof createTempFolder>
 
   beforeEach(() => {
-    db = createTestDatabase()
+    ctx = createTestContext()
+    db = ctx.db
     settingStore = new SettingStore(db)
     reposFolder = createTempFolder()
   })
@@ -31,7 +31,7 @@ describe('GET /api/v1/settings', () => {
   afterEach(() => reposFolder.remove())
 
   async function getSettings() {
-    const client = treaty(createApp({ db, railsUrl: unreachableRailsUrl }))
+    const client = treaty(createTestApp(ctx))
     const { status, data } = await client.api.v1.settings.get()
     return { status, body: data }
   }
