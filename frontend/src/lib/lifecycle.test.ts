@@ -65,6 +65,15 @@ describe('flattenBoard', () => {
 
     expect(flattenBoard(board).map((item) => item.id)).toEqual([shared.id, other.id])
   })
+
+  it('includes merged or closed pull requests that were reviewed', () => {
+    const open = buildPullRequest()
+    const merged = buildPullRequest({ lifecycle: 'settled', remote_state: 'merged', review_task: buildTask() })
+    const board = buildBoard({ pending_review: [open] }, [merged])
+
+    expect(flattenBoard(board).map((item) => item.id)).toEqual([open.id, merged.id])
+    expect(mailboxFor(merged, login)).toBe('settled')
+  })
 })
 
 describe('sectionsFor', () => {

@@ -73,7 +73,8 @@ export function flattenBoard(board: PullRequestBoardResponse) {
   const seen = new Set<number>()
   const items: PullRequestItem[] = []
 
-  for (const column of Object.values(board.columns)) {
+  // settled_reviews holds merged or closed PRs that were reviewed; they live in Settled.
+  for (const column of [...Object.values(board.columns), board.settled_reviews]) {
     for (const item of column) {
       if (seen.has(item.id)) continue
       seen.add(item.id)

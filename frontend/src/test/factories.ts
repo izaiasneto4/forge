@@ -104,7 +104,7 @@ export function buildComment(overrides: Partial<ReviewCommentItem> = {}): Review
   }
 }
 
-export function buildBoard(columns: Partial<PullRequestBoardResponse['columns']>): PullRequestBoardResponse {
+export function buildBoard(columns: Partial<PullRequestBoardResponse['columns']>, settledReviews: PullRequestItem[] = []): PullRequestBoardResponse {
   return {
     current_repo: { path: '/code/api', slug: 'acme/api', name: 'api' },
     repositories: { repos_folder: '/code', current_repo_path: '/code/api', current_repo_slug: 'acme/api', items: [] },
@@ -135,5 +135,6 @@ export function buildBoard(columns: Partial<PullRequestBoardResponse['columns']>
       review_failed: [],
       ...columns,
     },
+    settled_reviews: settledReviews,
   }
 }

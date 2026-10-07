@@ -159,6 +159,7 @@ export interface PullRequestBoardResponse {
   counts: Record<PullRequestStatus, number>
   total_count: number
   columns: Record<PullRequestStatus, PullRequestItem[]>
+  settled_reviews: PullRequestItem[]
 }
 
 export interface CompactPullRequest {
