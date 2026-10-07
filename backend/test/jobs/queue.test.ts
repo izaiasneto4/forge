@@ -1,4 +1,5 @@
 import { describe, expect, setSystemTime, afterEach, test } from 'bun:test'
+import { hostname } from 'node:os'
 import { decodeJob, JOB_STATES, JobQueue } from '../../src/jobs/queue'
 import { createTestDatabase } from '../support/database'
 
@@ -44,15 +45,53 @@ describe('JobQueue', () => {
     expect(queue.all()[0]).toMatchObject({ state: JOB_STATES.failed, error: errorMessage })
   })
 
-  test('releases jobs claimed by a previous process', () => {
+  test('releases claimed jobs whose worker is not registered, and keeps the rest claimed', () => {
     const queue = new JobQueue(createTestDatabase())
-    queue.enqueue('SyncPullRequestsJob', {})
+    const registeredWorker = { id: crypto.randomUUID(), hostname: hostname(), pid: process.pid }
+    const unregisteredWorkerId = crypto.randomUUID()
+    queue.registerWorker(registeredWorker)
+    const orphaned = queue.enqueue('SyncPullRequestsJob', {})
+    const owned = queue.enqueue('ProcessReviewQueueJob', {})
+    const claimedWithoutWorker = queue.enqueue('PullRequestSummaryJob', { snapshotId: 1 })
+    queue.claimNext(new Date(), unregisteredWorkerId)
+    queue.claimNext(new Date(), registeredWorker.id)
     queue.claimNext()
 
-    const released = queue.releaseClaimed()
+    const released = queue.releaseOrphaned()
 
-    expect(released).toBe(1)
-    expect(queue.claimNext()).toBeDefined()
+    const statesById = new Map(queue.all().map((job) => [job.id, job.state]))
+    expect(released).toBe(2)
+    expect(statesById.get(orphaned.id)).toBe(JOB_STATES.ready)
+    expect(statesById.get(claimedWithoutWorker.id)).toBe(JOB_STATES.ready)
+    expect(statesById.get(owned.id)).toBe(JOB_STATES.claimed)
+  })
+
+  test('deregistering a worker hands its claimed jobs back to the queue', () => {
+    const queue = new JobQueue(createTestDatabase())
+    const worker = { id: crypto.randomUUID(), hostname: hostname(), pid: process.pid }
+    queue.registerWorker(worker)
+    queue.enqueue('SyncPullRequestsJob', {})
+    queue.claimNext(new Date(), worker.id)
+
+    queue.deregisterWorker(worker.id)
+
+    expect(queue.all()[0]).toMatchObject({ state: JOB_STATES.ready, claimedBy: null })
+    expect(queue.workers()).toEqual([])
+  })
+
+  test('heartbeat reports whether the worker is still registered', () => {
+    const queue = new JobQueue(createTestDatabase())
+    const worker = { id: crypto.randomUUID(), hostname: hostname(), pid: process.pid }
+    const registeredAt = new Date('2026-10-07T12:00:00Z')
+    const beatAt = new Date(registeredAt.getTime() + 60_000)
+    queue.registerWorker(worker, registeredAt)
+
+    const stillRegistered = queue.heartbeat(worker.id, beatAt)
+    queue.deregisterWorker(worker.id)
+    const afterDeregistering = queue.heartbeat(worker.id, beatAt)
+
+    expect(stillRegistered).toBe(true)
+    expect(afterDeregistering).toBe(false)
   })
 
   test('decodes payloads per job type and reports unfinished review jobs', () => {

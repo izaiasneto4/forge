@@ -1,11 +1,11 @@
 import { Type, type Static } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
-import { and, asc, eq, inArray, lte } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, lte, notInArray, or } from 'drizzle-orm'
 import type { Db } from '../db/client'
-import { jobs } from '../db/schema'
+import { jobWorkers, jobs } from '../db/schema'
 
 // Replaces Solid Queue. Jobs persist in the `jobs` table so queued work survives
-// restarts; one in-process worker (see worker.ts) claims and runs them.
+// restarts; an in-process worker per server (see worker.ts) claims and runs them.
 export const JOB_PAYLOAD_SCHEMAS = {
   ReviewTaskJob: Type.Object({ reviewTaskId: Type.Integer(), isRetry: Type.Boolean() }),
   ProcessReviewQueueJob: Type.Object({}),
@@ -23,6 +23,8 @@ export type DecodedJob =
   | { id: number; name: 'SyncPullRequestsJob'; payload: JobPayload<'SyncPullRequestsJob'> }
 
 export type JobRecord = typeof jobs.$inferSelect
+export type JobWorkerRecord = typeof jobWorkers.$inferSelect
+export type JobWorkerIdentity = Pick<JobWorkerRecord, 'id' | 'hostname' | 'pid'>
 
 export const JOB_STATES = Object.freeze({
   ready: 'ready',
@@ -69,7 +71,7 @@ export class JobQueue {
 
   // Atomically claims the oldest due job. SQLite serializes writers, so the
   // conditional UPDATE guarantees a job is claimed at most once.
-  claimNext(now = new Date()): JobRecord | undefined {
+  claimNext(now = new Date(), claimedBy: string | null = null): JobRecord | undefined {
     const candidate = this.db
       .select({ id: jobs.id })
       .from(jobs)
@@ -80,7 +82,7 @@ export class JobQueue {
 
     return this.db
       .update(jobs)
-      .set({ state: JOB_STATES.claimed, claimedAt: now, updatedAt: now })
+      .set({ state: JOB_STATES.claimed, claimedAt: now, claimedBy, updatedAt: now })
       .where(and(eq(jobs.id, candidate.id), eq(jobs.state, JOB_STATES.ready)))
       .returning()
       .get()
@@ -96,13 +98,46 @@ export class JobQueue {
     this.db.update(jobs).set({ state: JOB_STATES.failed, error, finishedAt: now, updatedAt: now }).where(eq(jobs.id, id)).run()
   }
 
-  // Solid Queue releases a dead process's claimed executions back to ready.
-  releaseClaimed() {
-    const now = new Date()
+  // Solid Queue's process registry: each worker heartbeats, so another server
+  // sharing the database can tell a live worker's claimed jobs from a dead one's.
+  registerWorker(worker: JobWorkerIdentity, now = new Date()) {
+    this.db.insert(jobWorkers).values({ ...worker, heartbeatAt: now, createdAt: now }).run()
+  }
+
+  // False when the worker's row is gone, e.g. pruned after it missed heartbeats.
+  heartbeat(workerId: string, now = new Date()) {
+    const touched = this.db
+      .update(jobWorkers)
+      .set({ heartbeatAt: now })
+      .where(eq(jobWorkers.id, workerId))
+      .returning({ id: jobWorkers.id })
+      .all()
+    return touched.length > 0
+  }
+
+  workers(): JobWorkerRecord[] {
+    return this.db.select().from(jobWorkers).orderBy(asc(jobWorkers.createdAt)).all()
+  }
+
+  // Solid Queue's process deregistration: the worker's claimed jobs go back to ready.
+  deregisterWorker(workerId: string, now = new Date()) {
+    this.db.transaction((tx) => {
+      tx.update(jobs)
+        .set({ state: JOB_STATES.ready, claimedAt: null, claimedBy: null, updatedAt: now })
+        .where(and(eq(jobs.state, JOB_STATES.claimed), eq(jobs.claimedBy, workerId)))
+        .run()
+      tx.delete(jobWorkers).where(eq(jobWorkers.id, workerId)).run()
+    })
+  }
+
+  // Claimed jobs with no registered worker behind them: claimed outside a
+  // worker (drainJobs) or by a build that predates worker registration.
+  releaseOrphaned(now = new Date()) {
+    const registeredWorkerIds = this.db.select({ id: jobWorkers.id }).from(jobWorkers)
     return this.db
       .update(jobs)
-      .set({ state: JOB_STATES.ready, claimedAt: null, updatedAt: now })
-      .where(eq(jobs.state, JOB_STATES.claimed))
+      .set({ state: JOB_STATES.ready, claimedAt: null, claimedBy: null, updatedAt: now })
+      .where(and(eq(jobs.state, JOB_STATES.claimed), or(isNull(jobs.claimedBy), notInArray(jobs.claimedBy, registeredWorkerIds))))
       .returning({ id: jobs.id })
       .all().length
   }

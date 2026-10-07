@@ -265,6 +265,7 @@ export const jobs = sqliteTable(
     attempts: integer().default(0).notNull(),
     error: text(),
     claimedAt: railsDatetime('claimed_at'),
+    claimedBy: text('claimed_by'),
     finishedAt: railsDatetime('finished_at'),
     createdAt: railsDatetime('created_at').notNull(),
     updatedAt: railsDatetime('updated_at').notNull(),
@@ -274,3 +275,11 @@ export const jobs = sqliteTable(
     index('index_jobs_on_name_and_state').on(table.name, table.state),
   ],
 )
+
+export const jobWorkers = sqliteTable('job_workers', {
+  id: text().primaryKey().notNull(),
+  hostname: text().notNull(),
+  pid: integer().notNull(),
+  heartbeatAt: railsDatetime('heartbeat_at').notNull(),
+  createdAt: railsDatetime('created_at').notNull(),
+})
