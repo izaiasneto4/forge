@@ -37,7 +37,15 @@ function lifecycleEvent(data: unknown) {
 
 export function useLiveLogs(taskId: number | null | undefined, initialLogs: AgentLogItem[], live: boolean) {
   const queryClient = useQueryClient()
-  const [streamed, setStreamed] = useState<{ taskId: number | null | undefined; logs: AgentLogItem[] }>({ taskId, logs: [] })
+
+  // Each time a run goes live starts a new session, so lines streamed for an earlier run
+  // never mix into the next one even if its "preparing" broadcast was missed.
+  const liveKey = live && taskId != null ? taskId : null
+  const [session, setSession] = useState({ liveKey, count: 0 })
+  if (session.liveKey !== liveKey) setSession({ liveKey, count: liveKey === null ? session.count : session.count + 1 })
+  const sessionId = `${taskId ?? 'none'}:${session.count}`
+
+  const [streamed, setStreamed] = useState<{ sessionId: string; logs: AgentLogItem[] }>({ sessionId, logs: [] })
 
   useEffect(() => {
     if (taskId == null || !live) return
@@ -49,22 +57,22 @@ export function useLiveLogs(taskId: number | null | undefined, initialLogs: Agen
           const event = lifecycleEvent(data)
           if (event && REFRESH_EVENTS.has(event)) {
             // The server clears the log when a new run starts; drop what was streamed for the old one.
-            if (event === 'preparing') setStreamed({ taskId, logs: [] })
+            if (event === 'preparing') setStreamed({ sessionId, logs: [] })
             queryClient.invalidateQueries({ queryKey: queryKeys.reviewTaskDetail(String(taskId)) })
             queryClient.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
             return
           }
 
           const log = parseLog(data)
-          if (log) setStreamed((current) => ({ taskId, logs: current.taskId === taskId ? [...current.logs, log] : [log] }))
+          if (log) setStreamed((current) => ({ sessionId, logs: current.sessionId === sessionId ? [...current.logs, log] : [log] }))
         },
       },
     )
-  }, [taskId, live, queryClient])
+  }, [taskId, live, sessionId, queryClient])
 
   return useMemo(() => {
     const seen = new Set(initialLogs.map((log) => log.id))
-    const extra = streamed.taskId === taskId ? streamed.logs.filter((log) => !seen.has(log.id)) : []
+    const extra = streamed.sessionId === sessionId ? streamed.logs.filter((log) => !seen.has(log.id)) : []
     return [...initialLogs, ...extra]
-  }, [initialLogs, streamed, taskId])
+  }, [initialLogs, streamed, sessionId])
 }
