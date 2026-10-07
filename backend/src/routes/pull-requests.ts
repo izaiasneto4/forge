@@ -64,14 +64,17 @@ export function focusParam(params: Record<string, unknown>) {
 // queue behind a running review, otherwise start a ReviewTaskJob right away.
 // One transaction, so a rejected request (say, an unknown cli_client) leaves the
 // previous run's findings in place instead of half-reset.
+// The task is read inside the transaction so two servers sharing the database
+// can't both pass the conflict check and reset each other's run.
 export function startOrQueueReview(ctx: AppContext, pullRequestId: number, options: StartReviewOptions) {
   const pullRequest = findPullRequest(ctx.db, pullRequestId)
-  const existing = reviewTaskFor(ctx.db, pullRequest.id)
-  if (existing && inProgressOrRetrying(existing)) {
-    renderError('conflict', `Review already in progress for PR #${pullRequest.number}`, 409)
-  }
 
   return transaction(ctx, (txCtx) => {
+    const existing = reviewTaskFor(txCtx.db, pullRequest.id)
+    if (existing && inProgressOrRetrying(existing)) {
+      renderError('conflict', `Review already in progress for PR #${pullRequest.number}`, 409)
+    }
+
     const snapshot = currentSnapshotOrCreate(txCtx, pullRequest)
     const queued = anyReviewRunning(txCtx)
     const changes: ReviewTaskChanges = {
