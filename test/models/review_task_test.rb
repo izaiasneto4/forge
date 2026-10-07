@@ -181,6 +181,19 @@ class ReviewTaskTest < ActiveSupport::TestCase
     assert @task.started_at.present?
   end
 
+  test "start_review! clears submission metadata from the previous run" do
+    pending = "pending_submission"
+    @task.save!
+    @task.mark_submitted!(event: "COMMENT")
+
+    @task.start_review!
+    @task.reload
+
+    assert_equal pending, @task.submission_status
+    assert_nil @task.submitted_at
+    assert_nil @task.submitted_event
+  end
+
   test "start_review! updates PR status when PR is pending_review" do
     @task.save!
     @task.start_review!
@@ -417,8 +430,25 @@ class ReviewTaskTest < ActiveSupport::TestCase
 
   test "in_progress_or_retrying? returns true when has recent retry activity" do
     @task.save!
-    @task.update!(state: "failed_review", last_retry_at: 2.minutes.ago)
+    @task.update!(state: "pending_review", last_retry_at: 2.minutes.ago)
     assert @task.in_progress_or_retrying?
+  end
+
+  test "in_progress_or_retrying? returns false once retries end in failure" do
+    @task.save!
+    @task.update!(state: "failed_review", last_retry_at: 2.minutes.ago)
+    refute @task.in_progress_or_retrying?
+  end
+
+  test "review_job_pending? checks for a queued review job" do
+    @task.save!
+    other_task_id = @task.id + 1
+
+    ReviewTask.stubs(:ids_with_pending_review_job).returns(Set[@task.id])
+    assert @task.review_job_pending?
+
+    ReviewTask.stubs(:ids_with_pending_review_job).returns(Set[other_task_id])
+    refute @task.review_job_pending?
   end
 
   test "in_progress_or_retrying? returns false for fresh pending_review" do

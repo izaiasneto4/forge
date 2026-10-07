@@ -64,6 +64,7 @@ class ReviewTask < ApplicationRecord
 
   # Check if task is actively being processed or has pending retries
   def in_progress_or_retrying?
+    return false if failed_review?
     return true if in_review?
     return true if pending_review? && retry_count > 0
     return true if last_retry_at.present? && last_retry_at > 5.minutes.ago
@@ -124,6 +125,25 @@ class ReviewTask < ApplicationRecord
     in_review.exists? || pending_review_with_active_job?
   end
 
+  # True while a ReviewTaskJob for this task is waiting, scheduled or running.
+  # Tasks can sit in pending_review without one (dequeued, re-requested, recovered).
+  def review_job_pending?
+    self.class.ids_with_pending_review_job.include?(id)
+  end
+
+  def self.ids_with_pending_review_job
+    return Set.new unless defined?(SolidQueue::Job)
+    return Set.new unless SolidQueue::Job.table_exists?
+
+    SolidQueue::Job
+      .where(class_name: "ReviewTaskJob", finished_at: nil)
+      .where.missing(:failed_execution)
+      .map { |job| Array(job.arguments["arguments"]).first }
+      .to_set
+  rescue ActiveRecord::StatementInvalid
+    Set.new
+  end
+
   def self.pending_review_with_active_job?
     return false unless defined?(SolidQueue::ClaimedExecution)
     return false unless SolidQueue::ClaimedExecution.table_exists?
@@ -172,7 +192,13 @@ class ReviewTask < ApplicationRecord
   end
 
   def start_review!
-    update!(state: "in_review", started_at: Time.current)
+    update!(
+      state: "in_review",
+      started_at: Time.current,
+      submission_status: "pending_submission",
+      submitted_at: nil,
+      submitted_event: nil
+    )
     if pull_request.pending_review? || pull_request.review_failed?
       pull_request.update!(review_status: "in_review")
     end

@@ -40,7 +40,8 @@ class PullRequestLifecycle
 
     case task.state
     when "queued" then "queued"
-    when "pending_review", "in_review" then "reviewing"
+    when "in_review" then "reviewing"
+    when "pending_review" then task.review_job_pending? ? "reviewing" : "needs_review"
     when "failed_review" then "failed"
     when "waiting_implementation" then "waiting"
     when "done" then new_commits? ? "needs_review" : "settled"

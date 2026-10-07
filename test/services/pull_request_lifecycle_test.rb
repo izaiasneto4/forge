@@ -44,7 +44,6 @@ class PullRequestLifecycleTest < ActiveSupport::TestCase
   test "task states map onto the lifecycle" do
     expectations = {
       "queued" => "queued",
-      "pending_review" => "reviewing",
       "in_review" => "reviewing",
       "failed_review" => "failed",
       "waiting_implementation" => "waiting",
@@ -57,6 +56,19 @@ class PullRequestLifecycleTest < ActiveSupport::TestCase
 
       assert_equal expected, lifecycle_for(pull_request), "task state #{task_state}"
     end
+  end
+
+  test "pending tasks are reviewing only while a review job is pending" do
+    reviewing = "reviewing"
+    idle = "needs_review"
+    pull_request = create_pull_request
+    task = pull_request.create_review_task!(state: "pending_review")
+
+    ReviewTask.stubs(:ids_with_pending_review_job).returns(Set[task.id])
+    assert_equal reviewing, lifecycle_for(pull_request)
+
+    ReviewTask.stubs(:ids_with_pending_review_job).returns(Set.new)
+    assert_equal idle, lifecycle_for(pull_request)
   end
 
   test "archived tasks are settled" do
