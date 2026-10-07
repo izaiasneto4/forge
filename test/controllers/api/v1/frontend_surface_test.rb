@@ -131,6 +131,8 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     assert_equal "comments", detail["content_mode"]
     assert_equal 1, detail["comments"].size
     assert_equal 1, detail["live_logs"].size
+    assert_equal @review_task.pull_request_id, detail.dig("pull_request", "id")
+    assert_equal PullRequestLifecycle.call(@review_task.pull_request), detail.dig("pull_request", "lifecycle")
   end
 
   test "status and comment mutations return refreshed payloads" do

@@ -268,6 +268,7 @@ export interface AgentLogItem {
 export interface ReviewTaskDetailResponse {
   current_repo: CurrentRepo
   task: ReviewTaskItem
+  pull_request: PullRequestItem
   submission: {
     auto_submit_enabled: boolean
     pending_comment_count: number

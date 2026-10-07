@@ -85,6 +85,13 @@ export function isAuthoredBy(item: PullRequestItem, login: string | null | undef
   return Boolean(login) && item.author?.toLowerCase() === login?.toLowerCase()
 }
 
+// "Only PRs requesting my review" hides untouched PRs from others; anything
+// already reviewed or authored stays visible.
+export function inReviewScope(item: PullRequestItem, login: string | null | undefined, onlyRequested: boolean) {
+  if (!onlyRequested || item.review_requested_for_me || item.review_task) return true
+  return isAuthoredBy(item, login)
+}
+
 export function belongsToMailbox(item: PullRequestItem, mailbox: MailboxId, login: string | null | undefined) {
   const authored = isAuthoredBy(item, login)
 

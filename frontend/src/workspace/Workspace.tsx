@@ -154,6 +154,7 @@ function DetailPane() {
   if (boardError) return <DetailEmpty icon="warn" title="Couldn’t load pull requests" body={errorMessage(boardError)} />
   if (boardLoading) return <DetailEmpty icon="refresh" title="Loading" body="Fetching pull requests from Forge…" />
   if (route.kind === 'mailbox' && route.id !== null) return <DetailEmpty icon="search" title="Pull request not found" body="It may have been merged, closed or archived." />
+  if (route.kind === 'task') return <DetailEmpty icon="refresh" title="Loading" body="Opening review…" />
   if (sections.length === 0) return <DetailEmpty icon="checkCircle" title={`${MAILBOX_LABELS[mailbox]} is empty`} body="Nothing to look at here right now." />
   return <DetailEmpty title="Select a pull request" body="Use J and K to move through the list." />
 }

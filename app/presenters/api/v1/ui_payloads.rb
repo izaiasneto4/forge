@@ -336,6 +336,7 @@ module Api
           {
             current_repo: current_repo_payload,
             task: review_task_payload(@review_task),
+            pull_request: pull_request_payload(@review_task.pull_request),
             submission: submission_payload(comments),
             comments: comments.map { |comment| review_comment_payload(comment) },
             review_history: @review_task.review_history.map { |iteration| review_iteration_payload(iteration) },

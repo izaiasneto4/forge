@@ -6,6 +6,7 @@ import {
   defaultSelection,
   flattenBoard,
   groupBySeverity,
+  inReviewScope,
   mailboxFor,
   orderedIds,
   sectionsFor,
@@ -38,6 +39,19 @@ describe('mailboxes', () => {
 
     expect(belongsToMailbox(ownWithFindings, 'inbox', login)).toBe(false)
     expect(belongsToMailbox(ownWithFindings, 'mine', login)).toBe(true)
+  })
+})
+
+describe('inReviewScope', () => {
+  it('hides untouched pull requests nobody asked you to review when scoped', () => {
+    const unrequested = buildPullRequest()
+    const requested = buildPullRequest({ review_requested_for_me: true })
+    const alreadyReviewed = buildPullRequest({ review_task: buildTask() })
+    const own = buildPullRequest({ author: login })
+    const visibleWhenScoped = [requested, alreadyReviewed, own]
+
+    expect([unrequested, ...visibleWhenScoped].filter((item) => inReviewScope(item, login, true))).toEqual(visibleWhenScoped)
+    expect(inReviewScope(unrequested, login, false)).toBe(true)
   })
 })
 

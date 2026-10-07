@@ -9,6 +9,7 @@ import {
   belongsToMailbox,
   defaultSelection,
   flattenBoard,
+  inReviewScope,
   isAuthoredBy,
   MAILBOX_IDS,
   mailboxFor,
@@ -36,6 +37,7 @@ import {
   type WorkspaceValue,
 } from './context'
 import { mailboxPath, parseRoute, type SettingsTab } from './routing'
+import { useTaskDetail } from './useTaskDetail'
 
 const AUTO_SYNC_INTERVAL_MS = 120_000
 
@@ -85,7 +87,11 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
   const board = boardQuery.data
   const bootstrap = bootstrapQuery.data
   const login = board?.settings.current_user_login ?? bootstrap?.settings.github_login ?? null
-  const items = useMemo(() => (board ? flattenBoard(board) : []), [board])
+  const onlyRequested = board?.settings.only_requested_reviews ?? false
+  const items = useMemo(
+    () => (board ? flattenBoard(board).filter((item) => inReviewScope(item, login, onlyRequested)) : []),
+    [board, login, onlyRequested],
+  )
 
   if (route.kind === 'mailbox' && route.mailbox !== lastMailbox) setLastMailbox(route.mailbox)
   const mailbox = route.kind === 'mailbox' ? route.mailbox : lastMailbox
@@ -110,8 +116,20 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     return result
   }, [items, login])
 
+  // Legacy /review_tasks/:id links can point at merged, closed or other-repo PRs that
+  // aren't on the board, so those are loaded through the task detail instead.
+  const taskRouteId = route.kind === 'task' ? route.taskId : null
+  const taskOnBoard = useMemo(
+    () => (taskRouteId === null ? null : items.find((entry) => entry.review_task?.id === taskRouteId) ?? null),
+    [items, taskRouteId],
+  )
+  const offBoardTask = useTaskDetail(board && taskRouteId !== null && !taskOnBoard ? taskRouteId : null)
+
   const selectedId = route.kind === 'mailbox' ? route.id : null
-  const selected = useMemo(() => items.find((item) => item.id === selectedId) ?? null, [items, selectedId])
+  const selected = useMemo(() => {
+    if (route.kind === 'task') return offBoardTask.data?.pull_request ?? null
+    return items.find((item) => item.id === selectedId) ?? null
+  }, [route.kind, offBoardTask.data, items, selectedId])
   const anyReviewing = items.some((item) => item.lifecycle === 'reviewing')
   const requestedItems = useMemo(
     () => items.filter((item) => item.lifecycle === 'needs_review' && item.review_requested_for_me && !isAuthoredBy(item, login)),
@@ -164,10 +182,13 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
   }, [route, navigate])
 
   useEffect(() => {
-    if (route.kind !== 'task' || !board) return
-    const item = items.find((entry) => entry.review_task?.id === route.taskId)
-    navigate(item ? mailboxPath(mailboxFor(item, login), item.id) : mailboxPath('inbox'), { replace: true })
-  }, [route, board, items, login, navigate])
+    if (taskOnBoard) {
+      navigate(mailboxPath(mailboxFor(taskOnBoard, login), taskOnBoard.id), { replace: true })
+    } else if (offBoardTask.isError) {
+      pushToast(errorMessage(offBoardTask.error), 'error', { title: 'Review not found' })
+      navigate(mailboxPath('inbox'), { replace: true })
+    }
+  }, [taskOnBoard, offBoardTask.isError, offBoardTask.error, login, navigate, pushToast])
 
   const confirm = useCallback((options: ConfirmOptions) => new Promise<boolean>((resolve) => {
     setPendingConfirm({ ...options, resolve })
