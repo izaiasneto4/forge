@@ -54,7 +54,7 @@ class Api::V1::ReviewTaskSubmissionsController < Api::V1::BaseController
 
   def selected_comments_for_submission(comment_ids, event, force_empty_submission)
     return @review_task.review_comments.none if force_empty_submission && event == "APPROVE"
-    return @review_task.review_comments.where(id: comment_ids) if comment_ids.present?
+    return @review_task.review_comments.where(id: comment_ids) unless comment_ids.nil?
 
     @review_task.review_comments.pending
   end

@@ -196,7 +196,8 @@ function SubmitComposer({ item }: { item: PullRequestItem }) {
   const suggested = suggestedEvent(comments)
   const event: ReviewEvent = draft.event ?? suggested
   const included = selection.size
-  const blocked = !detail || pending.submit || (included === 0 && event !== 'APPROVE' && !draft.summary.trim())
+  const nothingIncluded = included === 0 && event !== 'APPROVE'
+  const blocked = !detail || pending.submit || nothingIncluded
 
   const submit = () => {
     if (blocked) return
@@ -234,7 +235,7 @@ function SubmitComposer({ item }: { item: PullRequestItem }) {
           </MenuButton>
           <span className="vsep opt2" />
           <span className="pill opt2" style={{ pointerEvents: 'none' }}><Icon name="message" size={14} />{pluralize(included, 'inline comment')}</span>
-          <button type="button" className="send wide" disabled={blocked} onClick={submit}>
+          <button type="button" className="send wide" disabled={blocked} title={nothingIncluded ? 'Include a finding or approve' : undefined} onClick={submit}>
             {pending.submit ? 'Submitting…' : 'Submit review'}<kbd>⌘↵</kbd>
           </button>
         </div>
