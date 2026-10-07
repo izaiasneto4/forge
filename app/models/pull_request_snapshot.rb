@@ -1,13 +1,16 @@
 class PullRequestSnapshot < ApplicationRecord
   STATUSES = %w[current stale].freeze
   AI_SUMMARY_STATUSES = %w[none pending current failed].freeze
+  FILE_TRIAGE_STATUSES = %w[none pending current failed].freeze
 
   belongs_to :pull_request
   has_many :review_tasks, dependent: :nullify
+  has_many :pull_request_file_triages, dependent: :destroy
 
   validates :head_sha, :base_sha, presence: true
   validates :status, inclusion: { in: STATUSES }
   validates :ai_summary_status, inclusion: { in: AI_SUMMARY_STATUSES }
+  validates :file_triage_status, inclusion: { in: FILE_TRIAGE_STATUSES }
   validates :head_sha, uniqueness: { scope: [ :pull_request_id, :base_sha ] }
 
   serialize :ai_summary_main_changes, coder: JSON, type: Array
@@ -43,6 +46,7 @@ class PullRequestSnapshot < ApplicationRecord
     end
 
     snapshot&.enqueue_ai_summary_generation!
+    snapshot&.enqueue_file_triage!
     snapshot
   end
 
@@ -105,6 +109,70 @@ class PullRequestSnapshot < ApplicationRecord
       ai_summary_status: "failed",
       ai_summary_failure_reason: reason,
       ai_summary_generated_at: nil
+    )
+  end
+
+  def file_triage_pending?
+    file_triage_status == "pending"
+  end
+
+  def file_triage_current?
+    file_triage_status == "current"
+  end
+
+  def file_triage_failed?
+    file_triage_status == "failed"
+  end
+
+  def file_triage_payload(stale: false, budget_minutes: nil)
+    files = pull_request_file_triages.ranked.map(&:as_api_json)
+    shortlist =
+      if budget_minutes.present? && file_triage_current?
+        PullRequestFileTriage.shortlist_for(self, budget_minutes: budget_minutes).map(&:as_api_json)
+      else
+        []
+      end
+
+    {
+      status: file_triage_status,
+      generated_at: file_triage_generated_at,
+      failure_reason: file_triage_failure_reason,
+      snapshot_id: id,
+      stale: stale,
+      files: files,
+      shortlist: shortlist,
+      scored_count: pull_request_file_triages.scored.count,
+      skipped_count: pull_request_file_triages.skipped_files.count
+    }
+  end
+
+  def enqueue_file_triage!
+    with_lock do
+      return false if file_triage_pending? || file_triage_current?
+
+      update!(
+        file_triage_status: "pending",
+        file_triage_failure_reason: nil
+      )
+    end
+
+    FileTriageJob.perform_later(id)
+    true
+  end
+
+  def store_file_triage!
+    update!(
+      file_triage_status: "current",
+      file_triage_generated_at: Time.current,
+      file_triage_failure_reason: nil
+    )
+  end
+
+  def mark_file_triage_failed!(reason)
+    update!(
+      file_triage_status: "failed",
+      file_triage_failure_reason: reason,
+      file_triage_generated_at: nil
     )
   end
 end

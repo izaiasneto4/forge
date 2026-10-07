@@ -97,6 +97,35 @@ export interface PullRequestAiSummary {
   risk_areas: string[]
 }
 
+export interface PullRequestFileTriageFile {
+  path: string
+  status: string
+  additions: number
+  deletions: number
+  role: string
+  core_score: number
+  risk_score: number
+  must_read_p: number
+  priority: number
+  confidence: number
+  skipped: boolean
+  skip_reason: string | null
+  why: string
+  rank: number | null
+}
+
+export interface PullRequestFileTriage {
+  status: 'none' | 'pending' | 'current' | 'failed'
+  generated_at: string | null
+  failure_reason: string | null
+  snapshot_id: number | null
+  stale: boolean
+  files: PullRequestFileTriageFile[]
+  shortlist: PullRequestFileTriageFile[]
+  scored_count: number
+  skipped_count: number
+}
+
 export interface PullRequestItem {
   id: number
   number: number
@@ -129,6 +158,7 @@ export interface PullRequestItem {
   deletions: number | null
   changed_files: number | null
   ai_summary: PullRequestAiSummary
+  file_triage: PullRequestFileTriage
   review_task: PullRequestReviewTaskSummary | null
 }
 

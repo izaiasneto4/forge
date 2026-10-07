@@ -11,6 +11,7 @@ import { queryKeys } from './lib/queryKeys'
 import { ThemeProvider, useTheme } from './lib/theme'
 import { ToastProvider, useToasts } from './lib/toasts'
 import { handleReviewNotification, handleUiEvent } from './lib/uiEvents'
+import { MustReadFilesPanel } from './components/MustReadFilesPanel'
 import { PullRequestSummaryPanel } from './components/PullRequestSummaryPanel'
 import { RepoSwitcher } from './components/RepoSwitcher'
 import type {
@@ -699,6 +700,7 @@ function PullRequestsPage() {
         <Modal title={`Start review for #${reviewModalItem.number}`} onClose={() => setReviewModalItem(null)}>
           <div className="space-y-4">
             <PullRequestSummaryPanel summary={reviewModalItem.ai_summary} />
+            <MustReadFilesPanel triage={reviewModalItem.file_triage} />
             <div>
               <label className="mb-2 block text-sm font-medium">Agent</label>
               <select className="linear-select w-full" value={reviewForm.cli_client} onChange={(event) => setReviewForm((current) => ({ ...current, cli_client: event.target.value }))}>

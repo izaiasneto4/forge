@@ -13,6 +13,7 @@ class PullRequestSnapshotTest < ActiveSupport::TestCase
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestFileTriage.delete_all
     PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
 
@@ -39,22 +40,26 @@ class PullRequestSnapshotTest < ActiveSupport::TestCase
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestFileTriage.delete_all
     PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
   end
 
   test "activate_for marks snapshot pending and enqueues summary generation once" do
     assert_enqueued_with(job: PullRequestSummaryJob) do
-      PullRequestSnapshot.activate_for!(
-        pull_request: @pull_request,
-        head_sha: "head-1",
-        base_sha: "base-1",
-        stale_reason: "revision_changed"
-      )
+      assert_enqueued_with(job: FileTriageJob) do
+        PullRequestSnapshot.activate_for!(
+          pull_request: @pull_request,
+          head_sha: "head-1",
+          base_sha: "base-1",
+          stale_reason: "revision_changed"
+        )
+      end
     end
 
     snapshot = @pull_request.reload.current_snapshot
     assert_equal "pending", snapshot.ai_summary_status
+    assert_equal "pending", snapshot.file_triage_status
   end
 
   test "enqueue_ai_summary_generation skips duplicate pending and current work" do

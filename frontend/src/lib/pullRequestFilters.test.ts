@@ -17,6 +17,18 @@ function buildBoard(): PullRequestBoardResponse {
     risk_areas: ['Authentication logic'],
   }
 
+  const fileTriage = {
+    status: 'none' as const,
+    generated_at: null,
+    failure_reason: null,
+    snapshot_id: null,
+    stale: false,
+    files: [],
+    shortlist: [],
+    scored_count: 0,
+    skipped_count: 0,
+  }
+
   return {
     current_repo: { path: '/tmp/repo', slug: 'acme/api', name: 'api' },
     repositories: {
@@ -87,6 +99,7 @@ function buildBoard(): PullRequestBoardResponse {
           deletions: 5,
           changed_files: 2,
           ai_summary: summary,
+          file_triage: fileTriage,
           review_task: null,
         },
         {
@@ -121,6 +134,7 @@ function buildBoard(): PullRequestBoardResponse {
           deletions: 2,
           changed_files: 1,
           ai_summary: { ...summary, files_changed: 1, lines_added: 2, lines_removed: 2 },
+          file_triage: fileTriage,
           review_task: null,
         },
       ],

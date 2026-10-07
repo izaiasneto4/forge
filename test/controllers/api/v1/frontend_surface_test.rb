@@ -8,6 +8,7 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestFileTriage.delete_all
     PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
     Setting.delete_all
@@ -79,6 +80,7 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     ReviewIteration.delete_all
     AgentLog.delete_all
     ReviewTask.delete_all
+    PullRequestFileTriage.delete_all
     PullRequestSnapshot.delete_all
     PullRequest.unscoped.delete_all
     Setting.delete_all
@@ -110,6 +112,8 @@ class Api::V1::FrontendSurfaceTest < ActionDispatch::IntegrationTest
     assert_equal "current", json.dig("columns", "pending_review", 0, "ai_summary", "status")
     assert_equal 6, json.dig("columns", "pending_review", 0, "ai_summary", "files_changed")
     assert_equal [ "Caching layer added", "Auth middleware refactor" ], json.dig("columns", "pending_review", 0, "ai_summary", "main_changes")
+    assert_equal "none", json.dig("columns", "pending_review", 0, "file_triage", "status")
+    assert_equal [], json.dig("columns", "pending_review", 0, "file_triage", "files")
   end
 
   test "review task board and detail return structured payloads" do

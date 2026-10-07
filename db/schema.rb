@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_07_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_07_130000) do
   create_table "agent_logs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "log_type", default: "output", null: false
@@ -20,6 +20,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_120000) do
     t.index ["created_at"], name: "index_agent_logs_on_created_at"
     t.index ["log_type"], name: "index_agent_logs_on_log_type"
     t.index ["review_task_id"], name: "index_agent_logs_on_review_task_id"
+  end
+
+  create_table "pull_request_file_triages", force: :cascade do |t|
+    t.integer "pull_request_snapshot_id", null: false
+    t.string "path", null: false
+    t.string "status", default: "modified", null: false
+    t.integer "additions", default: 0, null: false
+    t.integer "deletions", default: 0, null: false
+    t.string "role", default: "chore", null: false
+    t.float "core_score", default: 0.0, null: false
+    t.float "risk_score", default: 0.0, null: false
+    t.float "must_read_p", default: 0.0, null: false
+    t.float "priority", default: 0.0, null: false
+    t.float "confidence", default: 0.0, null: false
+    t.boolean "skipped", default: false, null: false
+    t.string "skip_reason"
+    t.text "why"
+    t.text "raw_jev_response"
+    t.integer "rank"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["pull_request_snapshot_id", "path"], name: "index_file_triages_on_snapshot_and_path", unique: true
+    t.index ["pull_request_snapshot_id", "priority"], name: "index_file_triages_on_snapshot_and_priority"
   end
 
   create_table "pull_request_snapshots", force: :cascade do |t|
@@ -39,7 +62,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_120000) do
     t.string "status", default: "current", null: false
     t.datetime "synced_at"
     t.datetime "updated_at", null: false
+    t.string "file_triage_status", default: "none", null: false
+    t.datetime "file_triage_generated_at"
+    t.text "file_triage_failure_reason"
     t.index ["ai_summary_status"], name: "index_pull_request_snapshots_on_ai_summary_status"
+    t.index ["file_triage_status"], name: "index_pull_request_snapshots_on_file_triage_status"
     t.index ["pull_request_id", "head_sha", "base_sha"], name: "index_pr_snapshots_on_pull_request_and_revision", unique: true
     t.index ["pull_request_id", "status"], name: "index_pr_snapshots_on_pull_request_and_status"
     t.index ["pull_request_id"], name: "index_pull_request_snapshots_on_pull_request_id"
@@ -204,6 +231,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_120000) do
   end
 
   add_foreign_key "agent_logs", "review_tasks"
+  add_foreign_key "pull_request_file_triages", "pull_request_snapshots"
   add_foreign_key "pull_request_snapshots", "pull_requests"
   add_foreign_key "review_comments", "review_tasks"
   add_foreign_key "review_iterations", "review_tasks"

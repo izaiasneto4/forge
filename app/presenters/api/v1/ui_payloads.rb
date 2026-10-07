@@ -79,6 +79,7 @@ module Api
             deletions: pull_request.deletions,
             changed_files: pull_request.changed_files,
             ai_summary: ai_summary_payload(pull_request.ai_summary_for_display),
+            file_triage: file_triage_payload(pull_request.file_triage_for_display),
             review_requested_for_me: pull_request.review_requested_for_me?,
             review_task: pull_request.review_task.present? ? review_task_payload(pull_request.review_task, include_pull_request: false) : nil
           }
@@ -96,6 +97,20 @@ module Api
             lines_removed: summary[:lines_removed],
             main_changes: Array(summary[:main_changes]),
             risk_areas: Array(summary[:risk_areas])
+          }
+        end
+
+        def file_triage_payload(triage)
+          {
+            status: triage[:status],
+            generated_at: triage[:generated_at]&.iso8601,
+            failure_reason: triage[:failure_reason],
+            snapshot_id: triage[:snapshot_id],
+            stale: triage[:stale],
+            files: Array(triage[:files]),
+            shortlist: Array(triage[:shortlist]),
+            scored_count: triage[:scored_count].to_i,
+            skipped_count: triage[:skipped_count].to_i
           }
         end
 

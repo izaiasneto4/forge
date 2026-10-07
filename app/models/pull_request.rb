@@ -124,6 +124,31 @@ class PullRequest < ApplicationRecord
     end
   end
 
+  def file_triage_for_display
+    snapshot = current_snapshot
+    fallback_snapshot = pull_request_snapshots.stale.where(file_triage_status: "current").order(updated_at: :desc).first
+
+    if snapshot&.file_triage_current?
+      snapshot.file_triage_payload(stale: false)
+    elsif fallback_snapshot.present?
+      fallback_snapshot.file_triage_payload(stale: true)
+    elsif snapshot.present?
+      snapshot.file_triage_payload(stale: false)
+    else
+      {
+        status: "none",
+        generated_at: nil,
+        failure_reason: nil,
+        snapshot_id: nil,
+        stale: false,
+        files: [],
+        shortlist: [],
+        scored_count: 0,
+        skipped_count: 0
+      }
+    end
+  end
+
   def current_snapshot_or_create!
     return if head_sha.blank? || base_sha.blank?
 
