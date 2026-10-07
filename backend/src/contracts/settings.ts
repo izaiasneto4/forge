@@ -1,13 +1,8 @@
 import { t } from 'elysia'
 import { okSchema } from '../http/envelope'
+import { CurrentRepo, ThemePreference } from './ui-payloads'
 
-const ThemePreference = t.Union([t.Literal('light'), t.Literal('dark')])
-
-export const CurrentRepo = t.Object({
-  path: t.Nullable(t.String()),
-  slug: t.Nullable(t.String()),
-  name: t.Nullable(t.String()),
-})
+export { CurrentRepo }
 
 export const Settings = {
   repos_folder: t.Nullable(t.String()),

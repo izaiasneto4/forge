@@ -1,23 +1,12 @@
-import { basename } from 'node:path'
-import type { Db } from '../db/client'
-import { isBlank } from '../lib/ruby'
 import { CLI_CLIENTS, SettingStore, VALID_THEME_PREFERENCES } from '../models/setting'
-import { recoverCurrentRepo } from '../services/current-repo-recovery'
-import { slugFromPath } from '../services/repo-slug-resolver'
+import { dbOf, type PayloadSource } from './pull-request-index'
+import { currentRepoPayload } from './ui-payloads'
 
-// Port of Api::V1::UiPayloads::Base#current_repo_payload.
-export async function currentRepoPayload(db: Db) {
-  const repoPath = (await recoverCurrentRepo(db)) ?? new SettingStore(db).currentRepo()
-
-  return {
-    path: repoPath,
-    slug: await slugFromPath(repoPath),
-    name: isBlank(repoPath) ? null : basename(repoPath),
-  }
-}
+export { currentRepoPayload }
 
 // Port of Api::V1::UiPayloads::Settings.
-export async function settingsPayload(db: Db) {
+export async function settingsPayload(source: PayloadSource) {
+  const db = dbOf(source)
   const settingStore = new SettingStore(db)
 
   return {
