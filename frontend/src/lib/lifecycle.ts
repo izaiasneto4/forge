@@ -7,7 +7,7 @@ import type {
 } from '../types/api'
 
 export type MailboxId = 'inbox' | 'reviewing' | 'waiting' | 'mine' | 'settled'
-export type SortOption = 'longest_waiting' | 'newest' | 'recent_activity' | 'smallest_diff'
+export type SortOption = 'longest_waiting' | 'newest' | 'oldest' | 'recent_activity' | 'smallest_diff' | 'author'
 export type Severity = ReviewCommentItem['severity']
 
 export type ListSection = {
@@ -29,8 +29,10 @@ export const MAILBOX_LABELS: Record<MailboxId, string> = {
 export const SORT_LABELS: Record<SortOption, string> = {
   longest_waiting: 'Longest waiting',
   newest: 'Newest',
+  oldest: 'Oldest',
   recent_activity: 'Recent activity',
   smallest_diff: 'Smallest diff',
+  author: 'Author',
 }
 
 export const LIFECYCLE_LABELS: Record<Lifecycle, string> = {
@@ -129,10 +131,14 @@ export function sortPullRequests(items: PullRequestItem[], sort: SortOption) {
       return sorted.sort((a, b) => time(a.updated_at_github) - time(b.updated_at_github))
     case 'newest':
       return sorted.sort((a, b) => time(b.created_at_github) - time(a.created_at_github))
+    case 'oldest':
+      return sorted.sort((a, b) => time(a.created_at_github) - time(b.created_at_github))
     case 'recent_activity':
       return sorted.sort((a, b) => time(b.updated_at_github) - time(a.updated_at_github))
     case 'smallest_diff':
       return sorted.sort((a, b) => diffSize(a) - diffSize(b))
+    case 'author':
+      return sorted.sort((a, b) => (a.author ?? '').localeCompare(b.author ?? '', undefined, { sensitivity: 'base' }))
   }
 }
 

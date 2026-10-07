@@ -1,7 +1,7 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, type MouseEvent, type ReactNode } from 'react'
 
 import { agentLabel, DEPTHS, EVENTS, isReviewEvent } from '../lib/agents'
-import { elapsedClock, formatCount, pluralize, relativeAgo } from '../lib/format'
+import { elapsedClock, formatCount, mergeVerb, pluralize, relativeAgo } from '../lib/format'
 import {
   groupBySeverity,
   isAuthoredBy,
@@ -45,9 +45,24 @@ function InlineCode({ text }: { text: string }) {
   return <>{parts.map((part, index) => (part.startsWith('`') && part.endsWith('`') && part.length > 2 ? <code key={index}>{part.slice(1, -1)}</code> : part))}</>
 }
 
+const COPIED_RESET_MS = 1200
+
+// Code blocks come pre-rendered from the server with a .copy-btn carrying the raw code.
+function copyCodeBlock(event: MouseEvent<HTMLDivElement>) {
+  if (!(event.target instanceof Element)) return
+  const button = event.target.closest('.copy-btn')
+  if (!(button instanceof HTMLButtonElement) || button.dataset.copy === undefined) return
+  event.stopPropagation()
+  const showLabel = (label: string) => {
+    button.textContent = label
+    window.setTimeout(() => { button.textContent = 'Copy' }, COPIED_RESET_MS)
+  }
+  void navigator.clipboard?.writeText(button.dataset.copy).then(() => showLabel('Copied'), () => showLabel('Copy failed'))
+}
+
 function Html({ html, className = 'md' }: { html: string | null; className?: string }) {
   if (!html) return null
-  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />
+  return <div className={className} onClick={copyCodeBlock} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 function Block({ title, aside, children, delay = 0 }: { title: string; aside?: ReactNode; children: ReactNode; delay?: number }) {
@@ -94,7 +109,7 @@ function Header({ item }: { item: PullRequestItem }) {
       <div className="byline" style={{ '--d': 2 }}>
         <Avatar name={item.author} url={item.author_avatar} size={20} />
         <b>{authored ? 'You' : item.author ?? 'Someone'}</b>
-        <span>{authored ? 'want' : 'wants'} to merge into</span>
+        <span>{mergeVerb(item.remote_state, authored)}</span>
         {item.base_ref ? <span className="ref">{item.base_ref}</span> : null}
         {item.head_ref ? <><span>from</span><span className="ref">{item.head_ref}</span></> : null}
       </div>
@@ -255,7 +270,15 @@ function Verdict({ item, detail }: { item: PullRequestItem; detail: ReviewTaskDe
   )
 }
 
-function Finding({ comment, editable, included, onToggle }: { comment: ReviewCommentItem; editable: boolean; included: boolean; onToggle: () => void }) {
+type FindingProps = {
+  comment: ReviewCommentItem
+  editable: boolean
+  included: boolean
+  onToggle: () => void
+  onStatus: (status: ReviewCommentItem['status']) => void
+}
+
+function Finding({ comment, editable, included, onToggle, onStatus }: FindingProps) {
   const { focusedFinding, setFocusedFinding } = useWorkspace()
   const focused = focusedFinding === comment.id
   const classes = ['finding']
@@ -292,6 +315,19 @@ function Finding({ comment, editable, included, onToggle }: { comment: ReviewCom
           <span className="f-title">{comment.title ?? 'Untitled finding'}</span>
           <span className="f-meta">
             {!editable && comment.status !== 'pending' ? <span className={`status-tag ${comment.status}`}>{comment.status === 'addressed' ? 'Sent' : 'Dismissed'}</span> : null}
+            {comment.status === 'addressed' ? null : (
+              <button
+                type="button"
+                className="link f-act"
+                title={comment.status === 'dismissed' ? 'Restore finding  D' : 'Dismiss finding  D'}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onStatus(comment.status === 'dismissed' ? 'pending' : 'dismissed')
+                }}
+              >
+                {comment.status === 'dismissed' ? 'Restore' : 'Dismiss'}
+              </button>
+            )}
             <span className="f-loc" title={comment.location}>{comment.file_path.split('/').pop()}{comment.line_number ? `:${comment.line_number}` : ''}</span>
           </span>
         </div>
@@ -303,7 +339,7 @@ function Finding({ comment, editable, included, onToggle }: { comment: ReviewCom
 }
 
 function Findings({ item, detail }: { item: PullRequestItem; detail: ReviewTaskDetailResponse }) {
-  const { selectionFor, setSelection, focusedFinding } = useWorkspace()
+  const { selectionFor, setSelection, focusedFinding, actions } = useWorkspace()
   const taskId = detail.task.id
   const editable = item.lifecycle === 'ready'
   const comments = detail.comments
@@ -318,25 +354,36 @@ function Findings({ item, detail }: { item: PullRequestItem; detail: ReviewTaskD
     setSelection(taskId, next)
   }
 
-  useEffect(() => {
-    if (!editable) return
+  const setStatus = (id: number, status: ReviewCommentItem['status']) => void actions.setFindingStatus(taskId, id, status)
 
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== 'x' || event.metaKey || event.ctrlKey || event.altKey) return
+      if (event.metaKey || event.ctrlKey || event.altKey) return
       const target = event.target
       if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return
-      const id = focusedFinding ?? pending[0]?.id
-      if (id === undefined) return
-      event.preventDefault()
-      const next = new Set(selection)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      setSelection(taskId, next)
+      const key = event.key.toLowerCase()
+
+      if (key === 'x' && editable) {
+        const id = focusedFinding ?? pending[0]?.id
+        if (id === undefined) return
+        event.preventDefault()
+        const next = new Set(selection)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        setSelection(taskId, next)
+      }
+
+      if (key === 'd') {
+        const focused = comments.find((comment) => comment.id === focusedFinding)
+        if (!focused || focused.status === 'addressed') return
+        event.preventDefault()
+        void actions.setFindingStatus(taskId, focused.id, focused.status === 'dismissed' ? 'pending' : 'dismissed')
+      }
     }
 
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [editable, focusedFinding, pending, selection, setSelection, taskId])
+  }, [editable, focusedFinding, pending, comments, selection, setSelection, taskId, actions])
 
   if (groups.length === 0) return null
 
@@ -362,7 +409,14 @@ function Findings({ item, detail }: { item: PullRequestItem; detail: ReviewTaskD
             <span>{group.comments.length}</span>
           </div>
           {group.comments.map((comment) => (
-            <Finding key={comment.id} comment={comment} editable={editable && comment.status === 'pending'} included={selection.has(comment.id)} onToggle={() => toggle(comment.id)} />
+            <Finding
+              key={comment.id}
+              comment={comment}
+              editable={editable && comment.status === 'pending'}
+              included={selection.has(comment.id)}
+              onToggle={() => toggle(comment.id)}
+              onStatus={(status) => setStatus(comment.id, status)}
+            />
           ))}
         </div>
       ))}
@@ -492,6 +546,7 @@ function DetailToolbar({ item }: { item: PullRequestItem }) {
   if (task) reviewItems.push({ key: 'log', label: 'Show agent log', icon: <Icon name="activity" size={14} /> })
   if (task && item.lifecycle !== 'reviewing') reviewItems.push({ key: 'clear', label: 'Discard review…', icon: <Icon name="x" size={14} /> })
   reviewItems.push({ key: 'archive', label: 'Archive', icon: <Icon name="archive" size={14} />, shortcut: 'E' })
+  reviewItems.push({ key: 'delete', label: 'Delete from Forge…', icon: <Icon name="trash" size={14} /> })
 
   return (
     <div className="toolbar">
@@ -515,6 +570,7 @@ function DetailToolbar({ item }: { item: PullRequestItem }) {
           if (key === 'log') openInspector('log')
           if (key === 'clear') void actions.clearReview(item)
           if (key === 'archive') void actions.archive(item)
+          if (key === 'delete') void actions.remove(item)
         }}
       >
         <Icon name="more" />

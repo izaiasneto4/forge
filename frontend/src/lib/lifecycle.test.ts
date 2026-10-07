@@ -107,6 +107,15 @@ describe('sortPullRequests', () => {
     expect(sortPullRequests([older, newer], 'recent_activity').map((item) => item.id)).toEqual([newer.id, older.id])
     expect(sortPullRequests([older, newer], 'smallest_diff').map((item) => item.id)).toEqual([newer.id, older.id])
   })
+
+  it('sorts by creation date and author', () => {
+    const first = buildPullRequest({ created_at_github: '2026-08-01T00:00:00Z', author: 'zoe' })
+    const second = buildPullRequest({ created_at_github: '2026-09-01T00:00:00Z', author: 'Adam' })
+
+    expect(sortPullRequests([second, first], 'oldest').map((item) => item.id)).toEqual([first.id, second.id])
+    expect(sortPullRequests([second, first], 'newest').map((item) => item.id)).toEqual([second.id, first.id])
+    expect(sortPullRequests([first, second], 'author').map((item) => item.id)).toEqual([second.id, first.id])
+  })
 })
 
 describe('review suggestions', () => {

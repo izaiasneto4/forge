@@ -243,13 +243,6 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       navigate(mailboxPath('reviewing'))
     },
 
-    retry: async (item) => {
-      if (!item.review_task) return
-      const taskId = item.review_task.id
-      await run('start', () => api.post<UiMutationResponse>(`/api/v1/review_tasks/${taskId}/retry`))
-      invalidateAll()
-    },
-
     dequeue: async (item) => {
       if (!item.review_task) return
       const taskId = item.review_task.id
@@ -262,6 +255,37 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       if (!response) return
       advanceFrom(item.id)
       invalidateAll()
+      pushToast('Click to undo.', 'info', {
+        key: `archive-${item.id}`,
+        title: `Archived #${item.number}`,
+        onClick: () => {
+          void run(null, () => api.patch<UiMutationResponse>(`/api/v1/pull_requests/${item.id}/unarchive`)).then((restored) => {
+            if (!restored) return
+            invalidateAll()
+            navigate(mailboxPath(mailboxFor(item, login), item.id))
+          })
+        },
+      })
+    },
+
+    remove: async (item) => {
+      const confirmed = await confirm({
+        title: `Delete #${item.number} from Forge?`,
+        message: 'Nothing changes on GitHub. If it’s still open, the next sync brings it back. Archive it to hide it for good.',
+        confirmLabel: 'Delete',
+      })
+      if (!confirmed) return
+      const response = await run(null, () => api.delete<UiMutationResponse>('/api/v1/pull_requests/bulk_destroy', { pull_request_ids: [item.id] }))
+      if (!response) return
+      advanceFrom(item.id)
+      invalidateAll()
+    },
+
+    setFindingStatus: async (taskId, commentId, status) => {
+      const response = await run(null, () => api.patch<UiMutationResponse>(`/api/v1/review_comments/${commentId}/toggle`, { status }))
+      if (!response) return
+      if (response.detail) queryClient.setQueryData(queryKeys.reviewTaskDetail(String(taskId)), response.detail)
+      queryClient.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
     },
 
     submit: async (item, input) => {
@@ -338,7 +362,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       advanceFrom(item.id)
       invalidateAll()
     },
-  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm])
+  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login])
 
   const maybeSync = useEffectEvent(() => {
     if (!board || document.visibilityState !== 'visible') return

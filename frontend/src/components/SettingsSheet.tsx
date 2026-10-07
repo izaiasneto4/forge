@@ -28,6 +28,7 @@ const SHORTCUTS: Array<[string, string]> = [
   ['Focus the composer', 'R'],
   ['Start review or submit', '⌘↵'],
   ['Include / exclude finding', 'X'],
+  ['Dismiss / restore finding', 'D'],
   ['Archive', 'E'],
   ['Toggle inspector', 'I'],
   ['Toggle sidebar', '⌘\\'],

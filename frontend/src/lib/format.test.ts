@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { elapsedClock, formatDuration, pluralize, relativeAge, relativeAgo, staleness } from './format'
+import type { PullRequestItem } from '../types/api'
+
+import { elapsedClock, formatDuration, mergeVerb, pluralize, relativeAge, relativeAgo, staleness } from './format'
 
 const now = Date.parse('2026-10-06T12:00:00Z')
 const minutesAgo = (minutes: number) => new Date(now - minutes * 60_000).toISOString()
@@ -41,5 +43,18 @@ describe('format', () => {
   it('pluralizes counts', () => {
     expect(pluralize(1, 'finding')).toBe('1 finding')
     expect(pluralize(3, 'finding')).toBe('3 findings')
+  })
+
+  it('words the byline by pull request state', () => {
+    const cases: Array<{ state: PullRequestItem['remote_state']; authored: boolean; expected: string }> = [
+      { state: 'open', authored: false, expected: 'wants to merge into' },
+      { state: 'open', authored: true, expected: 'want to merge into' },
+      { state: 'merged', authored: false, expected: 'merged into' },
+      { state: 'closed', authored: true, expected: 'wanted to merge into' },
+    ]
+
+    for (const { state, authored, expected } of cases) {
+      expect(mergeVerb(state, authored)).toBe(expected)
+    }
   })
 })

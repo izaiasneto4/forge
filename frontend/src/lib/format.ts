@@ -1,3 +1,5 @@
+import type { PullRequestItem } from '../types/api'
+
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
@@ -59,4 +61,10 @@ export function pluralize(count: number, singular: string, plural = `${singular}
 
 export function formatCount(value: number | null | undefined) {
   return (value ?? 0).toLocaleString('en-US')
+}
+
+export function mergeVerb(remoteState: PullRequestItem['remote_state'], authored: boolean) {
+  if (remoteState === 'merged') return 'merged into'
+  if (remoteState === 'closed') return 'wanted to merge into'
+  return authored ? 'want to merge into' : 'wants to merge into'
 }
