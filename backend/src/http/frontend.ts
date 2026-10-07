@@ -2,7 +2,6 @@ import { Elysia } from 'elysia'
 import { existsSync, statSync } from 'node:fs'
 import { join, normalize, sep } from 'node:path'
 
-// Replaces FrontendController, Rails' public file server, /up and the 404 page.
 export const SPA_ROUTES = ['/', '/review_tasks', '/review_tasks/:id', '/repositories', '/settings']
 const UP_HTML = '<!DOCTYPE html><html><body style="background-color: green"></body></html>'
 
@@ -56,7 +55,6 @@ function notFound(options: FrontendOptions) {
 }
 
 export function frontendRoutes(options: FrontendOptions) {
-  // Rails: 2 days in development, a year in production.
   const cacheSeconds = options.development ? 2 * 24 * 3600 : 365 * 24 * 3600
   let app = new Elysia({ name: 'frontend' }).get('/up', () => new Response(UP_HTML, { headers: { 'content-type': 'text/html; charset=utf-8' } }))
   for (const route of SPA_ROUTES) app = app.get(route, ({ request }) => spaIndex(options, request))

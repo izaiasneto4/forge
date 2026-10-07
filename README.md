@@ -240,17 +240,16 @@ bun run --cwd backend typecheck
 npm --prefix frontend test     # frontend tests
 ```
 
-The API lives in `backend/` (see [backend/README.md](backend/README.md)). Background jobs (reviews, syncs, AI summaries) run inside the API process. The database schema is managed by the migrations in `backend/drizzle/`, applied automatically on startup; an existing database created by the former Rails app is adopted in place.
+The API lives in `backend/` (see [backend/README.md](backend/README.md)). Background jobs (reviews, syncs, AI summaries) run inside the API process. The database schema is managed by the migrations in `backend/drizzle/`, applied automatically on startup.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution expectations and [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
 ## Production notes
 
-The repository includes Docker and Kamal configuration, but the checked-in deploy config should be treated as an example starting point rather than a production-ready template.
+A production `Dockerfile` is included. Treat it as a starting point, not a finished deploy recipe.
 
 Before a real deployment:
 
-- set real hosts, registry, and secrets
 - enable TLS and set `FORGE_ALLOWED_HOSTS`
 - decide how you will authenticate access to the app
 - back up the persistent `storage/` volume
