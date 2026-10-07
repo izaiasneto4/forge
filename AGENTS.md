@@ -16,7 +16,7 @@ Forge is a Rails 8 app with a service-oriented core.
 - `bin/rails test` — run all Rails tests.
 - `bin/rails test test/models/pull_request_test.rb` — run a single test file.
 - `bin/rails test test/models/pull_request_test.rb:42` — run one test by line.
-- `npm test` / `npm run test:watch` / `npm run test:coverage` — Vitest suite for JS.
+- `npm --prefix frontend run test` / `npm --prefix frontend run test:watch` / `npm --prefix frontend run test:coverage` — Vitest suite for the React app in `frontend/`.
 - `npx playwright test` — Playwright specs (expects server at `http://localhost:3000`).
 - `bin/rubocop` — Ruby style checks (Rails Omakase).
 - `bin/ci` — full CI flow (lint, security audits, tests).
@@ -50,3 +50,10 @@ This app requires authenticated CLI tools: `gh` (GitHub CLI) and `claude` (Claud
 - Quick task check:
   - `bin/rails runner 't=ReviewTask.find(<ID>); puts({state:t.state,started_at:t.started_at,worktree_path:t.worktree_path,logs:t.agent_logs.count}.to_json)'`
   - `pending_review` + `started_at=nil` + `logs=0` usually means job never started.
+
+## Cursor Cloud specific instructions
+
+- `bin/setup` prepares dependencies and the database, then replaces itself with `bin/dev` unless you pass `--skip-server`.
+- `bin/dev` starts Rails at `http://127.0.0.1:3000`, the Vite dev server at `http://127.0.0.1:5173/frontend/`, and Solid Queue via `bin/jobs`. Rails serves `public/frontend` when that build is present. Vite proxies `/api` and `/cable` to Rails.
+- The folder picker uses macOS `osascript`. On Linux, set Repos Folder in Settings to an existing directory. Forge lists immediate child directories that contain a `.git` entry.
+- `gh` is on `PATH`. Cloud Agent integration tokens can read this repository's pull requests, but `gh api user` returns HTTP 403, so switching a repository and syncing fails until a user-scoped GitHub credential is available. `claude`, `codex`, and `opencode` are not required to boot the app or run the test suite.
