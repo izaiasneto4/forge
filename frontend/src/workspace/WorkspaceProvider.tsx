@@ -157,6 +157,11 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
 
   const goToMailbox = useCallback((target: MailboxId) => navigate(mailboxPath(target)), [navigate])
 
+  // A new run replaces the findings, so the verdict and summary drafted for the old one no longer apply.
+  const resetRunDraft = useCallback((pullRequestId: number) => {
+    setDrafts((current) => ({ ...current, [pullRequestId]: { ...(current[pullRequestId] ?? EMPTY_DRAFT), text: '', event: null, summary: '' } }))
+  }, [])
+
   // Mutations that move a PR out of the list return the refreshed board; apply it before
   // advancing so auto-select can't land on the PR that was just removed.
   const applyBoard = useCallback((response: UiMutationResponse) => {
@@ -238,21 +243,22 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       if (response.detail?.task.state === 'queued') {
         pushToast(`#${item.number} starts after the current review.`, 'info', { title: 'Added to queue' })
       }
-      // A new run replaces the findings, so the verdict and summary drafted for the old one no longer apply.
-      setDrafts((current) => ({ ...current, [item.id]: { ...(current[item.id] ?? EMPTY_DRAFT), text: '', event: null, summary: '' } }))
+      resetRunDraft(item.id)
       invalidateAll()
     },
 
     startReviewFromUrl: async (url, input) => {
-      const response = await run('start', () => api.post<{ pull_request_id: number }>('/api/v1/reviews', {
+      const response = await run('start', () => api.post<{ task_id: number; pull_request_id: number }>('/api/v1/reviews', {
         pr_url: url.trim(),
         cli_client: input.client,
         review_type: input.depth,
         focus: input.focus,
       }))
       if (!response) return
+      resetRunDraft(response.pull_request_id)
       await queryClient.invalidateQueries({ queryKey: queryKeys.pullRequestBoard })
-      navigate(mailboxPath('reviewing', response.pull_request_id))
+      // The task route opens the review even when its PR isn't on the board (merged, closed).
+      navigate(`/review_tasks/${response.task_id}`)
     },
 
     reviewAllRequested: async () => {
@@ -389,7 +395,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       advanceFrom(item.id)
       invalidateAll()
     },
-  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login, applyBoard])
+  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login, applyBoard, resetRunDraft])
 
   const maybeSync = useEffectEvent(() => {
     if (!board || document.visibilityState !== 'visible') return

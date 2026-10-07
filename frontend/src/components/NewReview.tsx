@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 
 import { composeFocus, type ReviewDepth, type ReviewLens } from '../lib/agents'
 import { relativeAge } from '../lib/format'
-import { isAuthoredBy } from '../lib/lifecycle'
+import { belongsToMailbox, isAuthoredBy } from '../lib/lifecycle'
 import { splitPullRequestInput } from '../lib/pullRequestInput'
 import { useWorkspace } from '../workspace/context'
 import { BackToList } from './BackToList'
@@ -25,8 +25,9 @@ export function NewReview() {
 
   const open = items.filter((item) => item.lifecycle === 'needs_review' && !isAuthoredBy(item, login))
   const oldest = [...open].sort((a, b) => new Date(a.updated_at_github ?? 0).getTime() - new Date(b.updated_at_github ?? 0).getTime())[0]
-  const ready = items.filter((item) => item.lifecycle === 'ready').length
-  const newCommits = items.filter((item) => item.has_new_commits && item.lifecycle !== 'settled').length
+  // Counts match what the destination mailbox shows, so the shortcut never opens an empty list.
+  const ready = items.filter((item) => item.lifecycle === 'ready' && belongsToMailbox(item, 'inbox', login)).length
+  const newCommits = items.filter((item) => item.has_new_commits && belongsToMailbox(item, 'waiting', login)).length
 
   const start = () => {
     if (!url || pending.start) return
