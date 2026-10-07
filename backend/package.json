@@ -7,8 +7,8 @@
     "start": "bun src/index.ts",
     "test": "bun test",
     "typecheck": "bun --bun tsc --noEmit",
-    "db:pull": "bun --bun drizzle-kit pull --dialect sqlite --url ../storage/development.sqlite3 --out .drizzle-pull",
-    "db:generate": "bun --bun drizzle-kit generate"
+    "migrate": "bun bin/migrate.ts",
+    "forge": "bun bin/forge.ts"
   },
   "dependencies": {
     "@sinclair/typebox": "0.34.52",
@@ -19,7 +19,6 @@
   "devDependencies": {
     "@elysiajs/eden": "^1.4.9",
     "@types/bun": "latest",
-    "drizzle-kit": "^0.31.11",
     "typescript": "~5.9.3"
   }
 }

@@ -3,4 +3,3 @@ coverage
 *.tsbuildinfo
 .env
 .DS_Store
-.drizzle-pull
