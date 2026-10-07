@@ -29,6 +29,8 @@
   --red: #f2605a; --orange: #e9a23b; --yellow: #e6c84f; --green: #5fbf7d;
   --blue: #6c9eea; --purple: #a98be0; --teal: #6cc1d6; --gray: #8e8e93;
   --accent-text: var(--t1);
+  /* Text on accent fills; applyAccent picks white or near-black for 4.5:1 contrast. */
+  --on-accent: #141416;
   --shadow-win: inset 0 0 0 .5px rgba(255, 255, 255, .14), 0 0 0 1px rgba(0, 0, 0, .55), 0 30px 90px rgba(0, 0, 0, .55), 0 10px 30px rgba(0, 0, 0, .35);
   --shadow-pop: inset 0 0 0 .5px rgba(255, 255, 255, .12), 0 0 0 .5px rgba(0, 0, 0, .8), 0 16px 48px rgba(0, 0, 0, .5);
   --shadow-card: 0 0 0 .5px var(--hair2);
@@ -301,7 +303,7 @@ h1.pr-title { font-size: 23px; line-height: 1.22; font-weight: 700; letter-spaci
 }
 .btn:hover { filter: brightness(1.08); }
 .btn:active { filter: brightness(.95); transform: translateY(.5px); }
-.btn.primary { background: var(--accent); color: #fff; box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .25), 0 1px 2px rgba(0, 0, 0, .25); }
+.btn.primary { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .25), 0 1px 2px rgba(0, 0, 0, .25); }
 
 /* Composer */
 .composer-wrap { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 32px 20px; pointer-events: none; background: linear-gradient(transparent, var(--content) 46%); }
@@ -310,7 +312,7 @@ h1.pr-title { font-size: 23px; line-height: 1.22; font-weight: 700; letter-spaci
   box-shadow: 0 0 0 .5px var(--hair2), 0 10px 40px rgba(0, 0, 0, .22), 0 2px 6px rgba(0, 0, 0, .08);
   padding: 13px 10px 9px 16px; transition: box-shadow .2s; container-type: inline-size;
 }
-.composer:focus-within { box-shadow: 0 0 0 .5px rgba(255, 255, 255, .22), 0 10px 40px rgba(0, 0, 0, .25); }
+.composer:focus-within { box-shadow: 0 0 0 1px rgba(255, 255, 255, .3), 0 10px 40px rgba(0, 0, 0, .25); }
 .composer textarea {
   width: 100%; background: none; border: 0; outline: 0; resize: none; color: var(--t1);
   font: 14px/1.5 var(--font); min-height: 44px; max-height: 160px; padding-right: 6px; user-select: text;
@@ -329,11 +331,11 @@ h1.pr-title { font-size: 23px; line-height: 1.22; font-weight: 700; letter-spaci
 .vsep { width: 1px; height: 14px; background: var(--hair2); margin: 0 3px; }
 .send {
   margin-left: auto; height: 32px; min-width: 32px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  background: var(--accent); color: #fff; font-weight: 600; box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .3), 0 1px 3px rgba(0, 0, 0, .3);
+  background: var(--accent); color: var(--on-accent); font-weight: 600; box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .3), 0 1px 3px rgba(0, 0, 0, .3);
   transition: transform .12s var(--spring), filter .12s;
 }
 .send.wide { padding: 0 8px 0 14px; }
-.send.wide kbd { color: rgba(255, 255, 255, .75); background: rgba(255, 255, 255, .16); padding: 1px 5px; border-radius: 5px; }
+.send.wide kbd { color: var(--on-accent); background: color-mix(in oklab, var(--on-accent) 14%, transparent); padding: 1px 5px; border-radius: 5px; }
 .send:hover { filter: brightness(1.08); }
 .send:active { transform: scale(.96); }
 .send.stop { background: var(--elev2); color: var(--t1); box-shadow: 0 0 0 .5px var(--hair2); }
@@ -419,6 +421,8 @@ h1.pr-title { font-size: 23px; line-height: 1.22; font-weight: 700; letter-spaci
 @keyframes palIn { from { opacity: 0; transform: translateX(-50%) scale(.97) translateY(-6px); } }
 .palette .q { display: flex; align-items: center; gap: 12px; padding: 0 18px; height: 56px; border-bottom: .5px solid var(--hair2); }
 .palette .q .i { color: var(--t3); }
+.palette:focus-within .q { border-bottom-color: rgba(255, 255, 255, .28); }
+.palette:focus-within .q .i { color: var(--t2); }
 .palette input { flex: 1; background: none; border: 0; outline: 0; font: 400 19px var(--font); color: var(--t1); letter-spacing: -.01em; }
 .palette input::placeholder { color: var(--t3); }
 .palette .res { max-height: 380px; overflow: auto; padding: 6px; }
@@ -620,6 +624,7 @@ input, textarea, select { font: inherit; color: inherit; }
 /* Settings fields */
 .field { height: 28px; padding: 0 9px; border-radius: 7px; border: 0; background: var(--field); box-shadow: inset 0 0 0 .5px var(--hair2); color: var(--t1); font: 12.5px var(--mono); min-width: 0; flex: 1; }
 .field:focus { box-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .3); }
+.field:focus-visible { outline: 2px solid rgba(255, 255, 255, .4); outline-offset: 1px; }
 .grow .row-actions { display: flex; gap: 6px; align-items: center; flex: 1; justify-content: flex-end; min-width: 0; }
 .grow.clickable:hover { background: var(--hover); }
 button.grow { width: 100%; text-align: left; }
