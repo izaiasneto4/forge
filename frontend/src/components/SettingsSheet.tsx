@@ -102,7 +102,7 @@ function General({ settings }: { settings: SettingsResponse }) {
             onChange={(value) => mutation.mutate({ repos_folder: settings.repos_folder ?? '', default_cli_client: settings.default_cli_client, auto_submit_enabled: value })}
           />
         </Row>
-        <Row label="Desktop notifications" hint="Get a macOS notification when a review finishes while Forge is in the background">
+        <Row label="Desktop notifications" hint="Get a macOS notification when a review finishes while Ordem is in the background">
           <Switch label="Desktop notifications" on={notify} onChange={(value) => void setDesktopNotifications(value).then(setNotify)} />
         </Row>
       </div>
@@ -214,10 +214,10 @@ function GitHub() {
       </div>
       <div className="group-label">Sync</div>
       <div className="group">
-        <Row label="Only pull requests that request my review" hint="Other open pull requests in the repository stay out of Forge">
+        <Row label="Only pull requests that request my review" hint="Other open pull requests in the repository stay out of Ordem">
           <Switch label="Only requested reviews" on={board?.settings.only_requested_reviews ?? false} onChange={(value) => void actions.setOnlyRequested(value)} />
         </Row>
-        <Row label="Sync now" hint="Forge also syncs every two minutes while the window is visible">
+        <Row label="Sync now" hint="Ordem also syncs every two minutes while the window is visible">
           <button type="button" className="btn" onClick={() => void actions.sync(true)}><Icon name="refresh" size={14} />Sync</button>
         </Row>
       </div>

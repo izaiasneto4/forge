@@ -214,7 +214,7 @@ describe('Client', () => {
 
   test('keeps a path prefix on the base url', async () => {
     const http = okHttp()
-    const prefixedBase = `${baseUrl}/forge`
+    const prefixedBase = `${baseUrl}/ordem`
 
     await new Client({ baseUrl: prefixedBase, fetch: http.fetch }).status()
 
@@ -262,28 +262,47 @@ describe('Client', () => {
   })
 
   describe('default base url', () => {
-    const originalUrl = process.env.FORGE_API_URL
+    const originalUrl = process.env.ORDEM_API_URL
+    const originalLegacyUrl = process.env.FORGE_API_URL
 
     beforeEach(() => {
+      delete process.env.ORDEM_API_URL
       delete process.env.FORGE_API_URL
     })
 
     afterEach(() => {
-      if (originalUrl === undefined) delete process.env.FORGE_API_URL
-      else process.env.FORGE_API_URL = originalUrl
+      if (originalUrl === undefined) delete process.env.ORDEM_API_URL
+      else process.env.ORDEM_API_URL = originalUrl
+      if (originalLegacyUrl === undefined) delete process.env.FORGE_API_URL
+      else process.env.FORGE_API_URL = originalLegacyUrl
     })
 
-    test('reads FORGE_API_URL, then falls back to the local server', async () => {
-      const envUrl = 'http://forge.test:4000'
+    test('reads ORDEM_API_URL, then falls back to the local server', async () => {
+      const envUrl = 'http://ordem.test:4000'
       const fallback = okHttp()
       const fromEnv = okHttp()
 
       await new Client({ fetch: fallback.fetch }).status()
-      process.env.FORGE_API_URL = envUrl
+      process.env.ORDEM_API_URL = envUrl
       await new Client({ fetch: fromEnv.fetch }).status()
 
       expect(fallback.requests[0]?.url.href).toBe(`${DEFAULT_API_URL}/api/v1/status`)
       expect(fromEnv.requests[0]?.url.href).toBe(`${envUrl}/api/v1/status`)
+    })
+
+    test('uses the legacy URL until an Ordem URL is configured', async () => {
+      const legacyUrl = 'http://legacy.test:4000'
+      const ordemUrl = 'http://ordem.test:4100'
+      const fromLegacy = okHttp()
+      const fromOrdem = okHttp()
+
+      process.env.FORGE_API_URL = legacyUrl
+      await new Client({ fetch: fromLegacy.fetch }).status()
+      process.env.ORDEM_API_URL = ordemUrl
+      await new Client({ fetch: fromOrdem.fetch }).status()
+
+      expect(fromLegacy.requests[0]?.url.href).toBe(`${legacyUrl}/api/v1/status`)
+      expect(fromOrdem.requests[0]?.url.href).toBe(`${ordemUrl}/api/v1/status`)
     })
   })
 })

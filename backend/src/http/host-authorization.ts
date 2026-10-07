@@ -2,7 +2,7 @@ import { isIP } from 'node:net'
 
 // Development allows .localhost, .test and any IP (what stops DNS-rebinding
 // pages from reaching the API). Production allows every host.
-// FORGE_ALLOWED_HOSTS overrides both: a comma list where a leading "." also
+// ORDEM_ALLOWED_HOSTS overrides both: a comma list where a leading "." also
 // allows subdomains, or "*" for any host.
 export const DEFAULT_ALLOWED_HOSTS = ['.localhost', '.test']
 export const ALLOW_ALL_HOSTS = ['*']

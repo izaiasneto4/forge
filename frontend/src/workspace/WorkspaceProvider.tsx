@@ -310,7 +310,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
 
     remove: async (item) => {
       const confirmed = await confirm({
-        title: `Delete #${item.number} from Forge?`,
+        title: `Delete #${item.number} from Ordem?`,
         message: 'Nothing changes on GitHub. If it’s still open, the next sync brings it back. Archive it to hide it for good.',
         confirmLabel: 'Delete',
       })
@@ -390,7 +390,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       const taskId = item.review_task.id
       const confirmed = await confirm({
         title: 'Discard this review?',
-        message: `Findings and logs for #${item.number} will be deleted. The pull request stays in Forge.`,
+        message: `Findings and logs for #${item.number} will be deleted. The pull request stays in Ordem.`,
         confirmLabel: 'Discard',
       })
       if (!confirmed) return

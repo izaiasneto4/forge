@@ -158,7 +158,7 @@ export class CodeReviewService {
   }
 
   codexLastMessagePath() {
-    return join(this.worktreePath, '.forge_codex_last_message.md')
+    return join(this.worktreePath, '.ordem_codex_last_message.md')
   }
 
   clearCodexLastMessage() {

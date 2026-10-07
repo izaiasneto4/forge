@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { isJsonObject } from '../../src/cli/formatter'
 import { closedPortUrl, readJson, runBin, spawnBin, withStubServer } from './support'
 
-// Port of test/integration/forge_cli_e2e_test.rb: runs bin/forge.ts as a
+// Port of the original Ruby CLI integration tests: runs bin/ordem.ts as a
 // process against an in-process server that answers with the API's shapes.
 
 const repo = 'acme/api'
@@ -27,7 +27,7 @@ function syncState(secondsUntilSyncAllowed: number) {
   }
 }
 
-describe('forge cli e2e', () => {
+describe('ordem cli e2e', () => {
   test('sync forced and skipped and failure and connection error', async () => {
     const secondsRemaining = 15
 

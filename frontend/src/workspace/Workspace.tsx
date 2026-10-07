@@ -75,7 +75,7 @@ function useLiveUpdates() {
         const notification = new Notification(event.type === 'review_failed' ? `Review failed · #${prNumber}` : `Review finished · #${prNumber}`, {
           body: event.type === 'review_failed' ? event.reason ?? 'The agent stopped early.' : 'Findings are ready for you to send.',
           // PR numbers repeat across repositories; the task id doesn't.
-          tag: `forge-review-${event.review_task_id ?? prNumber}`,
+          tag: `ordem-review-${event.review_task_id ?? prNumber}`,
         })
         notification.onclick = () => {
           window.focus()
@@ -161,7 +161,7 @@ function DetailPane() {
   if (route.kind === 'new') return <NewReview />
   if (selected) return <PullRequestDetail item={selected} />
   if (boardError) return <DetailEmpty icon="warn" title="Couldn’t load pull requests" body={errorMessage(boardError)} />
-  if (boardLoading) return <DetailEmpty icon="refresh" title="Loading" body="Fetching pull requests from Forge…" />
+  if (boardLoading) return <DetailEmpty icon="refresh" title="Loading" body="Fetching pull requests from Ordem…" />
   if (route.kind === 'mailbox' && route.id !== null) return <DetailEmpty icon="search" title="Pull request not found" body="It may have been merged, closed or archived." />
   if (route.kind === 'task') return <DetailEmpty icon="refresh" title="Loading" body="Opening review…" />
   if (sections.length === 0) return <DetailEmpty icon="checkCircle" title={`${MAILBOX_LABELS[mailbox]} is empty`} body="Nothing to look at here right now." />

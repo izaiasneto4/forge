@@ -6,7 +6,7 @@ function requestWith(headers: Record<string, string>, url = 'http://localhost:31
 }
 
 describe('host authorization', () => {
-  test.each(['localhost:3100', 'forge.localhost', 'forge.test:3000', '127.0.0.1:3000', '[::1]:3000', '192.168.2.6'])('allows %p by default', (host) => {
+  test.each(['localhost:3100', 'ordem.localhost', 'ordem.test:3000', '127.0.0.1:3000', '[::1]:3000', '192.168.2.6'])('allows %p by default', (host) => {
     expect(isAllowedHost(host, DEFAULT_ALLOWED_HOSTS)).toBe(true)
   })
 
@@ -14,10 +14,10 @@ describe('host authorization', () => {
     expect(isAllowedHost(host, DEFAULT_ALLOWED_HOSTS)).toBe(false)
   })
 
-  test('honors FORGE_ALLOWED_HOSTS, including subdomain and wildcard entries', () => {
-    const allowed = allowedHostsFromEnv('forge.example.com, .internal')
+  test('honors ORDEM_ALLOWED_HOSTS, including subdomain and wildcard entries', () => {
+    const allowed = allowedHostsFromEnv('ordem.example.com, .internal')
 
-    expect(isAllowedHost('forge.example.com', allowed)).toBe(true)
+    expect(isAllowedHost('ordem.example.com', allowed)).toBe(true)
     expect(isAllowedHost('api.internal', allowed)).toBe(true)
     expect(isAllowedHost('localhost', allowed)).toBe(false)
     expect(isAllowedHost('anything.example', allowedHostsFromEnv('*'))).toBe(true)
@@ -30,7 +30,7 @@ describe('host authorization', () => {
   })
 
   test('accepts same-origin websocket requests, and localhost ports only in development', () => {
-    const sameOrigin = requestWith({ host: 'forge.example.com', origin: 'http://forge.example.com' }, 'http://forge.example.com/ws')
+    const sameOrigin = requestWith({ host: 'ordem.example.com', origin: 'http://ordem.example.com' }, 'http://ordem.example.com/ws')
     const viteDevServer = requestWith({ host: 'localhost:3100', origin: 'http://localhost:5173' })
     const crossSite = requestWith({ host: 'localhost:3100', origin: 'https://evil.example' })
 

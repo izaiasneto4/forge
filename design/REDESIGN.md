@@ -1,4 +1,4 @@
-# Forge redesign
+# Ordem redesign
 
 Prototype: `design/prototype/index.html` (static, mock data). Serve the folder and open it:
 
@@ -10,7 +10,7 @@ URL params jump straight to a state: `?pr=479&box=reviewing`, `?hero`, `?theme=l
 
 ## The core idea
 
-Forge works like a mail client for code review. Each PR is a thread, and the agent is a collaborator inside that thread. T3 Code uses the same model (project → threads with live status), and so do Mail and the ChatGPT desktop app.
+Ordem works like a mail client for code review. Each PR is a thread, and the agent is a collaborator inside that thread. T3 Code uses the same model (project → threads with live status), and so do Mail and the ChatGPT desktop app.
 
 Today the app is a web dashboard: top nav, four pages, two kanban-ish boards with **two separate status systems** (6 PR statuses and 7 task states). To answer "what do I need to do?" the user has to map one onto the other in their head.
 
@@ -46,7 +46,7 @@ Today the app is a web dashboard: top nav, four pages, two kanban-ish boards wit
 | `settled` | Settled | task `done`, PR `reviewed_by_me` / `reviewed_by_others`, archived, merged/closed |
 | `authored` | My PRs | author == `github_login` |
 
-Expose this as `lifecycle` on the PR payload so the UI and `bin/forge` share one vocabulary. Drop the drag-and-drop task board. Those states are machine-driven, so letting users drag cards between them is a fake affordance.
+Expose this as `lifecycle` on the PR payload so the UI and `bin/ordem` share one vocabulary. Drop the drag-and-drop task board. Those states are machine-driven, so letting users drag cards between them is a fake affordance.
 
 ## Interaction principles
 
@@ -60,7 +60,7 @@ Expose this as `lifecycle` on the PR payload so the UI and `bin/forge` share one
 
 - System font (SF Pro / SF Mono) at a 13px base, which is the macOS default. Drop Inter.
 - Translucent sidebar (vibrancy), opaque content panes, 0.5px hairlines, 12px window radius.
-- One user-selectable accent (default ember `#ff7a3d`, from the forge flame). Apple system colors for semantics.
+- One user-selectable accent (default ember `#ff7a3d`, from the ordem flame). Apple system colors for semantics.
 - Status is a glyph, not a text badge: ring, spinner, filled send, red alert, half-moon, check.
 - Motion: 120–300ms ease-out, spring on toggles and sheets, shimmer on the live agent step. Respects `prefers-reduced-motion`.
 
@@ -71,7 +71,7 @@ Shipped in the app (dark appearance only for now):
 - 3-pane shell with mailboxes, repository switcher, sync chip, inspector (activity, agent log, history).
 - Server-derived `lifecycle` + `has_new_commits` on PR payloads; the task board and drag-and-drop are gone.
 - State-aware composer: start (agent, depth, focus lens + free text sent as `focus`), re-review, retry, live run, submit with include/exclude per finding and a suggested event. No verdict is suggested when the agent's output wasn't parsed into findings.
-- Findings can be dismissed and restored; a PR can be archived (with undo) or deleted from Forge; past runs expand in the inspector history.
+- Findings can be dismissed and restored; a PR can be archived (with undo) or deleted from Ordem; past runs expand in the inspector history.
 - `⌘K` palette, `J/K`, `X`, `D`, `E`, `I`, `N`, `R`, `⌘↵`, `⌘\`, `⌘,`; auto-advance after submit/archive.
 - macOS-style notifications (in-app banners + optional desktop notifications), confirm sheet, settings sheet (accent color, agents, repositories, GitHub, shortcuts).
 - Mailbox URLs: `/inbox`, `/reviewing/:id`, `/waiting/:id`, `/mine`, `/settled`, `/new`. `/review_tasks/:id` redirects to the PR, or opens the review directly when its PR isn't on the board (merged, closed, other repository). Settled also lists reviewed PRs that were merged or closed.

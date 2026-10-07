@@ -6,7 +6,7 @@ import { ConfirmSheet } from './ConfirmSheet'
 const confirmLabel = 'Delete'
 
 function renderSheet(onResolve = vi.fn()) {
-  return render(<ConfirmSheet title="Delete #12 from Forge?" message="Nothing changes on GitHub." confirmLabel={confirmLabel} onResolve={onResolve} />)
+  return render(<ConfirmSheet title="Delete #12 from Ordem?" message="Nothing changes on GitHub." confirmLabel={confirmLabel} onResolve={onResolve} />)
 }
 
 describe('ConfirmSheet', () => {

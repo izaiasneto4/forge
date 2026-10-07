@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { Interrupt, interruptibleSleep } from '../../src/cli/cli'
-import { ApiError, ConnectionError, DEFAULT_API_URL, type ForgeApi } from '../../src/cli/client'
+import { ApiError, ConnectionError, DEFAULT_API_URL, type OrdemApi } from '../../src/cli/client'
 import { runCli, ScriptedClient, TEST_API_URL } from './support'
 
 const prUrl = 'https://github.com/acme/api/pull/1'
@@ -8,10 +8,10 @@ const repo = 'acme/api'
 const taskId = '1'
 const followIntervalSeconds = 2
 
-const usage = 'Usage: forge <command>'
-const reviewUsage = 'Usage: forge review <pr-url>'
-const logsUsage = 'Usage: forge logs <task-id>'
-const repoUsage = 'Usage: forge repo switch <org/repo>'
+const usage = 'Usage: ordem <command>'
+const reviewUsage = 'Usage: ordem review <pr-url>'
+const logsUsage = 'Usage: ordem logs <task-id>'
+const repoUsage = 'Usage: ordem repo switch <org/repo>'
 
 function log(id: number, message: string) {
   return { id, log_type: 'output', message }
@@ -21,7 +21,7 @@ function formatLog(entry: ReturnType<typeof log>) {
   return `[${entry.id}] ${entry.log_type}: ${entry.message}`
 }
 
-describe('forge cli', () => {
+describe('ordem cli', () => {
   test('unknown command returns 1', async () => {
     const command = 'wat'
 
@@ -38,9 +38,9 @@ describe('forge cli', () => {
     expect(stderr).toBe(`${usage}\n`)
   })
 
-  test('builds the client from FORGE_API_URL, defaulting to the local server', async () => {
+  test('builds the client from ORDEM_API_URL, defaulting to the local server', async () => {
     const baseUrls: string[] = []
-    const createClient = (baseUrl: string): ForgeApi => {
+    const createClient = (baseUrl: string): OrdemApi => {
       baseUrls.push(baseUrl)
       return new ScriptedClient()
     }
@@ -49,6 +49,21 @@ describe('forge cli', () => {
     await runCli([], { createClient, env: {} })
 
     expect(baseUrls).toEqual([TEST_API_URL, DEFAULT_API_URL])
+  })
+
+  test('keeps the legacy API URL working and gives the Ordem URL priority', async () => {
+    const legacyUrl = 'http://legacy.test:4000'
+    const ordemUrl = 'http://ordem.test:4100'
+    const baseUrls: string[] = []
+    const createClient = (baseUrl: string): OrdemApi => {
+      baseUrls.push(baseUrl)
+      return new ScriptedClient()
+    }
+
+    await runCli([], { createClient, env: { FORGE_API_URL: legacyUrl } })
+    await runCli([], { createClient, env: { FORGE_API_URL: legacyUrl, ORDEM_API_URL: ordemUrl } })
+
+    expect(baseUrls).toEqual([legacyUrl, ordemUrl])
   })
 
   describe('sync', () => {
@@ -400,7 +415,7 @@ describe('option parsing', () => {
 
     const { code } = await runCli(['logs', taskId, '--follow'], {
       client,
-      env: { FORGE_API_URL: TEST_API_URL, POSIXLY_CORRECT: '1' },
+      env: { ORDEM_API_URL: TEST_API_URL, POSIXLY_CORRECT: '1' },
     })
 
     expect(code).toBe(0)
@@ -513,7 +528,7 @@ describe('option parsing', () => {
 
     expect(code).toBe(0)
     expect(stdout).toBe(
-      ['Usage: forge [options]', '        --status STATUS', '        --limit LIMIT', '        --json', ''].join('\n'),
+      ['Usage: ordem [options]', '        --status STATUS', '        --limit LIMIT', '        --json', ''].join('\n'),
     )
     expect(client.calls).toEqual([])
   })
@@ -526,9 +541,9 @@ describe('option parsing', () => {
   })
 
   test.each([
-    [['--version'], 'forge: version unknown'],
-    [['-v'], 'forge: version unknown'],
-    [['--version=pkg'], 'forge: no version found in package pkg'],
+    [['--version'], 'ordem: version unknown'],
+    [['-v'], 'ordem: version unknown'],
+    [['--version=pkg'], 'ordem: no version found in package pkg'],
   ])('%p aborts like OptionParser without a version', async (options, message) => {
     const { code, stderr, stdout } = await runCli(['status', ...options])
 

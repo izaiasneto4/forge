@@ -205,7 +205,7 @@ function normalizeFinalSummary(pullRequest: PullRequestRecord, data: Record<stri
 }
 
 async function runCodexPrompt(ctx: AppContext, prompt: string) {
-  const outputPath = join(tmpdir(), `forge-pr-summary-${randomBytes(6).toString('hex')}.md`)
+  const outputPath = join(tmpdir(), `ordem-pr-summary-${randomBytes(6).toString('hex')}.md`)
   const result = await ctx.commands.run(['codex', 'exec', '--output-last-message', outputPath, prompt])
   const content = existsSync(outputPath) ? readFileSync(outputPath, 'utf8') : result.stdout
   rmSync(outputPath, { force: true })

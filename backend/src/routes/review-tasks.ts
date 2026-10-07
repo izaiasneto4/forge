@@ -80,7 +80,7 @@ async function submitReviewTask(deps: RouteDependencies, task: ReviewTaskRecord,
         ? commentsWithIds(ctx.db, task.id, requestedIds)
         : pendingComments(ctx.db, task.id)
 
-  const allowEmptyApproval = forceEmptySubmission && event === 'APPROVE' && summary === null
+  const allowEmptyApproval = forceEmptySubmission && event === 'APPROVE'
   if (selected.length === 0 && !allowEmptyApproval) {
     renderError(ERROR_CODES.invalidInput, 'No comments selected for submission')
   }

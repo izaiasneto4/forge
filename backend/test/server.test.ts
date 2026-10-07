@@ -36,9 +36,9 @@ describe('startServer', () => {
   })
 
   test('serves the API and shuts down promptly while a websocket client is connected', async () => {
-    tempDir = mkdtempSync(join(tmpdir(), 'forge-server-'))
+    tempDir = mkdtempSync(join(tmpdir(), 'ordem-server-'))
     const shutdownTimeoutMs = 3000
-    const config = runtimeConfig({ PORT: '0', DATABASE_PATH: join(tempDir, 'forge.sqlite3') })
+    const config = runtimeConfig({ PORT: '0', DATABASE_PATH: join(tempDir, 'ordem.sqlite3') })
     const server = startServer({ config, jobWorker: false, shutdownTimeoutMs })
     const origin = `http://localhost:${server.port}`
 
@@ -60,8 +60,8 @@ describe('startServer', () => {
   }, 15_000)
 
   test('delivers subscribed broadcasts over the real /ws socket', async () => {
-    tempDir = mkdtempSync(join(tmpdir(), 'forge-server-'))
-    const config = runtimeConfig({ PORT: '0', DATABASE_PATH: join(tempDir, 'forge.sqlite3') })
+    tempDir = mkdtempSync(join(tmpdir(), 'ordem-server-'))
+    const config = runtimeConfig({ PORT: '0', DATABASE_PATH: join(tempDir, 'ordem.sqlite3') })
     const server = startServer({ config, jobWorker: false })
     const origin = `http://localhost:${server.port}`
     const frames: unknown[] = []

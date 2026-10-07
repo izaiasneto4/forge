@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Forge — redesign prototype</title>
+<title>Ordem — redesign prototype</title>
 <style>
 :root {
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
@@ -702,7 +702,7 @@ const PRS = [
       risks: ['Long-running migration', 'Tax rounding', 'Public API serialization'],
     },
     script: [
-      ['status', 'Preparing worktree ~/.forge/worktrees/api-479'],
+      ['status', 'Preparing worktree ~/.ordem/worktrees/api-479'],
       ['ok', 'Checked out theo/decimal-money @ 9f2c1ab'],
       ['status', 'Reading diff · 23 files, +1,204 −611'],
       ['out', 'app/models/concerns/money_attribute.rb'],
@@ -752,7 +752,7 @@ const PRS = [
     id: 5, repo: 'acme/infra', num: 88, title: 'Bump Postgres to 17 and tune autovacuum', author: 'kai',
     head: 'kai/pg17', base: 'main', add: 44, del: 19, commits: 3, updated: NOW - 74 * H,
     requested: true, checks: 'fail', state: 'failed', agent: 'codex', depth: 'standard', lens: 'general',
-    failure: 'Couldn\'t check out kai/pg17 — the branch was force-pushed while Forge was preparing the worktree. Retrying will fetch the new head.',
+    failure: 'Couldn\'t check out kai/pg17 — the branch was force-pushed while Ordem was preparing the worktree. Retrying will fetch the new head.',
     attempts: 2,
     brief: {
       changes: ['Bumps the RDS engine to Postgres 17.2', 'Lowers <code>autovacuum_vacuum_scale_factor</code> on hot tables', 'Adds a blue/green deployment step'],
@@ -1082,7 +1082,7 @@ function renderDetail() {
   if (p.state === 'failed') main = `<div class="block" style="--d:5"><div class="card callout" style="--c:var(--red)"><div class="ico">${icon('warn', 18)}</div><div><div class="what">Review failed after ${p.attempts} attempts</div><div class="why">${p.failure}</div></div></div></div>`
   if (p.state === 'ready' || p.state === 'waiting' || (p.state === 'settled' && p.findings)) main = verdictCard(p) + findingsBlock(p)
   if (p.state === 'waiting' && p.newCommits) {
-    main = `<div class="block" style="--d:5"><div class="card callout" style="--c:var(--purple)"><div class="ico">${icon('branch', 18)}</div><div><div class="what">${p.newCommits} new commits since your review</div><div class="why">${p.author} pushed changes ${agoLong(p.updated)}. Re-review only what changed, and Forge will check which findings were addressed.</div></div></div></div>` + main
+    main = `<div class="block" style="--d:5"><div class="card callout" style="--c:var(--purple)"><div class="ico">${icon('branch', 18)}</div><div><div class="what">${p.newCommits} new commits since your review</div><div class="why">${p.author} pushed changes ${agoLong(p.updated)}. Re-review only what changed, and Ordem will check which findings were addressed.</div></div></div></div>` + main
   }
   if (p.state === 'settled' && !p.findings) main = `<div class="block" style="--d:5"><div class="card callout" style="--c:var(--green)"><div class="ico">${icon('checkCircle', 18)}</div><div><div class="what">${p.settledHow}</div><div class="why">Nothing left to do here.</div></div></div></div>`
   if (p.state === 'authored') main = `<div class="block" style="--d:5"><div class="card callout" style="--c:var(--blue)"><div class="ico">${icon('user', 18)}</div><div><div class="what">Waiting on ${p.reviewers.join(' and ')}</div><div class="why">Run a self-review before they get to it — findings stay private until you choose to act on them.</div></div></div></div>`
@@ -1263,7 +1263,7 @@ function heroHtml() {
   <div class="hero">
     <div class="mark">${icon('flame', 34, '', 1.7)}</div>
     <h2>What should we review in <u>${scope}</u>?</h2>
-    <p>Paste a pull request link, or let Forge pick up what’s waiting on you.</p>
+    <p>Paste a pull request link, or let Ordem pick up what’s waiting on you.</p>
     <div class="composer">
       <textarea id="composer-input" rows="2" placeholder="https://github.com/acme/api/pull/…"></textarea>
       <div class="bar">
@@ -1335,7 +1335,7 @@ function autosize() {
 /* ───────────────────────── Simulation ───────────────────────── */
 function genericScript(p) {
   return [
-    ['status', `Preparing worktree ~/.forge/worktrees/${repoOf(p).name}-${p.num}`],
+    ['status', `Preparing worktree ~/.ordem/worktrees/${repoOf(p).name}-${p.num}`],
     ['ok', `Checked out ${p.head} @ ${Math.random().toString(16).slice(2, 9)}`],
     ['status', `Reading diff · ${p.fileList.length} files, +${fmtN(p.add)} −${fmtN(p.del)}`],
     ...p.fileList.slice(0, 3).map((f) => ['out', f.path]),
@@ -1527,7 +1527,7 @@ function openSettings(tab) {
       <div class="group-label">Sync</div>
       <div class="group">
         <div class="grow"><div class="l">Only show PRs that request my review</div>${sw('onlyRequested', false)}</div>
-        <div class="grow"><div class="l">Sync every<small>Forge also syncs when the window becomes active</small></div><button class="select-btn">2 minutes${icon('chevDown', 12)}</button></div>
+        <div class="grow"><div class="l">Sync every<small>Ordem also syncs when the window becomes active</small></div><button class="select-btn">2 minutes${icon('chevDown', 12)}</button></div>
       </div>`,
     keys: `
       <div class="group">${[['Search everything', '⌘K'], ['New review', '⌘N'], ['Next / previous PR', 'J / K'], ['Start review', '⌘↵'], ['Include / exclude finding', 'X'], ['Submit review', '⌘↵'], ['Archive', 'E'], ['Toggle sidebar', '⌘\\'], ['Toggle inspector', 'I'], ['Sync', '⌘R']].map(([l, k]) => `<div class="grow"><div class="l">${l}</div><kbd style="font-size:12px">${k}</kbd></div>`).join('')}</div>`,

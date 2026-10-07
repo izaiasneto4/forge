@@ -47,7 +47,7 @@ export function Sidebar() {
       <div className="titlebar">
         <div className="brand">
           <span className="brand-mark"><Icon name="flame" size={14} stroke={2} /></span>
-          <span>Forge</span>
+          <span>Ordem</span>
         </div>
         <button type="button" className="tb-btn" title="Hide sidebar  ⌘\" onClick={toggleSidebar}><Icon name="sidebar" /></button>
         <button type="button" className={route.kind === 'new' ? 'tb-btn on' : 'tb-btn'} title="New review  N" onClick={openNew}><Icon name="compose" /></button>

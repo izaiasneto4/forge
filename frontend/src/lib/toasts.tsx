@@ -19,7 +19,7 @@ const LEAVE_MS = 280
 const DEFAULT_TITLES: Record<ToastType, string> = {
   success: 'Done',
   error: 'Something went wrong',
-  info: 'Forge',
+  info: 'Ordem',
 }
 
 export function ToastProvider({ children }: PropsWithChildren) {

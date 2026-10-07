@@ -2,7 +2,7 @@
 
 ## Scope
 
-Forge is currently designed as a local-first tool operated by a trusted user on their own machine or private network.
+Ordem is currently designed as a local-first tool operated by a trusted user on their own machine or private network.
 
 It is not hardened for anonymous or multi-tenant internet exposure by default. In particular, the current app and JSON API perform privileged local actions such as:
 

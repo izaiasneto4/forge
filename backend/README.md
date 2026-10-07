@@ -1,6 +1,6 @@
-# Forge API (Bun + Elysia)
+# Ordem API (Bun + Elysia)
 
-The whole server side of Forge: the `/api/v1` JSON API, the ActionCable-compatible
+The whole server side of Ordem: the `/api/v1` JSON API, the plain JSON
 WebSocket at `/ws`, the background job worker, and static serving of the built
 frontend.
 
@@ -10,18 +10,20 @@ bun run dev        # http://localhost:3000 (API + job worker + frontend build)
 bun test
 bun run typecheck
 bun bin/migrate.ts # create or upgrade the database without starting the server
-bun bin/forge.ts   # the forge CLI (see the root README)
+bun bin/ordem.ts   # the ordem CLI (see the root README)
 ```
 
 | Env | Default |
 |---|---|
 | `PORT` | `3000` |
-| `FORGE_ROOT` | repo root; the server runs from here so relative repo paths resolve as before |
-| `DATABASE_PATH` | `storage/development.sqlite3` (`storage/production.sqlite3` in production), relative to `FORGE_ROOT` |
-| `FORGE_ALLOWED_HOSTS` | development: localhost, `.localhost`, `.test`, IPs; production: any host |
+| `ORDEM_ROOT` | repo root; the server runs from here so relative repo paths resolve as before |
+| `DATABASE_PATH` | `storage/development.sqlite3` (`storage/production.sqlite3` in production), relative to `ORDEM_ROOT` |
+| `ORDEM_ALLOWED_HOSTS` | development: localhost, `.localhost`, `.test`, IPs; production: any host |
 | `FRONTEND_DEV_URL` | `http://localhost:5173` (used when no frontend build exists) |
-| `FORGE_LOG_LEVEL` | `info` (`silent` under `bun test`) |
-| `FORGE_DISABLE_JOB_WORKER` | unset; `1` queues jobs without running them |
+| `ORDEM_LOG_LEVEL` | `info` (`silent` under `bun test`) |
+| `ORDEM_DISABLE_JOB_WORKER` | unset; `1` queues jobs without running them |
+
+Legacy `FORGE_*` environment variables remain supported when their `ORDEM_*` equivalent is unset.
 
 ## Layout
 
@@ -32,7 +34,7 @@ bun bin/forge.ts   # the forge CLI (see the root README)
 - `src/services/` — GitHub sync (`sync/`), AI review runs, submissions, summaries.
 - `src/jobs/` — SQLite-backed job queue, in-process worker, recurring maintenance.
 - `src/realtime/` — plain JSON WebSocket server for live UI updates.
-- `src/cli/` — the `forge` CLI.
+- `src/cli/` — the `ordem` CLI.
 
 ## Contract rules
 

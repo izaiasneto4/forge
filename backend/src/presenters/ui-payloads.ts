@@ -330,7 +330,7 @@ export async function bootstrapPayload(ctx: PayloadContext) {
 
   return {
     app: {
-      name: 'Forge',
+      name: 'Ordem',
       cli_clients: [...CLI_CLIENTS],
       valid_theme_preferences: [...VALID_THEME_PREFERENCES],
     },

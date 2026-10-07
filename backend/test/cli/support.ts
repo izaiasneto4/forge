@@ -1,8 +1,8 @@
 import { fileURLToPath } from 'node:url'
 import { type CliOptions, type Sleep, start } from '../../src/cli/cli'
-import type { ForgeApi, ListParams, LogsParams, ReviewParams } from '../../src/cli/client'
+import type { OrdemApi, ListParams, LogsParams, ReviewParams } from '../../src/cli/client'
 
-export const FORGE_BIN = fileURLToPath(new URL('../../bin/forge.ts', import.meta.url))
+export const ORDEM_BIN = fileURLToPath(new URL('../../bin/ordem.ts', import.meta.url))
 
 export class StringWriter {
   text = ''
@@ -12,7 +12,7 @@ export class StringWriter {
   }
 }
 
-type ApiMethod = keyof ForgeApi
+type ApiMethod = keyof OrdemApi
 
 export interface ScriptedAnswer {
   result?: unknown
@@ -25,7 +25,7 @@ export interface RecordedCall {
 }
 
 // Plays back answers in order and records every call, like the mocha client mocks in the Ruby tests.
-export class ScriptedClient implements ForgeApi {
+export class ScriptedClient implements OrdemApi {
   readonly calls: RecordedCall[] = []
 
   constructor(private readonly answers: ScriptedAnswer[] = []) {}
@@ -83,7 +83,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}) {
   const code = await start(argv, {
     stdout,
     stderr,
-    env: options.env ?? { FORGE_API_URL: TEST_API_URL },
+    env: options.env ?? { ORDEM_API_URL: TEST_API_URL },
     sleep: options.sleep ?? (() => {}),
     createClient: options.createClient ?? (() => client),
   })
@@ -118,8 +118,8 @@ export async function closedPortUrl() {
 }
 
 export function spawnBin(argv: string[], baseUrl: string) {
-  return Bun.spawn([FORGE_BIN, ...argv], {
-    env: { ...process.env, FORGE_API_URL: baseUrl, POSIXLY_CORRECT: undefined },
+  return Bun.spawn([ORDEM_BIN, ...argv], {
+    env: { ...process.env, ORDEM_API_URL: baseUrl, POSIXLY_CORRECT: undefined },
     stdin: 'ignore',
     stdout: 'pipe',
     stderr: 'pipe',

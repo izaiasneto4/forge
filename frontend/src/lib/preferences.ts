@@ -1,5 +1,5 @@
-const ACCENT_KEY = 'forge.accent'
-const NOTIFY_KEY = 'forge.notify'
+const ACCENT_KEY = 'ordem.accent'
+const NOTIFY_KEY = 'ordem.notify'
 
 export const ACCENTS = ['#ff7a3d', '#0a84ff', '#bf5af2', '#ff375f', '#30d158', '#ffd60a', '#98989d']
 export const DEFAULT_ACCENT = ACCENTS[0]
@@ -21,7 +21,7 @@ function write(key: string, value: string) {
 }
 
 export function storedAccent() {
-  const value = read(ACCENT_KEY)
+  const value = read(ACCENT_KEY) ?? read('forge.accent')
   return value && ACCENTS.includes(value) ? value : DEFAULT_ACCENT
 }
 
@@ -56,7 +56,7 @@ export function saveAccent(accent: string) {
 }
 
 export function desktopNotificationsEnabled() {
-  return read(NOTIFY_KEY) === 'on' && typeof Notification !== 'undefined' && Notification.permission === 'granted'
+  return (read(NOTIFY_KEY) ?? read('forge.notify')) === 'on' && typeof Notification !== 'undefined' && Notification.permission === 'granted'
 }
 
 export async function setDesktopNotifications(enabled: boolean) {

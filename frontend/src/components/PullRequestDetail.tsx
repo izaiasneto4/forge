@@ -492,7 +492,7 @@ function StatusCallouts({ item }: { item: PullRequestItem }) {
   if (item.lifecycle === 'authored') {
     return (
       <Callout icon="user" title="Your pull request">
-        Run a self-review before your reviewers get to it. Findings stay in Forge until you decide what to do with them.
+        Run a self-review before your reviewers get to it. Findings stay in Ordem until you decide what to do with them.
       </Callout>
     )
   }
@@ -549,7 +549,7 @@ function DetailToolbar({ item }: { item: PullRequestItem }) {
   if (task) reviewItems.push({ key: 'log', label: 'Show agent log', icon: <Icon name="activity" size={14} /> })
   if (task && item.lifecycle !== 'reviewing') reviewItems.push({ key: 'clear', label: 'Discard review…', icon: <Icon name="x" size={14} /> })
   reviewItems.push({ key: 'archive', label: 'Archive', icon: <Icon name="archive" size={14} />, shortcut: 'E' })
-  reviewItems.push({ key: 'delete', label: 'Delete from Forge…', icon: <Icon name="trash" size={14} /> })
+  reviewItems.push({ key: 'delete', label: 'Delete from Ordem…', icon: <Icon name="trash" size={14} /> })
 
   return (
     <div className="toolbar">

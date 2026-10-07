@@ -82,7 +82,7 @@ describe('script entry points', () => {
 
   beforeEach(() => {
     folder = createTempFolder()
-    databasePath = join(folder.path, 'forge.sqlite3')
+    databasePath = join(folder.path, 'ordem.sqlite3')
     const db = openDatabase(databasePath)
     migrateDatabase(db)
     insertPullRequest(db, { reviewStatus: 'reviewed_by_me' })

@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
-import './styles/forge.css'
+import './styles/ordem.css'
 import App from './App'
 import { applyAccent, storedAccent } from './lib/preferences'
 

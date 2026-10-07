@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 # Production image:
-#   docker build -t forge .
-#   docker run -d -p 80:80 -v forge_storage:/app/storage --name forge forge
+#   docker build -t ordem .
+#   docker run -d -p 80:80 -v forge_storage:/app/storage --name ordem ordem
+# Keep the existing storage identifier when upgrading; new installs may use ordem_storage.
 
 ARG BUN_VERSION=1.2.20
 FROM docker.io/oven/bun:${BUN_VERSION}-slim AS base
@@ -24,9 +25,9 @@ COPY backend ./backend
 COPY public ./public
 
 # Run as a non-root user that owns the SQLite storage volume.
-RUN groupadd --system --gid 1000 forge && \
-    useradd forge --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
-    mkdir -p storage && chown -R forge:forge storage
+RUN groupadd --system --gid 1000 ordem && \
+    useradd ordem --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    mkdir -p storage && chown -R ordem:ordem storage
 USER 1000:1000
 
 EXPOSE 80

@@ -1,4 +1,4 @@
-import { ApiError, Client, ConnectionError, DEFAULT_API_URL, type ForgeApi, Interrupt } from './client'
+import { ApiError, Client, ConnectionError, DEFAULT_API_URL, type OrdemApi, Interrupt } from './client'
 import {
   dump,
   listResult,
@@ -17,13 +17,13 @@ import {
   type Writer,
 } from './formatter'
 
-// Port of Forge::Cli (lib/forge/cli.rb), including the slice of Ruby's
+// Port of the original Ruby CLI, including the slice of Ruby's
 // OptionParser it leans on: permuted operands, unique-prefix completion,
 // bundled short flags, Integer arguments, --help/--version and its error texts.
 
 export { Interrupt }
 
-const PROGRAM_NAME = 'forge'
+const PROGRAM_NAME = 'ordem'
 const FOLLOW_INTERVAL_SECONDS = 2
 
 export type Sleep = (seconds: number) => Promise<void> | void
@@ -35,7 +35,7 @@ export interface CliOptions {
   sleep?: Sleep
   // Aborted on SIGINT; the default client and sleep turn it into an Interrupt.
   signal?: AbortSignal
-  createClient?: (baseUrl: string) => ForgeApi
+  createClient?: (baseUrl: string) => OrdemApi
 }
 
 export function start(argv: readonly string[], options: CliOptions = {}) {
@@ -64,7 +64,7 @@ class Cli {
   private readonly stdout: Writer
   private readonly stderr: Writer
   private readonly sleep: Sleep
-  private readonly client: ForgeApi
+  private readonly client: OrdemApi
   private readonly posixlyCorrect: boolean
 
   constructor(
@@ -82,14 +82,14 @@ class Cli {
     this.stdout = stdout
     this.stderr = stderr
     this.sleep = sleep
-    this.client = createClient(env.FORGE_API_URL ?? DEFAULT_API_URL)
+    this.client = createClient(env.ORDEM_API_URL ?? env.FORGE_API_URL ?? DEFAULT_API_URL)
     this.posixlyCorrect = env.POSIXLY_CORRECT !== undefined
   }
 
   async run(): Promise<number> {
     try {
       const command = this.argv.shift()
-      if (command === undefined) return this.writeError('Usage: forge <command>')
+      if (command === undefined) return this.writeError('Usage: ordem <command>')
 
       switch (command) {
         case 'sync':
@@ -143,7 +143,7 @@ class Cli {
     })
 
     const prUrl = this.argv.shift()
-    if (prUrl === undefined) return this.writeError('Usage: forge review <pr-url>')
+    if (prUrl === undefined) return this.writeError('Usage: ordem review <pr-url>')
 
     const result = await this.client.review({ prUrl, cliClient: options.client, reviewType: options.type })
     dump(options.json, options.json ? result : reviewResult(result), this.stdout)
@@ -191,7 +191,7 @@ class Cli {
     })
 
     const taskId = this.argv.shift()
-    if (taskId === undefined) return this.writeError('Usage: forge logs <task-id>')
+    if (taskId === undefined) return this.writeError('Usage: ordem logs <task-id>')
 
     const result = await this.client.logs({ taskId, tail: options.tail })
     dump(options.json, options.json ? result : logsResult(result), this.stdout)
@@ -214,7 +214,7 @@ class Cli {
   }
 
   private async runRepo() {
-    const usage = 'Usage: forge repo switch <org/repo>'
+    const usage = 'Usage: ordem repo switch <org/repo>'
     if (this.argv.shift() !== 'switch') return this.writeError(usage)
 
     const options = { json: false }

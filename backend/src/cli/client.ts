@@ -1,6 +1,6 @@
 import { type JsonObject, rubyIndex, rubyToS, rubyTruthy } from './formatter'
 
-// Port of Forge::Client (lib/forge/client.rb): a thin JSON client for /api/v1.
+// Port of the original Ruby client: a thin JSON client for /api/v1.
 
 export const DEFAULT_API_URL = 'http://127.0.0.1:3000'
 
@@ -54,7 +54,7 @@ export interface LogsParams {
   afterId?: unknown
 }
 
-export interface ForgeApi {
+export interface OrdemApi {
   sync(params?: { force?: boolean }): Promise<unknown>
   review(params: ReviewParams): Promise<unknown>
   status(): Promise<unknown>
@@ -65,14 +65,14 @@ export interface ForgeApi {
 
 type Query = [string, string][]
 
-export class Client implements ForgeApi {
+export class Client implements OrdemApi {
   private readonly baseUrl: string
   private readonly timeoutSeconds: number
   private readonly interrupt: AbortSignal | undefined
   private readonly fetch: FetchFunction
 
   constructor({
-    baseUrl = process.env.FORGE_API_URL ?? DEFAULT_API_URL,
+    baseUrl = process.env.ORDEM_API_URL ?? process.env.FORGE_API_URL ?? DEFAULT_API_URL,
     timeoutSeconds = 10,
     signal,
     fetch: fetchFunction = (url, init) => fetch(url, init),

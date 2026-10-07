@@ -9,7 +9,7 @@ import type { GithubCliClient } from './github-cli-client'
 // Port of ReviewLifecycleBackfillService: re-derives the lifecycle state of
 // submitted reviews from GitHub's review history (dry-run unless `apply`).
 
-// GitHub review state -> the event Forge records as `submitted_event`.
+// GitHub review state -> the event Ordem records as `submitted_event`.
 export const EVENT_MAP = new Map([
   ['CHANGES_REQUESTED', 'REQUEST_CHANGES'],
   ['APPROVED', 'APPROVE'],

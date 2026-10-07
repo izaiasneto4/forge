@@ -1,28 +1,28 @@
 <p align="center">
-  <img src="public/icon.png" alt="Forge" width="128">
+  <img src="public/icon.png" alt="Ordem" width="128">
 </p>
 
-# Forge
+# Ordem
 
-Forge is a local-first application for automated GitHub pull request review: a Bun + Elysia API with a React frontend. It syncs PR metadata via GitHub CLI and runs code review agents through supported local CLIs such as Claude CLI, Codex, and OpenCode.
+Ordem is a local-first application for automated GitHub pull request review: a Bun + Elysia API with a React frontend. It syncs PR metadata via GitHub CLI and runs code review agents through supported local CLIs such as Claude CLI, Codex, and OpenCode.
 
 ## Status
 
-Forge is ready to be used and contributed to as open source, but its default operating model is still a trusted local or private-network deployment.
+Ordem is ready to be used and contributed to as open source, but its default operating model is still a trusted local or private-network deployment.
 
 Important:
 
-- Forge is designed for a single trusted operator by default.
+- Ordem is designed for a single trusted operator by default.
 - The app invokes local tools such as `git`, `gh`, and AI review CLIs.
 - The current web UI and JSON API are not hardened for anonymous public internet access.
 
-If you want to expose a running Forge instance publicly, add authentication, TLS, host protection, and a CSP first.
+If you want to expose a running Ordem instance publicly, add authentication, TLS, host protection, and a CSP first.
 
 ## Supported environment
 
 Tested assumptions in the repository:
 
-- [Bun](https://bun.sh) `1.2.20` (runs the API, the job worker and the `forge` CLI)
+- [Bun](https://bun.sh) `1.2.20` (runs the API, the job worker and the `ordem` CLI)
 - SQLite (bundled with Bun)
 - Node/npm for the frontend dev server, tests and builds
 - [GitHub CLI](https://cli.github.com/) (`gh`) authenticated against GitHub
@@ -64,65 +64,67 @@ Runtime configuration is intentionally small. See [.env.example](.env.example) f
 Common variables:
 
 - `PORT`: API port. Default: `3000`
-- `FORGE_API_URL`: where the `forge` CLI finds the API. Default: `http://127.0.0.1:3000`
+- `ORDEM_API_URL`: where the `ordem` CLI finds the API. Default: `http://127.0.0.1:3000`
 - `DATABASE_PATH`: SQLite file. Default: `storage/development.sqlite3` (`storage/production.sqlite3` when `NODE_ENV=production`)
-- `FORGE_ALLOWED_HOSTS`: hosts allowed to reach the app. Default: localhost, `.localhost`, `.test` and IPs in development; any host in production
-- `FORGE_LOG_LEVEL`: `debug`, `info`, `warn` or `error`
-- `FORGE_DISABLE_JOB_WORKER=1`: queue background jobs without running them
+- `ORDEM_ALLOWED_HOSTS`: hosts allowed to reach the app. Default: localhost, `.localhost`, `.test` and IPs in development; any host in production
+- `ORDEM_LOG_LEVEL`: `debug`, `info`, `warn` or `error`
+- `ORDEM_DISABLE_JOB_WORKER=1`: queue background jobs without running them
 - `ANTHROPIC_MODEL` or `CLAUDE_MODEL`
 
-External credentials are typically provided by the tools Forge shells out to:
+When upgrading an existing installation, use `bin/ordem` for CLI commands. The previous `FORGE_*` environment variables remain supported as fallbacks; `ORDEM_*` values take precedence. Keep your existing SQLite file at `DATABASE_PATH`. For Docker, mount your existing storage volume at `/app/storage`; the Docker example retains the existing volume identifier by default, while new installations may use `ordem_storage`. Existing review worktree directories and browser preferences also remain supported.
+
+External credentials are typically provided by the tools Ordem shells out to:
 
 - `gh auth login`
 - provider-specific auth for `claude`, `codex`, or `opencode`
 
 ## First-time setup flow
 
-1. Start Forge locally with `bin/dev`.
+1. Start Ordem locally with `bin/dev`.
 2. Configure the repositories folder in the UI at `/settings`.
 3. Switch to a repo:
 
 ```bash
-bin/forge repo switch ORG/REPO
+bin/ordem repo switch ORG/REPO
 ```
 
 4. Sync PRs:
 
 ```bash
-bin/forge sync --force
+bin/ordem sync --force
 ```
 
 5. List pending PRs:
 
 ```bash
-bin/forge list --status pending_review
+bin/ordem list --status pending_review
 ```
 
 6. Start a review:
 
 ```bash
-bin/forge review https://github.com/ORG/REPO/pull/123
+bin/ordem review https://github.com/ORG/REPO/pull/123
 ```
 
 7. Watch logs:
 
 ```bash
-bin/forge logs TASK_ID --follow
+bin/ordem logs TASK_ID --follow
 ```
 
 ## CLI
 
-Forge includes a local CLI wrapper at `bin/forge` backed by `/api/v1/*` JSON endpoints.
+Ordem includes a local CLI wrapper at `bin/ordem` backed by `/api/v1/*` JSON endpoints.
 
-If Forge is running on a non-default host or port:
+If Ordem is running on a non-default host or port:
 
 ```bash
-export FORGE_API_URL=http://127.0.0.1:3000
+export ORDEM_API_URL=http://127.0.0.1:3000
 ```
 
-### `bin/forge sync [--force] [--json]`
+### `bin/ordem sync [--force] [--json]`
 
-Sync PR state from GitHub into Forge.
+Sync PR state from GitHub into Ordem.
 
 - `--force`: bypass sync debounce window
 - `--json`: print raw JSON response
@@ -130,12 +132,12 @@ Sync PR state from GitHub into Forge.
 Examples:
 
 ```bash
-bin/forge sync
-bin/forge sync --force
-bin/forge sync --json
+bin/ordem sync
+bin/ordem sync --force
+bin/ordem sync --json
 ```
 
-### `bin/forge review <pr-url> [--client ...] [--type ...] [--json]`
+### `bin/ordem review <pr-url> [--client ...] [--type ...] [--json]`
 
 Start or queue a review task for a PR URL.
 
@@ -147,25 +149,25 @@ Start or queue a review task for a PR URL.
 Examples:
 
 ```bash
-bin/forge review https://github.com/acme/api/pull/42
-bin/forge review https://github.com/acme/api/pull/42 --client codex --type swarm
-bin/forge review https://github.com/acme/api/pull/42 --json
+bin/ordem review https://github.com/acme/api/pull/42
+bin/ordem review https://github.com/acme/api/pull/42 --client codex --type swarm
+bin/ordem review https://github.com/acme/api/pull/42 --json
 ```
 
-### `bin/forge status [--json]`
+### `bin/ordem status [--json]`
 
 Show current repo and review queue counts.
 
 Examples:
 
 ```bash
-bin/forge status
-bin/forge status --json
+bin/ordem status
+bin/ordem status --json
 ```
 
-### `bin/forge list [--status ...] [--limit N] [--json]`
+### `bin/ordem list [--status ...] [--limit N] [--json]`
 
-List PRs known to Forge.
+List PRs known to Ordem.
 
 - `--status`: `pending_review`, `in_review`, `reviewed_by_me`, `waiting_implementation`, `reviewed_by_others`, `review_failed`, `all`
 - `--limit`: `1-200`
@@ -174,16 +176,16 @@ List PRs known to Forge.
 Examples:
 
 ```bash
-bin/forge list
-bin/forge list --status pending_review --limit 20
-bin/forge list --json
+bin/ordem list
+bin/ordem list --status pending_review --limit 20
+bin/ordem list --json
 ```
 
-### `bin/forge logs <task-id> [--tail N] [--follow] [--json]`
+### `bin/ordem logs <task-id> [--tail N] [--follow] [--json]`
 
 Show review task logs.
 
-- `<task-id>`: Forge review task id
+- `<task-id>`: Ordem review task id
 - `--tail`: `1-1000` (default `100`)
 - `--follow`: poll for new logs every 2s until `Ctrl+C`
 - `--json`: print raw JSON response and cannot be used with `--follow`
@@ -191,15 +193,15 @@ Show review task logs.
 Examples:
 
 ```bash
-bin/forge logs 42
-bin/forge logs 42 --tail 200
-bin/forge logs 42 --follow
-bin/forge logs 42 --json
+bin/ordem logs 42
+bin/ordem logs 42 --tail 200
+bin/ordem logs 42 --follow
+bin/ordem logs 42 --json
 ```
 
-### `bin/forge repo switch <org/repo> [--json]`
+### `bin/ordem repo switch <org/repo> [--json]`
 
-Switch Forge context to a local repository matching a GitHub slug and run sync.
+Switch Ordem context to a local repository matching a GitHub slug and run sync.
 
 - Requires the repo to exist under the configured repositories folder
 - If multiple local repos match, the command fails with a conflict
@@ -207,8 +209,8 @@ Switch Forge context to a local repository matching a GitHub slug and run sync.
 Examples:
 
 ```bash
-bin/forge repo switch acme/api
-bin/forge repo switch acme/api --json
+bin/ordem repo switch acme/api
+bin/ordem repo switch acme/api --json
 ```
 
 ### Output and exit codes
@@ -222,7 +224,7 @@ bin/forge repo switch acme/api --json
 
 ### Common errors
 
-- `Connection error`: Forge is not running or `FORGE_API_URL` is wrong
+- `Connection error`: Ordem is not running or `ORDEM_API_URL` is wrong
 - `API error (invalid_input)`: bad argument such as invalid URL, bad status, or malformed repo slug
 - `API error (not_found)`: missing task, PR, or repo mapping
 - `API error (conflict)`: existing in-progress review or ambiguous repo switch
@@ -250,10 +252,10 @@ A production `Dockerfile` is included. Treat it as a starting point, not a finis
 
 Before a real deployment:
 
-- enable TLS and set `FORGE_ALLOWED_HOSTS`
+- enable TLS and set `ORDEM_ALLOWED_HOSTS`
 - decide how you will authenticate access to the app
 - back up the persistent `storage/` volume
 
 ## License
 
-Forge is available under the [MIT License](LICENSE).
+Ordem is available under the [MIT License](LICENSE).

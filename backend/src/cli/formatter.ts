@@ -1,4 +1,4 @@
-// Port of Forge::Formatter (lib/forge/formatter.rb). API payloads arrive as
+// Port of the original Ruby formatter. API payloads arrive as
 // untyped JSON, so field access follows Ruby's Hash semantics: missing keys read
 // as nil, only nil/false are falsy, and shapes Ruby would crash on (e.g. `nil["x"]`)
 // raise a TypeError instead of being papered over.

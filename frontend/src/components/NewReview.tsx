@@ -44,7 +44,7 @@ export function NewReview() {
       <div className="hero">
         <div className="mark"><Icon name="flame" size={34} stroke={1.7} /></div>
         <h2>What should we review{board?.current_repo.name ? <> in <u>{board.current_repo.name}</u></> : null}?</h2>
-        <p>Paste a pull request link, or let Forge pick up what’s waiting on you.</p>
+        <p>Paste a pull request link, or let Ordem pick up what’s waiting on you.</p>
         <div className="composer">
           <textarea
             id="composer-input"
