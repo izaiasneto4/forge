@@ -87,6 +87,32 @@ class ReviewTaskJobTest < ActiveJob::TestCase
     assert_equal 0, @review_task.retry_count
   end
 
+  test "reviews a PR from another repository in that repository's checkout" do
+    other_checkout = "/code/repo"
+    RepoSlugResolver.stubs(:from_path).with(Setting.current_repo).returns("test/other")
+    RepoSwitchResolver.any_instance.stubs(:resolve).with(@pull_request.repo_full_name).returns({ status: :ok, path: other_checkout })
+    worktree = mock("worktree")
+    worktree.stubs(:create_for_pr).raises(ReviewErrors::PermanentError.new("stop after choosing the checkout"))
+    WorktreeService.expects(:new).with(repo_path: other_checkout).returns(worktree)
+    ActionCable.server.stubs(:broadcast)
+
+    ReviewTaskJob.perform_now(@review_task.id)
+  end
+
+  test "fails clearly when the PR's repository has no local checkout" do
+    failed = "failed_review"
+    RepoSlugResolver.stubs(:from_path).with(Setting.current_repo).returns("test/other")
+    RepoSwitchResolver.any_instance.stubs(:resolve).returns({ status: :not_found, paths: [] })
+    WorktreeService.expects(:new).never
+    ActionCable.server.stubs(:broadcast)
+
+    ReviewTaskJob.perform_now(@review_task.id)
+
+    @review_task.reload
+    assert_equal failed, @review_task.state
+    assert_includes @review_task.failure_reason, @pull_request.repo_full_name
+  end
+
   test "review notifications identify the review task" do
     ActionCable.server.stubs(:broadcast)
     ActionCable.server.expects(:broadcast).with("review_notifications", has_entries(review_task_id: @review_task.id, pr_number: @review_task.pull_request.number))

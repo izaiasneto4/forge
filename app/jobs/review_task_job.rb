@@ -8,6 +8,13 @@ class ReviewTaskJob < ApplicationJob
 
     return unless repo_path.present?
 
+    repo_path = checkout_for(pull_request, repo_path)
+    unless repo_path
+      handle_permanent_error(review_task, ReviewErrors::PermanentError.new("No local checkout of #{pull_request.repo_full_name} in the repositories folder"))
+      schedule_next_queued_review
+      return
+    end
+
     # Clear logs on fresh start (not retries) - retry state is reset on success
     unless is_retry
       review_task.clear_logs!
@@ -85,6 +92,16 @@ class ReviewTaskJob < ApplicationJob
   end
 
   private
+
+  # The selected repository can change while a review waits in the queue, and PR numbers
+  # are only unique per repository, so always check out the PR's own repository.
+  def checkout_for(pull_request, current_repo)
+    current_slug = RepoSlugResolver.from_path(current_repo)
+    return current_repo if current_slug.nil? || current_slug.casecmp?(pull_request.repo_full_name)
+
+    resolution = RepoSwitchResolver.new(repos_folder: Setting.repos_folder).resolve(pull_request.repo_full_name)
+    resolution[:path] if resolution[:status] == :ok
+  end
 
   def log_retry_info(review_task, is_retry)
     if is_retry
