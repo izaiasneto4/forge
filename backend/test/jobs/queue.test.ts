@@ -39,7 +39,7 @@ describe('JobQueue', () => {
     if (!claimed) throw new Error('expected a claimed job')
 
     expect(queue.hasClaimed('ReviewTaskJob')).toBe(true)
-    queue.fail(claimed.id, errorMessage)
+    queue.fail(claimed, errorMessage)
 
     expect(queue.hasClaimed('ReviewTaskJob')).toBe(false)
     expect(queue.all()[0]).toMatchObject({ state: JOB_STATES.failed, error: errorMessage })
@@ -66,7 +66,7 @@ describe('JobQueue', () => {
     expect(statesById.get(owned.id)).toBe(JOB_STATES.claimed)
   })
 
-  test('deregistering a worker hands its claimed jobs back to the queue', () => {
+  test('jobs a deregistered worker still holds stay claimed until released as orphans', () => {
     const queue = new JobQueue(createTestDatabase())
     const worker = { id: crypto.randomUUID(), hostname: hostname(), pid: process.pid }
     queue.registerWorker(worker)
@@ -74,9 +74,34 @@ describe('JobQueue', () => {
     queue.claimNext(new Date(), worker.id)
 
     queue.deregisterWorker(worker.id)
+    const stateAfterDeregistering = queue.all()[0]?.state
+    const released = queue.releaseOrphaned()
 
+    expect(stateAfterDeregistering).toBe(JOB_STATES.claimed)
+    expect(released).toBe(1)
     expect(queue.all()[0]).toMatchObject({ state: JOB_STATES.ready, claimedBy: null })
     expect(queue.workers()).toEqual([])
+  })
+
+  test('only the worker holding the claim records the outcome', () => {
+    const queue = new JobQueue(createTestDatabase())
+    const stoppedWorker = { id: crypto.randomUUID(), hostname: hostname(), pid: process.pid }
+    const nextWorker = { id: crypto.randomUUID(), hostname: hostname(), pid: process.pid }
+    queue.registerWorker(stoppedWorker)
+    queue.registerWorker(nextWorker)
+    queue.enqueue('SyncPullRequestsJob', {})
+    const staleClaim = queue.claimNext(new Date(), stoppedWorker.id)
+    queue.deregisterWorker(stoppedWorker.id)
+    queue.releaseOrphaned()
+    const currentClaim = queue.claimNext(new Date(), nextWorker.id)
+    if (!staleClaim || !currentClaim) throw new Error('expected both claims')
+
+    queue.finish(staleClaim)
+    const stateAfterStaleFinish = queue.all()[0]?.state
+    queue.finish(currentClaim)
+
+    expect(stateAfterStaleFinish).toBe(JOB_STATES.claimed)
+    expect(queue.all()[0]?.state).toBe(JOB_STATES.finished)
   })
 
   test('heartbeat reports whether the worker is still registered', () => {

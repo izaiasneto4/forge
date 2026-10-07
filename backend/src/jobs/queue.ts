@@ -35,6 +35,11 @@ export const JOB_STATES = Object.freeze({
 
 export class InvalidJobError extends Error {}
 
+function claimHeldBy(job: JobRecord) {
+  const holder = job.claimedBy === null ? isNull(jobs.claimedBy) : eq(jobs.claimedBy, job.claimedBy)
+  return and(eq(jobs.id, job.id), eq(jobs.state, JOB_STATES.claimed), holder)
+}
+
 export function decodeJob(record: JobRecord): DecodedJob {
   const payload: unknown = JSON.parse(record.payload)
   const { id, name } = record
@@ -88,14 +93,16 @@ export class JobQueue {
       .get()
   }
 
-  finish(id: number) {
+  // Only the holder of the claim records the outcome, so a handler still running
+  // after its job was taken back can't overwrite the next run's result.
+  finish(job: JobRecord) {
     const now = new Date()
-    this.db.update(jobs).set({ state: JOB_STATES.finished, finishedAt: now, updatedAt: now }).where(eq(jobs.id, id)).run()
+    this.db.update(jobs).set({ state: JOB_STATES.finished, finishedAt: now, updatedAt: now }).where(claimHeldBy(job)).run()
   }
 
-  fail(id: number, error: string) {
+  fail(job: JobRecord, error: string) {
     const now = new Date()
-    this.db.update(jobs).set({ state: JOB_STATES.failed, error, finishedAt: now, updatedAt: now }).where(eq(jobs.id, id)).run()
+    this.db.update(jobs).set({ state: JOB_STATES.failed, error, finishedAt: now, updatedAt: now }).where(claimHeldBy(job)).run()
   }
 
   // Solid Queue's process registry: each worker heartbeats, so another server
@@ -119,19 +126,14 @@ export class JobQueue {
     return this.db.select().from(jobWorkers).orderBy(asc(jobWorkers.createdAt)).all()
   }
 
-  // Solid Queue's process deregistration: the worker's claimed jobs go back to ready.
-  deregisterWorker(workerId: string, now = new Date()) {
-    this.db.transaction((tx) => {
-      tx.update(jobs)
-        .set({ state: JOB_STATES.ready, claimedAt: null, claimedBy: null, updatedAt: now })
-        .where(and(eq(jobs.state, JOB_STATES.claimed), eq(jobs.claimedBy, workerId)))
-        .run()
-      tx.delete(jobWorkers).where(eq(jobWorkers.id, workerId)).run()
-    })
+  // Jobs the worker still holds become orphaned; releaseOrphaned hands them back.
+  deregisterWorker(workerId: string) {
+    this.db.delete(jobWorkers).where(eq(jobWorkers.id, workerId)).run()
   }
 
-  // Claimed jobs with no registered worker behind them: claimed outside a
-  // worker (drainJobs) or by a build that predates worker registration.
+  // Claimed jobs with no registered worker behind them: the worker was
+  // deregistered, or the job was claimed outside a worker (drainJobs) or by a
+  // build that predates worker registration.
   releaseOrphaned(now = new Date()) {
     const registeredWorkerIds = this.db.select({ id: jobWorkers.id }).from(jobWorkers)
     return this.db

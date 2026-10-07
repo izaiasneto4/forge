@@ -151,7 +151,7 @@ describe('job worker', () => {
     expect(ctx.jobs.workers()).toEqual([])
   })
 
-  test('hands a job still running at the shutdown timeout back to the queue', async () => {
+  test('a job still running at the shutdown timeout keeps its claim until another worker takes it back', async () => {
     const ctx = createTestContext()
     const jobStarted = Promise.withResolvers<void>()
     const jobAllowedToFinish = Promise.withResolvers<void>()
@@ -166,9 +166,15 @@ describe('job worker', () => {
     await jobStarted.promise
 
     await worker.stop()
-
-    expect(ctx.jobs.all()[0]).toMatchObject({ state: JOB_STATES.ready, claimedBy: null })
-    expect(ctx.jobs.workers()).toEqual([])
+    const afterStop = ctx.jobs.all()[0]
+    const workersAfterStop = ctx.jobs.workers()
+    const released = ctx.jobs.releaseOrphaned()
     jobAllowedToFinish.resolve()
+    await Bun.sleep(10)
+
+    expect(afterStop).toMatchObject({ state: JOB_STATES.claimed, claimedBy: worker.id })
+    expect(workersAfterStop).toEqual([])
+    expect(released).toBe(1)
+    expect(ctx.jobs.all()[0]?.state).toBe(JOB_STATES.ready)
   })
 })

@@ -39,10 +39,10 @@ function errorMessage(error: unknown) {
 export async function runJob(queue: JobQueue, record: JobRecord, handlers: JobHandlers) {
   try {
     await dispatch(decodeJob(record), handlers)
-    queue.finish(record.id)
+    queue.finish(record)
   } catch (error) {
     logger.error(`[jobs] ${record.name}#${record.id} failed: ${errorMessage(error)}`)
-    queue.fail(record.id, errorMessage(error))
+    queue.fail(record, errorMessage(error))
   }
 }
 
@@ -63,7 +63,7 @@ export interface JobWorkerOptions {
   // Solid Queue's process_heartbeat_interval and process_alive_threshold.
   heartbeatIntervalMs?: number
   aliveThresholdMs?: number
-  // How long stop() waits for running jobs before handing them back to the queue.
+  // How long stop() waits for running jobs before giving up on them.
   shutdownTimeoutMs?: number
 }
 
@@ -93,7 +93,7 @@ function isDead(worker: JobWorkerRecord, self: JobWorkerIdentity, now: Date, ali
 function releaseJobsOfDeadWorkers(queue: JobQueue, self: JobWorkerIdentity, aliveThresholdMs: number) {
   const now = new Date()
   for (const worker of queue.workers()) {
-    if (worker.id !== self.id && isDead(worker, self, now, aliveThresholdMs)) queue.deregisterWorker(worker.id, now)
+    if (worker.id !== self.id && isDead(worker, self, now, aliveThresholdMs)) queue.deregisterWorker(worker.id)
   }
   const released = queue.releaseOrphaned(now)
   if (released > 0) logger.info(`[jobs] released ${released} job(s) claimed by stopped workers`)
@@ -143,6 +143,9 @@ export function startJobWorker(queue: JobQueue, handlers: JobHandlers, options: 
       const finished = Promise.all(active)
       const { shutdownTimeoutMs } = options
       await (shutdownTimeoutMs === undefined ? finished : Promise.race([finished, Bun.sleep(shutdownTimeoutMs)]))
+      // A job still running keeps its claim, so no other worker starts it while
+      // this process is alive. Deregistering orphans the claim; the next worker
+      // to boot or heartbeat takes it back once this process has exited.
       queue.deregisterWorker(self.id)
     },
   }

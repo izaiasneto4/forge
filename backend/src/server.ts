@@ -11,8 +11,8 @@ import { startJobWorker } from './jobs/worker'
 import { CableServer } from './realtime/cable-server'
 
 // How long shutdown waits for the HTTP server and running jobs. Like Solid
-// Queue's shutdown timeout: a job still running goes back to the queue for the
-// next worker.
+// Queue's shutdown timeout: a job still running is taken back by the next
+// worker after this process exits.
 export const SHUTDOWN_TIMEOUT_MS = 5000
 
 export interface ServerOptions {
