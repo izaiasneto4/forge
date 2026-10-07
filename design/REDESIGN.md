@@ -70,10 +70,13 @@ Shipped in the app (dark appearance only for now):
 
 - 3-pane shell with mailboxes, repository switcher, sync chip, inspector (activity, agent log, history).
 - Server-derived `lifecycle` + `has_new_commits` on PR payloads; the task board and drag-and-drop are gone.
-- State-aware composer: start (agent, depth, focus lens + free text sent as `focus`), re-review, retry, live run, submit with include/exclude per finding and a suggested event.
-- `⌘K` palette, `J/K`, `X`, `E`, `I`, `N`, `R`, `⌘↵`, `⌘\`, `⌘,`; auto-advance after submit/archive.
+- State-aware composer: start (agent, depth, focus lens + free text sent as `focus`), re-review, retry, live run, submit with include/exclude per finding and a suggested event. No verdict is suggested when the agent's output wasn't parsed into findings.
+- Findings can be dismissed and restored; a PR can be archived (with undo) or deleted from Forge; past runs expand in the inspector history.
+- `⌘K` palette, `J/K`, `X`, `D`, `E`, `I`, `N`, `R`, `⌘↵`, `⌘\`, `⌘,`; auto-advance after submit/archive.
 - macOS-style notifications (in-app banners + optional desktop notifications), confirm sheet, settings sheet (accent color, agents, repositories, GitHub, shortcuts).
-- Mailbox URLs: `/inbox`, `/reviewing/:id`, `/waiting/:id`, `/mine`, `/settled`, `/new`. Old `/review_tasks/:id` links redirect to the PR.
+- Mailbox URLs: `/inbox`, `/reviewing/:id`, `/waiting/:id`, `/mine`, `/settled`, `/new`. `/review_tasks/:id` redirects to the PR, or opens the review directly when its PR isn't on the board (merged, closed, other repository). Settled also lists reviewed PRs that were merged or closed.
+- Narrow windows float the inspector and sidebar over the content; below 640px the list and the open PR take turns.
+- Error pages and the app icon use the same design.
 
 Still open: light appearance, multi-repo sync, file list per PR (no API yet), AI-drafted submission summary, editing finding text before submit, Tauri shell.
 
