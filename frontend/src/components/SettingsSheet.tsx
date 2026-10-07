@@ -120,11 +120,17 @@ function Agents({ settings }: { settings: SettingsResponse }) {
         {settings.cli_clients.map((client) => {
           const isDefault = settings.default_cli_client === client
           return (
-            <div key={client} className="grow agent-row clickable" onClick={() => mutation.mutate({ repos_folder: settings.repos_folder ?? '', default_cli_client: client, auto_submit_enabled: settings.auto_submit_enabled })}>
-              <div className="agent-badge"><AgentIcon client={client} size={18} /></div>
-              <div className="l">{agentLabel(client)}<small><code>{client}</code> CLI on your PATH</small></div>
+            <button
+              key={client}
+              type="button"
+              className="grow agent-row clickable"
+              aria-pressed={isDefault}
+              onClick={() => mutation.mutate({ repos_folder: settings.repos_folder ?? '', default_cli_client: client, auto_submit_enabled: settings.auto_submit_enabled })}
+            >
+              <span className="agent-badge"><AgentIcon client={client} size={18} /></span>
+              <span className="l">{agentLabel(client)}<small><code>{client}</code> CLI on your PATH</small></span>
               {isDefault ? <span className="ok-pill">Default</span> : <span className="ok-pill off">Use as default</span>}
-            </div>
+            </button>
           )
         })}
       </div>
@@ -176,13 +182,19 @@ function Repositories({ settings }: { settings: SettingsResponse }) {
       <div className="group">
         {repositories.isLoading ? <Row label="Scanning…" /> : null}
         {repositories.data?.items.length === 0 ? <Row label="No Git repositories found in this folder." /> : null}
-        {repositories.data?.items.map((repo) => (
-          <div key={repo.path} className={repo.current ? 'grow' : 'grow clickable'} onClick={() => { if (!repo.current && repo.slug) void actions.switchRepo(repo.slug) }}>
-            <span className="repo-dot" style={{ background: repo.current ? 'var(--t1)' : 'var(--t4)' }} />
-            <div className="l">{repo.slug ?? repo.name}<small className="mono">{repo.path}{repo.branch ? ` · ${repo.branch}` : ''}</small></div>
-            {repo.current ? <span className="repo-current">Current</span> : null}
-          </div>
-        ))}
+        {repositories.data?.items.map((repo) => {
+          const details = (
+            <>
+              <span className="repo-dot" style={{ background: repo.current ? 'var(--t1)' : 'var(--t4)' }} />
+              <span className="l">{repo.slug ?? repo.name}<small className="mono">{repo.path}{repo.branch ? ` · ${repo.branch}` : ''}</small></span>
+              {repo.current ? <span className="repo-current">Current</span> : null}
+            </>
+          )
+          const slug = repo.slug
+          return repo.current || !slug
+            ? <div key={repo.path} className="grow">{details}</div>
+            : <button key={repo.path} type="button" className="grow clickable" onClick={() => void actions.switchRepo(slug)}>{details}</button>
+        })}
       </div>
     </>
   )
