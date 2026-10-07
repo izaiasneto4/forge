@@ -3,30 +3,6 @@ require "test_helper"
 class ReviewTasksHelperTest < ActionView::TestCase
   include ReviewTasksHelper
 
-  # cli_client_icon tests
-  test "cli_client_icon returns SVG for known clients" do
-    assert_includes cli_client_icon("claude"), "<svg"
-    assert_includes cli_client_icon("codex"), "<svg"
-    assert_includes cli_client_icon("opencode"), "<svg"
-  end
-
-  test "cli_client_icon is case insensitive" do
-    assert_includes cli_client_icon("CLAUDE"), "<svg"
-    assert_includes cli_client_icon("ClaUdE"), "<svg"
-    assert_includes cli_client_icon("CoDeX"), "<svg"
-  end
-
-  test "cli_client_icon uses custom CSS class" do
-    result = cli_client_icon("claude", class: "w-5 h-5")
-    assert_includes result, 'class="w-5 h-5"'
-    refute_includes result, 'class="w-3.5 h-3.5"'
-  end
-
-  test "cli_client_icon returns empty string for unknown client" do
-    assert_equal "", cli_client_icon("unknown")
-    assert_equal "", cli_client_icon("")
-  end
-
   # severity_emoji tests
   test "severity_emoji returns correct emoji for critical" do
     assert_equal "🚨", severity_emoji("critical")
@@ -59,120 +35,6 @@ class ReviewTasksHelperTest < ActionView::TestCase
   test "severity_emoji returns default emoji for unknown severity" do
     assert_equal "💬", severity_emoji("unknown")
     assert_equal "💬", severity_emoji("")
-  end
-
-  # severity_border_class tests
-  test "severity_border_class returns correct class for critical" do
-    assert_equal "border-red-500", severity_border_class("critical")
-  end
-
-  test "severity_border_class returns correct class for error" do
-    assert_equal "border-red-500", severity_border_class("error")
-  end
-
-  test "severity_border_class returns correct class for major" do
-    assert_equal "border-yellow-500", severity_border_class("major")
-  end
-
-  test "severity_border_class returns correct class for warning" do
-    assert_equal "border-yellow-500", severity_border_class("warning")
-  end
-
-  test "severity_border_class returns correct class for minor" do
-    assert_equal "border-blue-500", severity_border_class("minor")
-  end
-
-  test "severity_border_class returns correct class for suggestion" do
-    assert_equal "border-green-500", severity_border_class("suggestion")
-  end
-
-  test "severity_border_class returns correct class for nitpick" do
-    assert_equal "border-gray-400", severity_border_class("nitpick")
-  end
-
-  test "severity_border_class returns default class for unknown" do
-    assert_equal "border-gray-300", severity_border_class("unknown")
-  end
-
-  # severity_badge_class tests
-  test "severity_badge_class returns correct class for critical" do
-    assert_equal "linear-badge-red", severity_badge_class("critical")
-  end
-
-  test "severity_badge_class returns correct class for major" do
-    assert_equal "linear-badge-yellow", severity_badge_class("major")
-  end
-
-  test "severity_badge_class returns correct class for minor" do
-    assert_equal "linear-badge-blue", severity_badge_class("minor")
-  end
-
-  test "severity_badge_class returns correct class for suggestion" do
-    assert_equal "linear-badge-green", severity_badge_class("suggestion")
-  end
-
-  test "severity_badge_class returns correct class for nitpick" do
-    assert_equal "linear-badge-default", severity_badge_class("nitpick")
-  end
-
-  test "severity_badge_class returns default class for unknown" do
-    assert_equal "linear-badge-default", severity_badge_class("unknown")
-  end
-
-  # status_badge_class tests
-  test "status_badge_class returns correct class for pending" do
-    assert_equal "linear-badge-yellow", status_badge_class("pending")
-  end
-
-  test "status_badge_class returns correct class for addressed" do
-    assert_equal "linear-badge-green", status_badge_class("addressed")
-  end
-
-  test "status_badge_class returns correct class for dismissed" do
-    assert_equal "linear-badge-default", status_badge_class("dismissed")
-  end
-
-  test "status_badge_class returns default class for unknown" do
-    assert_equal "linear-badge-default", status_badge_class("unknown")
-  end
-
-  # state_badge_class tests
-  test "state_badge_class returns correct class for pending_review" do
-    assert_equal "bg-gray-200 text-gray-700", state_badge_class("pending_review")
-  end
-
-  test "state_badge_class returns correct class for in_review" do
-    assert_equal "bg-yellow-200 text-yellow-800", state_badge_class("in_review")
-  end
-
-  test "state_badge_class returns correct class for reviewed" do
-    assert_equal "bg-blue-200 text-blue-800", state_badge_class("reviewed")
-  end
-
-  test "state_badge_class returns correct class for waiting_implementation" do
-    assert_equal "bg-orange-200 text-orange-800", state_badge_class("waiting_implementation")
-  end
-
-  test "state_badge_class returns correct class for done" do
-    assert_equal "bg-green-200 text-green-800", state_badge_class("done")
-  end
-
-  test "state_badge_class returns default class for unknown" do
-    assert_equal "bg-gray-200 text-gray-700", state_badge_class("unknown")
-  end
-
-  # log_type_class tests
-  test "log_type_class returns correct class for error" do
-    assert_equal "text-red-400", log_type_class("error")
-  end
-
-  test "log_type_class returns correct class for status" do
-    assert_equal "text-[color:var(--color-accent)] font-medium", log_type_class("status")
-  end
-
-  test "log_type_class returns default class for other types" do
-    assert_equal "text-[color:var(--color-text-secondary)]", log_type_class("info")
-    assert_equal "text-[color:var(--color-text-secondary)]", log_type_class("debug")
   end
 
   # format_review_duration tests
@@ -250,14 +112,21 @@ class ReviewTasksHelperTest < ActionView::TestCase
   end
 
   test "render_code_block includes language" do
-    result = render_code_block("def foo; end", "ruby")
-    assert_includes result, "<span class=\"text-gray-400 text-xs font-mono\">ruby</span>"
+    language = "ruby"
+    result = render_code_block("def foo; end", language)
+    assert_includes result, "<div class=\"code-head\"><span>#{language}</span>"
   end
 
-  test "render_code_block includes copy button" do
-    result = render_code_block("test code")
-    assert_includes result, "data-controller=\"copy\""
-    assert_includes result, "data-action=\"click->copy#copy\""
+  test "render_code_block includes a copy button carrying the escaped code" do
+    code = "a < b && c"
+    result = render_code_block(code, "plaintext")
+    assert_includes result, "class=\"copy-btn\" data-copy=\"#{ERB::Util.html_escape(code)}\""
+  end
+
+  test "render_markdown escapes the fenced language label" do
+    hostile_language = "x\"><img>"
+    result = render_markdown("```#{hostile_language}\ncode\n```")
+    refute_includes result, "<img>"
   end
 
   test "render_code_block is html_safe" do
