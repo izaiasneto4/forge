@@ -12,9 +12,11 @@ class FakeWebSocket {
 
   readyState = FakeWebSocket.CONNECTING
   readonly sent: string[] = []
+  readonly url: string
   private readonly listeners = new Map<string, Set<Listener>>()
 
-  constructor(public readonly url: string) {
+  constructor(url: string) {
+    this.url = url
     FakeWebSocket.instances.push(this)
   }
 
