@@ -74,6 +74,7 @@ function useLiveUpdates() {
         const prNumber = event.pr_number
         const notification = new Notification(event.type === 'review_failed' ? `Review failed · #${prNumber}` : `Review finished · #${prNumber}`, {
           body: event.type === 'review_failed' ? event.reason ?? 'The agent stopped early.' : 'Findings are ready for you to send.',
+          icon: '/icon.png',
           // PR numbers repeat across repositories; the task id doesn't.
           tag: `ordem-review-${event.review_task_id ?? prNumber}`,
         })

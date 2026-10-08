@@ -1,6 +1,16 @@
 import type { Lifecycle } from '../types/api'
 
 const CLAUDE_RAYS = Array.from({ length: 12 }, (_, index) => index * 30)
+// Same shape as public/brand/ordem-mark.svg: rounded-square ring with a corner bite and a detached square.
+const ORDEM_MARK_PATH = 'M22 13H69A4 4 0 0 1 73 17V27A3 3 0 0 0 76 30H86A4 4 0 0 1 90 34V81A22 22 0 0 1 68 103H22A22 22 0 0 1 0 81V35A22 22 0 0 1 22 13ZM26 33A6 6 0 0 0 20 39V77A6 6 0 0 0 26 83H64A6 6 0 0 0 70 77V39A6 6 0 0 0 64 33ZM85 0H99A4 4 0 0 1 103 4V18A4 4 0 0 1 99 22H85A4 4 0 0 1 81 18V4A4 4 0 0 1 85 0Z'
+
+export function OrdemMark({ size = 16 }: { size?: number }) {
+  return (
+    <svg className="i" width={size} height={size} viewBox="0 0 103 103" fill="currentColor" aria-hidden="true">
+      <path fillRule="evenodd" d={ORDEM_MARK_PATH} />
+    </svg>
+  )
+}
 
 export function AgentIcon({ client, size = 16 }: { client: string | null | undefined; size?: number }) {
   if (client === 'codex') {

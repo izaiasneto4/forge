@@ -1,7 +1,7 @@
 import { relativeAgo } from '../lib/format'
 import { MAILBOX_IDS, MAILBOX_LABELS, type MailboxId } from '../lib/lifecycle'
 import { useWorkspace } from '../workspace/context'
-import { Spinner } from './Glyphs'
+import { OrdemMark, Spinner } from './Glyphs'
 import { Icon, type IconName } from './Icon'
 
 const MAILBOX_ICONS: Record<MailboxId, IconName> = {
@@ -46,8 +46,8 @@ export function Sidebar() {
     <aside className="sidebar">
       <div className="titlebar">
         <div className="brand">
-          <span className="brand-mark"><Icon name="flame" size={14} stroke={2} /></span>
-          <span>Ordem</span>
+          <span className="brand-mark"><OrdemMark size={18} /></span>
+          <span className="brand-name">ordem</span>
         </div>
         <button type="button" className="tb-btn" title="Hide sidebar  ⌘\" onClick={toggleSidebar}><Icon name="sidebar" /></button>
         <button type="button" className={route.kind === 'new' ? 'tb-btn on' : 'tb-btn'} title="New review  N" onClick={openNew}><Icon name="compose" /></button>
