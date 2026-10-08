@@ -2,6 +2,7 @@
   "name": "ordem",
   "version": "1.0.0",
   "description": "Local-first app for automated GitHub PR reviews using external CLI agents (Bun API + React).",
+  "homepage": "https://ordem.sh",
   "scripts": {
     "dev": "bin/dev",
     "setup": "bin/setup",

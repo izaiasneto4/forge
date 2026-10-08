@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type PropsWithChildren } from 'react'
 
+import { OrdemMark } from '../components/Glyphs'
 import { Icon } from '../components/Icon'
 import { ToastContext, type PushToastOptions, type ToastType } from './toastContext'
 
@@ -92,7 +93,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
             }}
           >
             <div className="app">
-              <Icon name={toast.type === 'error' ? 'warn' : 'flame'} size={20} stroke={1.8} />
+              {toast.type === 'error' ? <Icon name="warn" size={20} stroke={1.8} /> : <OrdemMark size={21} />}
             </div>
             <div className="notif-body">
               <div className="h"><b>{toast.title ?? DEFAULT_TITLES[toast.type]}</b><span>now</span></div>

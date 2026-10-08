@@ -7,6 +7,7 @@ import { splitPullRequestInput } from '../lib/pullRequestInput'
 import { useWorkspace } from '../workspace/context'
 import { BackToList } from './BackToList'
 import { ReviewPills } from './Composer'
+import { OrdemMark } from './Glyphs'
 import { Icon } from './Icon'
 
 export function NewReview() {
@@ -42,7 +43,7 @@ export function NewReview() {
         <div className="crumbs"><b>New review</b></div>
       </div>
       <div className="hero">
-        <div className="mark"><Icon name="flame" size={34} stroke={1.7} /></div>
+        <div className="mark"><OrdemMark size={36} /></div>
         <h2>What should we review{board?.current_repo.name ? <> in <u>{board.current_repo.name}</u></> : null}?</h2>
         <p>Paste a pull request link, or let Ordem pick up what’s waiting on you.</p>
         <div className="composer">

@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useRef } from 'react'
 
-import { Icon } from './Icon'
+import { OrdemMark } from './Glyphs'
 
 type ConfirmSheetProps = {
   title: string
@@ -58,7 +58,7 @@ export function ConfirmSheet({ title, message, confirmLabel, onResolve }: Confir
     <>
       <div className="scrim" onClick={() => onResolve(false)} />
       <div ref={dialogRef} className="alert" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
-        <div className="alert-icon"><Icon name="flame" size={26} stroke={1.8} /></div>
+        <div className="alert-icon"><OrdemMark size={28} /></div>
         <h3 id="confirm-title">{title}</h3>
         <p id="confirm-message">{message}</p>
         <div className="alert-actions">

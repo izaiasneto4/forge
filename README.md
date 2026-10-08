@@ -1,6 +1,11 @@
 <p align="center">
-  <img src="public/icon.png" alt="Ordem" width="128">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/brand/ordem-logo-light.svg">
+    <img src="public/brand/ordem-logo.svg" alt="Ordem" width="280">
+  </picture>
 </p>
+
+<p align="center">code review, in order. · <a href="https://ordem.sh">ordem.sh</a></p>
 
 # Ordem
 
