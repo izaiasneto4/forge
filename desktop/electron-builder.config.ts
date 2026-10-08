@@ -109,7 +109,8 @@ export function resolveBuildConfig(options: BuildOptions) {
       signAndEditExecutable: true,
     },
     nsis: {
-      artifactName: `${PRODUCT_NAME} Setup \${version}-\${arch}.\${ext}`,
+      // No spaces: GitHub renames them in release assets and the update feed would 404.
+      artifactName: `${PRODUCT_NAME}-Setup-\${version}-\${arch}.\${ext}`,
       differentialPackage: true,
       oneClick: true,
       perMachine: false,

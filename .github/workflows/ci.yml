@@ -56,6 +56,37 @@ jobs:
       - name: Boot the compiled server outside the repository
         run: bun scripts/smoke-server.ts
 
+  desktop:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.20
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install desktop dependencies
+        run: npm --prefix desktop ci
+
+      - name: Typecheck the desktop shell
+        run: npm --prefix desktop run typecheck
+
+      - name: Run desktop shell tests
+        run: bun test ./desktop/test
+
+      - name: Bundle Electron main and preload
+        run: bun desktop/scripts/build.ts
+
   frontend:
     runs-on: ubuntu-latest
 
