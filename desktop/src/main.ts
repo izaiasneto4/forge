@@ -1,8 +1,9 @@
 import { app, BrowserWindow, dialog, session, shell } from 'electron'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import type { DesktopPlatform } from '@shared/desktop-bridge'
 import { BackendManager, rendererBackendState, type BackendState } from './backend'
+import { installCliShim, removeConnectionFile, writeConnectionFile } from './cli-shim'
 import { CHANNELS } from './channels'
 import { broadcast, registerIpc } from './ipc'
 import { RotatingLog } from './log'
@@ -54,7 +55,12 @@ function focusMainWindow() {
 function onBackendState(state: BackendState, paths: DesktopPaths) {
   logLine(`[shell] server ${state.status}`)
   broadcast(CHANNELS.backendState, rendererBackendState(state))
-  if (state.status === 'ready') broadcast(CHANNELS.localEnvironmentChanged, state.environment)
+  if (state.status === 'ready') {
+    broadcast(CHANNELS.localEnvironmentChanged, state.environment)
+    writeConnectionFile(paths.stateDir, state.environment)
+  } else {
+    removeConnectionFile(paths.stateDir)
+  }
   if (state.status === 'failed') void showBackendFailure(state.message, paths, false)
 }
 
@@ -130,6 +136,18 @@ async function runSmokeCheck(window: BrowserWindow, loaded: Promise<void>) {
   app.exit(result === 'ok' ? 0 : 1)
 }
 
+async function installCommandLineTool(paths: DesktopPaths) {
+  try {
+    const { shimPath, linkedAt } = installCliShim({ home: paths.home, stateDir: paths.stateDir, cli: paths.cli })
+    const detail = linkedAt
+      ? `Run \`ordem status\` in a terminal while Ordem is open. Linked ${linkedAt} to ${shimPath}.`
+      : `Installed ${shimPath}. Add ${dirname(shimPath)} to your PATH, then run \`ordem status\` while Ordem is open.`
+    await dialog.showMessageBox({ type: 'info', title: 'Ordem', message: 'The ordem command is installed', detail })
+  } catch (error) {
+    dialog.showErrorBox('Could not install the ordem command', error instanceof Error ? error.message : String(error))
+  }
+}
+
 function restrictPermissions() {
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => callback(ALLOWED_PERMISSIONS.has(permission)))
   session.defaultSession.setPermissionCheckHandler((_webContents, permission) => ALLOWED_PERMISSIONS.has(permission))
@@ -174,7 +192,7 @@ async function boot() {
   })
   updater = activeUpdater
   registerIpc({ appOrigin, platform: desktopPlatform(), environment: () => manager.environment, updater: activeUpdater })
-  installMenu({ development })
+  installMenu({ development, installCommandLineTool: process.platform === 'win32' ? undefined : () => void installCommandLineTool(paths) })
 
   // A window right away; the app page replaces the starting page once the server answers.
   openWindow(paths, STARTING_PAGE_URL)

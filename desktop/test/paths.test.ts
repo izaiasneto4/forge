@@ -17,6 +17,7 @@ describe('resolveDesktopPaths', () => {
       logDir: join(homeDir, '.ordem', 'userdata', 'logs'),
       settingsFile: join(homeDir, '.ordem', 'userdata', 'desktop-settings.json'),
       server: { command: join(resourcesPath, 'server', 'ordem-server'), args: [] },
+      cli: { command: join(resourcesPath, 'server', 'ordem-server'), args: ['cli'] },
       migrationsDir: join(resourcesPath, 'drizzle'),
       publicDir: join(resourcesPath, 'public'),
     })
@@ -33,6 +34,7 @@ describe('resolveDesktopPaths', () => {
 
     expect(paths.stateDir).toBe(join(homeDir, '.ordem', 'dev'))
     expect(paths.server).toEqual({ command: 'bun', args: ['--watch', join(repositoryRoot, 'backend', 'src', 'index.ts')] })
+    expect(paths.cli).toEqual({ command: 'bun', args: [join(repositoryRoot, 'backend', 'bin', 'ordem.ts')] })
     expect(paths.migrationsDir).toBe(join(repositoryRoot, 'backend', 'drizzle'))
     expect(paths.publicDir).toBe(join(repositoryRoot, 'public'))
   })

@@ -5,10 +5,10 @@
 // Steps: sync the version, build the web app, bundle the shell, compile the Bun
 // server, run electron-builder (never publishing), then check the result.
 // --skip-* reuse outputs a CI bundle job already produced.
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { resolveBuildConfig, serverResourceFolder, type BuildArch, type BuildPlatform } from '../electron-builder.config'
+import { channelForVersion, resolveBuildConfig, serverResourceFolder, type BuildArch, type BuildPlatform } from '../electron-builder.config'
 
 const desktopRoot = fileURLToPath(new URL('..', import.meta.url))
 const repositoryRoot = join(desktopRoot, '..')
@@ -74,7 +74,9 @@ async function main() {
   }
 
   const macSigning = options.platform === 'mac' && macSigningAvailable(process.env)
-  const config = resolveBuildConfig({ platform: options.platform, arch: options.arch, macSigning })
+  const desktopPackage: unknown = JSON.parse(readFileSync(join(desktopRoot, 'package.json'), 'utf8'))
+  const version = typeof desktopPackage === 'object' && desktopPackage !== null && 'version' in desktopPackage && typeof desktopPackage.version === 'string' ? desktopPackage.version : ''
+  const config = resolveBuildConfig({ platform: options.platform, arch: options.arch, macSigning, channel: channelForVersion(version) })
   const configPath = join(desktopRoot, 'release', 'builder-config.json')
   mkdirSync(join(desktopRoot, 'release'), { recursive: true })
   writeFileSync(configPath, JSON.stringify(config, null, 2))

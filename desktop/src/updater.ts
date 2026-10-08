@@ -52,6 +52,11 @@ export class Updater {
 
   start() {
     if (!this.enabled) return
+    // Nightly builds follow nightly-*.yml; stable ones never see prereleases.
+    if (/-nightly\./.test(app.getVersion())) {
+      autoUpdater.channel = 'nightly'
+      autoUpdater.allowPrerelease = true
+    }
     autoUpdater.autoDownload = true
     autoUpdater.autoInstallOnAppQuit = true
     autoUpdater.logger = { info: (message) => this.log(message), warn: (message) => this.log(message), error: (message) => this.log(message), debug: () => {} }

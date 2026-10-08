@@ -28,6 +28,8 @@ export interface DesktopPaths {
   logDir: string
   settingsFile: string
   server: ServerCommand
+  // The ordem CLI: the server binary's `cli` mode, or bin/ordem.ts from source.
+  cli: ServerCommand
   migrationsDir: string
   publicDir: string
 }
@@ -50,12 +52,14 @@ export function resolveDesktopPaths(inputs: PathInputs): DesktopPaths {
   const settingsFile = join(stateDir, 'desktop-settings.json')
 
   if (inputs.isPackaged) {
+    const serverBinary = join(inputs.resourcesPath, 'server', serverBinaryName(inputs.platform))
     return {
       home,
       stateDir,
       logDir,
       settingsFile,
-      server: { command: join(inputs.resourcesPath, 'server', serverBinaryName(inputs.platform)), args: [] },
+      server: { command: serverBinary, args: [] },
+      cli: { command: serverBinary, args: ['cli'] },
       migrationsDir: join(inputs.resourcesPath, 'drizzle'),
       publicDir: join(inputs.resourcesPath, 'public'),
     }
@@ -70,6 +74,7 @@ export function resolveDesktopPaths(inputs: PathInputs): DesktopPaths {
     logDir,
     settingsFile,
     server: { command: bun, args: ['--watch', join(repositoryRoot, 'backend', 'src', 'index.ts')] },
+    cli: { command: bun, args: [join(repositoryRoot, 'backend', 'bin', 'ordem.ts')] },
     migrationsDir: join(repositoryRoot, 'backend', 'drizzle'),
     publicDir: join(repositoryRoot, 'public'),
   }

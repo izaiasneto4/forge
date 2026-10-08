@@ -18,9 +18,18 @@ export const ELECTRON_PLATFORM: Readonly<Record<BuildPlatform, string>> = Object
 // defaults plus libgbm for GPU buffers).
 export const DEB_DEPENDS: readonly string[] = Object.freeze(['libgtk-3-0', 'libnotify4', 'libnss3', 'libxss1', 'libxtst6', 'xdg-utils', 'libatspi2.0-0', 'libuuid1', 'libsecret-1-0', 'libgbm1'])
 
+export type UpdateChannel = 'latest' | 'nightly'
+
+// Nightly builds carry versions like 1.2.0-nightly.20261008.42.
+export function channelForVersion(version: string): UpdateChannel {
+  return /-nightly\./.test(version) ? 'nightly' : 'latest'
+}
+
 export interface BuildOptions {
   platform: BuildPlatform
   arch: BuildArch
+  // Names the update feed: latest-mac.yml or nightly-mac.yml.
+  channel?: UpdateChannel
   // Apple Developer ID and notarization secrets are present (CSC_LINK, APPLE_API_KEY...).
   macSigning: boolean
 }
@@ -73,7 +82,7 @@ export function resolveBuildConfig(options: BuildOptions) {
     nodeGypRebuild: false,
     // The publish target makes electron-builder write the update feed (latest*.yml,
     // app-update.yml). Unsigned macOS builds get none: Squirrel.Mac refuses them.
-    publish: updatesSupported(options) ? [{ provider: 'github', owner: GITHUB_OWNER, repo: GITHUB_REPO }] : null,
+    publish: updatesSupported(options) ? [{ provider: 'github', owner: GITHUB_OWNER, repo: GITHUB_REPO, channel: options.channel ?? 'latest' }] : null,
     mac: macConfig(options),
     dmg: {
       contents: [

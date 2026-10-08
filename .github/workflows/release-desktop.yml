@@ -3,9 +3,14 @@ name: Desktop release
 # Builds the JavaScript once, then packages it on each platform's own hardware
 # with a server compiled there, smoke-tests every build, and publishes one
 # GitHub Release. Tags with a suffix (v1.2.0-alpha.1) become pre-releases.
+# The nightly schedule publishes <version>-nightly.<date> pre-releases; their
+# version puts them on electron-updater's nightly channel, so stable installs
+# are never offered one.
 on:
   push:
     tags: ['v*']
+  schedule:
+    - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       version:
@@ -30,20 +35,29 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
+      tag: ${{ steps.version.outputs.tag }}
+      publish: ${{ steps.version.outputs.publish }}
     steps:
       - uses: actions/checkout@v7
       - id: version
         env:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then version="${GITHUB_REF_NAME#v}"
+          base="$(node -p "require('./package.json').version")"
+          publish=false
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then version="${GITHUB_REF_NAME#v}"; publish=true
+          elif [ "$GITHUB_EVENT_NAME" = "schedule" ]; then version="$base-nightly.$(date -u +%Y%m%d).$GITHUB_RUN_NUMBER"; publish=true
           elif [ -n "$INPUT_VERSION" ]; then version="${INPUT_VERSION#v}"
-          else version="$(node -p "require('./package.json').version")"
+          else version="$base"
           fi
           case "$version" in *-*) prerelease=true ;; *) prerelease=false ;; esac
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
-          echo "Building $version (prerelease: $prerelease)"
+          {
+            echo "version=$version"
+            echo "prerelease=$prerelease"
+            echo "tag=v$version"
+            echo "publish=$publish"
+          } >> "$GITHUB_OUTPUT"
+          echo "Building $version (prerelease: $prerelease, publish: $publish)"
 
   bundle:
     needs: preflight
@@ -152,7 +166,7 @@ jobs:
 
   publish:
     needs: [preflight, package]
-    if: github.ref_type == 'tag'
+    if: needs.preflight.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -168,15 +182,17 @@ jobs:
       - name: Collect release files
         run: |
           mkdir -p release
-          # Both macOS jobs write latest-mac.yml; electron-updater needs one feed.
-          mac_feeds=$(find artifacts/desktop-mac-* -name latest-mac.yml 2>/dev/null || true)
-          if [ -n "$mac_feeds" ]; then bun desktop/scripts/merge-manifests.ts $mac_feeds release/latest-mac.yml; fi
-          find artifacts -type f ! -name latest-mac.yml -exec cp {} release/ \;
+          # Both macOS jobs write <channel>-mac.yml; electron-updater needs one feed per channel.
+          for feed in $(find artifacts -name '*-mac.yml' -exec basename {} \; | sort -u); do
+            bun desktop/scripts/merge-manifests.ts $(find artifacts -name "$feed") "release/$feed"
+          done
+          find artifacts -type f ! -name '*-mac.yml' -exec cp {} release/ \;
           ls -la release
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ needs.preflight.outputs.tag }}
           PRERELEASE: ${{ needs.preflight.outputs.prerelease }}
         run: |
-          gh release create "$TAG" release/* --title "Ordem $TAG" --generate-notes $([ "$PRERELEASE" = "true" ] && echo --prerelease)
+          # Nightly tags do not exist yet; --target creates them at the built commit.
+          gh release create "$TAG" release/* --target "$GITHUB_SHA" --title "Ordem $TAG" --generate-notes $([ "$PRERELEASE" = "true" ] && echo --prerelease)

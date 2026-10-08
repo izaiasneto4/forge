@@ -11,7 +11,8 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
-const serverEntry = join(repositoryRoot, 'backend', 'src', 'index.ts')
+// sidecar.ts runs the server, or the ordem CLI when the first argument is `cli`.
+const serverEntry = join(repositoryRoot, 'backend', 'src', 'sidecar.ts')
 export const SERVER_OUTPUT_DIR = join(repositoryRoot, 'desktop', 'prod-resources', 'server')
 
 export interface ServerTarget {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { DEB_DEPENDS, resolveBuildConfig, serverResourceFolder } from '../electron-builder.config'
+import { channelForVersion, DEB_DEPENDS, resolveBuildConfig, serverResourceFolder } from '../electron-builder.config'
 import { SERVER_TARGETS } from '../../scripts/build-server'
 
 const desktopRoot = join(import.meta.dir, '..')
@@ -51,5 +51,14 @@ describe('resolveBuildConfig', () => {
     expect(existsSync(join(desktopRoot, config.mac.entitlements))).toBe(true)
     expect(existsSync(join(desktopRoot, config.mac.icon))).toBe(true)
     expect(existsSync(join(desktopRoot, 'resources', 'linux', 'dev.ordem.app.metainfo.xml'))).toBe(true)
+  })
+
+  test('puts nightly versions on their own update channel', () => {
+    const nightly = '1.2.0-nightly.20261008.42'
+    const stable = '1.2.0'
+
+    expect(channelForVersion(nightly)).toBe('nightly')
+    expect(channelForVersion(stable)).toBe('latest')
+    expect(resolveBuildConfig({ platform: 'linux', arch: 'x64', macSigning: false, channel: 'nightly' }).publish?.[0]?.channel).toBe('nightly')
   })
 })
