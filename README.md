@@ -25,7 +25,7 @@ If you want to expose a running Ordem instance publicly, add authentication, TLS
 
 ## Download
 
-Desktop builds for macOS, Linux and Windows are on the [Releases page](https://github.com/izaiasneto4/ordem/releases): a `.dmg` for macOS, an `.AppImage` or `.deb` for Linux, and an installer for Windows. Each release lists which file to pick and how to open it. You still need `gh` and one of the review CLIs below installed.
+Desktop builds for macOS, Linux and Windows are on the [Releases page](https://github.com/izaiasneto4/ordem/releases): a `.dmg` for macOS, an `.AppImage` or `.deb` for Linux, and an installer for Windows. Each release lists which file to pick and how to open it. You still need `git`, `gh` and one of the review CLIs below installed.
 
 ## Supported environment
 

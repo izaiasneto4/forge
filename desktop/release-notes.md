@@ -8,7 +8,7 @@
 | Debian, Ubuntu | `Ordem-<version>-amd64.deb` (or `-arm64.deb`) |
 | Windows | `Ordem-Setup-<version>-x64.exe` |
 
-Ordem drives the CLIs you already use, so you need [GitHub CLI](https://cli.github.com/) (`gh auth login`) and at least one of `claude`, `codex` or `opencode` installed. The app finds them through your login shell.
+Ordem drives the CLIs you already use, so you need [Git](https://git-scm.com/downloads), [GitHub CLI](https://cli.github.com/) (`gh auth login`) and at least one of `claude`, `codex` or `opencode` installed. The app finds them through your login shell.
 
 **macOS:** open the DMG and drag Ordem to Applications. This build isn't signed with an Apple Developer ID yet, so the first launch is blocked. Open **System Settings → Privacy & Security** and click **Open Anyway**, or run `xattr -dr com.apple.quarantine /Applications/Ordem.app` once. Unsigned macOS builds don't update themselves; download new versions from this page.
 
