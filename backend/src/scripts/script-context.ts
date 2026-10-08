@@ -1,3 +1,4 @@
+import { mkdirSync } from 'node:fs'
 import { bunCommandRunner } from '../commands/runner'
 import { runtimeConfig } from '../config'
 import type { AppContext } from '../context'
@@ -24,9 +25,10 @@ const detachedBroadcaster: Broadcaster = {
 
 export function openScriptContext(env: Record<string, string | undefined> = process.env): AppContext {
   const config = runtimeConfig(env)
-  process.chdir(config.appRoot)
+  if (config.mode === 'server') process.chdir(config.appRoot)
+  if (config.stateDir) mkdirSync(config.stateDir, { recursive: true })
   const db = openDatabase(config.databasePath)
-  migrateDatabase(db)
+  migrateDatabase(db, config.migrationsDir)
   return { db, events: detachedBroadcaster, jobs: new JobQueue(db), commands: bunCommandRunner }
 }
 

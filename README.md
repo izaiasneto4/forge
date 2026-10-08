@@ -74,6 +74,12 @@ Common variables:
 - `ORDEM_ALLOWED_HOSTS`: hosts allowed to reach the app. Default: localhost, `.localhost`, `.test` and IPs in development; any host in production
 - `ORDEM_LOG_LEVEL`: `debug`, `info`, `warn` or `error`
 - `ORDEM_DISABLE_JOB_WORKER=1`: queue background jobs without running them
+- `ORDEM_HOST`: interface the API listens on. Default: `0.0.0.0`
+- `ORDEM_HOME`: keeps state outside the repository. The database moves to `$ORDEM_HOME/dev/ordem.sqlite3` (`$ORDEM_HOME/userdata/` when `NODE_ENV=production`). `DATABASE_PATH` still wins when set
+- `ORDEM_STATE_DIR`: overrides the `dev`/`userdata` folder under `ORDEM_HOME`
+- `ORDEM_PUBLIC_DIR`: static files and the frontend build. Default: `public/`
+- `ORDEM_MIGRATIONS_DIR`: SQL migrations. Default: `backend/drizzle`
+- `ORDEM_MODE`: `server` (default) or `desktop`. Desktop mode skips changing into the app root, since it runs from a read-only bundle
 - `ANTHROPIC_MODEL` or `CLAUDE_MODEL`
 
 When upgrading an existing installation, use `bin/ordem` for CLI commands. The previous `FORGE_*` environment variables remain supported as fallbacks; `ORDEM_*` values take precedence. Keep your existing SQLite file at `DATABASE_PATH`. For Docker, mount your existing storage volume at `/app/storage`; the Docker example retains the existing volume identifier by default, while new installations may use `ordem_storage`. Existing review worktree directories and browser preferences also remain supported.

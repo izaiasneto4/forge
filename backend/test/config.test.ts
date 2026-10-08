@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { join, resolve } from 'node:path'
-import { runtimeConfig } from '../src/config'
+import { DEFAULT_HOST, DEFAULT_MIGRATIONS_DIR, runtimeConfig } from '../src/config'
 import { ALLOW_ALL_HOSTS, DEFAULT_ALLOWED_HOSTS, isAllowedHost } from '../src/http/host-authorization'
 
 const repositoryRoot = resolve(import.meta.dir, '../..')
@@ -75,5 +75,67 @@ describe('runtimeConfig', () => {
     expect(config.appRoot).toBe(appRoot)
     expect(isAllowedHost(allowedHost, config.allowedHosts)).toBe(true)
     expect(isAllowedHost(legacyHost, config.allowedHosts)).toBe(false)
+  })
+
+  test('keeps server mode, every interface and the repository migrations without desktop variables', () => {
+    const repositoryMigrations = join(repositoryRoot, 'backend', 'drizzle')
+
+    const config = runtimeConfig({})
+
+    expect(config).toMatchObject({ mode: 'server', host: DEFAULT_HOST, stateDir: null, migrationsDir: repositoryMigrations })
+    expect(DEFAULT_MIGRATIONS_DIR).toBe(repositoryMigrations)
+  })
+
+  test('puts state under ORDEM_HOME/dev outside production', () => {
+    const home = '/tmp/ordem-home'
+    const expectedStateDir = join(home, 'dev')
+
+    const config = runtimeConfig({ ORDEM_HOME: home })
+
+    expect(config.stateDir).toBe(expectedStateDir)
+    expect(config.databasePath).toBe(join(expectedStateDir, 'ordem.sqlite3'))
+  })
+
+  test('puts state under ORDEM_HOME/userdata in production', () => {
+    const home = '/tmp/ordem-home'
+    const expectedStateDir = join(home, 'userdata')
+
+    const config = runtimeConfig({ NODE_ENV: 'production', ORDEM_HOME: home })
+
+    expect(config.stateDir).toBe(expectedStateDir)
+    expect(config.databasePath).toBe(join(expectedStateDir, 'ordem.sqlite3'))
+  })
+
+  test('prefers ORDEM_STATE_DIR over the ORDEM_HOME split', () => {
+    const stateDir = '/tmp/ordem-state'
+
+    const config = runtimeConfig({ ORDEM_HOME: '/tmp/ordem-home', ORDEM_STATE_DIR: stateDir })
+
+    expect(config.stateDir).toBe(stateDir)
+    expect(config.databasePath).toBe(join(stateDir, 'ordem.sqlite3'))
+  })
+
+  test('prefers DATABASE_PATH over the state directory', () => {
+    const databasePath = '/data/explicit.sqlite3'
+
+    const config = runtimeConfig({ ORDEM_HOME: '/tmp/ordem-home', DATABASE_PATH: databasePath })
+
+    expect(config.databasePath).toBe(databasePath)
+  })
+
+  test('reads desktop mode, host, public and migrations directories', () => {
+    const host = '127.0.0.1'
+    const publicDir = '/Applications/Ordem.app/Contents/Resources/public'
+    const migrationsDir = '/Applications/Ordem.app/Contents/Resources/drizzle'
+
+    const config = runtimeConfig({ ORDEM_MODE: 'desktop', ORDEM_HOST: host, ORDEM_PUBLIC_DIR: publicDir, ORDEM_MIGRATIONS_DIR: migrationsDir })
+
+    expect(config).toMatchObject({ mode: 'desktop', host, publicDir, migrationsDir })
+  })
+
+  test('treats an unknown ORDEM_MODE as server mode', () => {
+    const config = runtimeConfig({ ORDEM_MODE: 'kiosk' })
+
+    expect(config.mode).toBe('server')
   })
 })
