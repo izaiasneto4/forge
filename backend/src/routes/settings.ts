@@ -5,6 +5,7 @@ import { castBoolean, mergeParams, presentString, type Params } from '../http/pa
 import { isPresent } from '../lib/ruby'
 import { SETTING_KEYS, SettingStore, VALID_THEME_PREFERENCES } from '../models/setting'
 import { settingsPayload } from '../presenters/settings'
+import { DEFAULT_FOLDER_PROMPT, REPOSITORY_FOLDER_PROMPT } from '../services/folder-picker'
 import { isDirectory } from '../services/git'
 import { renderError, type RouteDependencies } from './shared'
 
@@ -44,5 +45,10 @@ export function settingsRoutes(deps: RouteDependencies) {
       new SettingStore(ctx.db).setThemePreference(themePreference)
       return ok({ message: 'Theme updated', settings: await settingsPayload(ctx) })
     })
-    .post('/pick_folder', async () => ok({ path: await services.pickFolder(ctx) }))
+    // `purpose` picks one of the fixed dialog prompts; client text never reaches osascript.
+    .post('/pick_folder', async ({ query, body }) => {
+      const purpose = presentString(mergeParams(query, body), 'purpose')
+      const prompt = purpose === 'repository' ? REPOSITORY_FOLDER_PROMPT : DEFAULT_FOLDER_PROMPT
+      return ok({ path: await services.pickFolder(ctx, prompt) })
+    })
 }

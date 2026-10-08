@@ -6,6 +6,7 @@ import { isDirectory } from './git'
 // Port of FolderPickerService: the macOS "choose folder" dialog via osascript.
 
 export const DEFAULT_FOLDER_PROMPT = 'Select your repositories folder'
+export const REPOSITORY_FOLDER_PROMPT = 'Select a repository, or the folder that holds your repositories'
 
 // The prompt is interpolated verbatim (Rails did not escape it either).
 export function buildApplescript(prompt: string) {
