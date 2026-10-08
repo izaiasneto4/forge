@@ -70,7 +70,7 @@ export function StatusGlyph({ lifecycle, requested = false, size = 16 }: { lifec
     case 'reviewing':
       return <Spinner size={size} />
     case 'ready':
-      return <svg {...box}><circle cx="8" cy="8" r="7" fill="var(--accent)" /><path d="M8 11V5.3M5.6 7.5 8 5.1l2.4 2.4" stroke="#fff" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      return <svg {...box}><circle cx="8" cy="8" r="7" fill="var(--accent)" /><path d="M8 11V5.3M5.6 7.5 8 5.1l2.4 2.4" stroke="var(--on-accent)" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
     case 'failed':
       return <svg {...box}><circle cx="8" cy="8" r="7" fill="var(--red)" /><path d="M8 4.6v4.1" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" /><circle cx="8" cy="11.2" r="1" fill="#fff" /></svg>
     case 'waiting':
