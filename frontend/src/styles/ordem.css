@@ -358,6 +358,10 @@ h1.pr-title { font-size: 23px; line-height: 1.22; font-weight: 700; letter-spaci
 .suggestion { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 11px; background: var(--field); color: var(--t2); font-size: 12.5px; transition: background .12s, color .12s, transform .12s; }
 .suggestion:hover { background: var(--press); color: var(--t1); transform: translateY(-1px); }
 .suggestion .i { color: var(--t3); }
+/* Scrolls when a folder holds many clones; the spacers keep it centered otherwise. */
+.hero.repo-setup { height: auto; flex: 1; min-height: 0; overflow-y: auto; justify-content: flex-start; }
+.repo-setup::before, .repo-setup::after { content: ''; flex: 1 0 0; }
+.repo-setup > * { flex-shrink: 0; }
 .repo-setup > .btn { margin-top: 26px; }
 .repo-setup-path { display: flex; gap: 8px; width: 100%; max-width: 400px; margin-top: 14px; }
 .repo-setup-found { font-size: 11.5px; font-weight: 600; color: var(--t3); margin-top: 30px; }
