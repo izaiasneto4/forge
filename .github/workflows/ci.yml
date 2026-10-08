@@ -31,6 +31,31 @@ jobs:
       - name: Run backend tests
         run: bun run --cwd backend test
 
+  sidecar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.20
+
+      - name: Install backend dependencies
+        run: bun install --cwd backend --frozen-lockfile
+
+      - name: Typecheck and test build scripts
+        run: bun run scripts:typecheck && bun run scripts:test
+
+      - name: Compile the server for this runner
+        run: bun scripts/build-server.ts
+
+      # Runs the binary from a temp dir with env vars only, as the desktop app does.
+      - name: Boot the compiled server outside the repository
+        run: bun scripts/smoke-server.ts
+
   frontend:
     runs-on: ubuntu-latest
 
