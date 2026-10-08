@@ -51,6 +51,8 @@ export type WorkspaceActions = {
   submit: (item: PullRequestItem, input: SubmitInput) => Promise<void>
   sync: (force?: boolean) => Promise<void>
   switchRepo: (slug: string) => Promise<void>
+  addRepository: (path: string) => Promise<void>
+  pickRepository: () => Promise<void>
   setOnlyRequested: (value: boolean) => Promise<void>
   clearReview: (item: PullRequestItem) => Promise<void>
   markDone: (item: PullRequestItem) => Promise<void>
@@ -62,6 +64,8 @@ export type WorkspaceValue = {
   boardLoading: boolean
   boardError: unknown
   items: PullRequestItem[]
+  // No GitHub repository is tracked yet, so there is nothing to sync.
+  needsRepository: boolean
   login: string | null
   route: Route
   mailbox: MailboxId

@@ -4,5 +4,6 @@ declare module 'react' {
   interface CSSProperties {
     '--c'?: string
     '--d'?: number
+    '--dot'?: string
   }
 }

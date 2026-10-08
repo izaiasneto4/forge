@@ -7,6 +7,7 @@ import { Inspector } from '../components/Inspector'
 import { NewReview } from '../components/NewReview'
 import { PullRequestDetail, DetailEmpty } from '../components/PullRequestDetail'
 import { PullRequestList } from '../components/PullRequestList'
+import { RepositorySetup } from '../components/RepositorySetup'
 import { SettingsSheet } from '../components/SettingsSheet'
 import { Sidebar } from '../components/Sidebar'
 import { subscribe } from '../lib/realtime'
@@ -178,12 +179,13 @@ function useShortcuts() {
 }
 
 function DetailPane() {
-  const { route, selected, boardLoading, boardError, mailbox, sections } = useWorkspace()
+  const { route, selected, boardLoading, boardError, mailbox, sections, needsRepository } = useWorkspace()
 
   if (route.kind === 'new') return <NewReview />
   if (selected) return <PullRequestDetail item={selected} />
   if (boardError) return <DetailEmpty icon="warn" title="Couldn’t load pull requests" body={errorMessage(boardError)} />
   if (boardLoading) return <DetailEmpty icon="refresh" title="Loading" body="Fetching pull requests from Ordem…" />
+  if (needsRepository) return <RepositorySetup />
   if (route.kind === 'mailbox' && route.id !== null) return <DetailEmpty icon="search" title="Pull request not found" body="It may have been merged, closed or archived." />
   if (route.kind === 'task') return <DetailEmpty icon="refresh" title="Loading" body="Opening review…" />
   if (sections.length === 0) return <DetailEmpty icon="checkCircle" title={`${MAILBOX_LABELS[mailbox]} is empty`} body="Nothing to look at here right now." />
@@ -191,7 +193,10 @@ function DetailPane() {
 }
 
 export function Workspace() {
-  const { sidebarOpen, inspectorOpen, route, selected, paletteOpen, settingsTab, toggleSidebar, toggleInspector } = useWorkspace()
+  const {
+    sidebarOpen, inspectorOpen, route, selected, paletteOpen, settingsTab,
+    toggleSidebar, toggleInspector, needsRepository,
+  } = useWorkspace()
   const showInspector = inspectorOpen && route.kind !== 'new'
   const floatingSidebar = useFloatingSidebar()
   const floatingInspector = useFloatingInspector()
@@ -204,7 +209,8 @@ export function Workspace() {
   const classes = ['window']
   if (!sidebarOpen) classes.push('no-sidebar')
   if (showInspector) classes.push('with-inspector')
-  if (route.kind !== 'mailbox' || route.id !== null) classes.push('has-selection')
+  // In the single-pane layout this shows the detail pane, which holds repository setup.
+  if (route.kind !== 'mailbox' || route.id !== null || needsRepository) classes.push('has-selection')
 
   return (
     <>

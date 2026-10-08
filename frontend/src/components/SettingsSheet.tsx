@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { agentLabel } from '../lib/agents'
 import { api } from '../lib/api'
 import { errorMessage } from '../lib/errors'
-import { ACCENTS, desktopNotificationsEnabled, saveAccent, setDesktopNotifications, storedAccent } from '../lib/preferences'
+import { ACCENTS, desktopNotificationsEnabled, onAccentColor, saveAccent, setDesktopNotifications, storedAccent } from '../lib/preferences'
 import { queryKeys } from '../lib/queryKeys'
 import { useToasts } from '../lib/toastContext'
 import type { RepositoryListResponse, SettingsResponse, UiMutationResponse } from '../types/api'
@@ -82,7 +82,7 @@ function General({ settings }: { settings: SettingsResponse }) {
                 type="button"
                 aria-label={`Accent ${color}`}
                 className={accent === color ? 'on' : ''}
-                style={{ '--c': color }}
+                style={{ '--c': color, '--dot': onAccentColor(color) }}
                 onClick={() => {
                   saveAccent(color)
                   setAccent(color)

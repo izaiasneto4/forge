@@ -14,7 +14,7 @@ export interface ApiServices {
     task: ReviewTaskRecord,
     options: { event: string; summary: string | null; comments: ReviewCommentRecord[] },
   ): Promise<unknown>
-  pickFolder(ctx: AppContext): Promise<string | null>
+  pickFolder(ctx: AppContext, prompt: string): Promise<string | null>
 }
 
 export interface RouteDependencies {

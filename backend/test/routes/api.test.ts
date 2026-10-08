@@ -8,7 +8,9 @@ import { SETTING_KEYS, SettingStore } from '../../src/models/setting'
 import { STREAMS } from '../../src/realtime/broadcaster'
 import type { ApiServices } from '../../src/routes/shared'
 import type { SyncStatusPayload } from '../../src/models/sync-state'
+import { DEFAULT_FOLDER_PROMPT, REPOSITORY_FOLDER_PROMPT } from '../../src/services/folder-picker'
 import type { SyncResult } from '../../src/services/sync/engine'
+import { runSync } from '../../src/services/sync/engine'
 import { SyncAdapterError } from '../../src/services/sync/github-adapter'
 import { createTestApp } from '../support/app'
 import { createTestContext, type TestContext } from '../support/context'
@@ -242,6 +244,31 @@ describe('API routes', () => {
 
       expect(status).toBe(422)
       expect(dig(json, 'error')).toEqual({ code: 'sync_failed', message: failure })
+    })
+
+    test('backs off after a real sync failure but lets force bypass the cooldown', async () => {
+      await useCurrentRepo()
+      const failure = 'gh is not authenticated'
+      const command = ['gh', 'api', 'user']
+      const automatic = { force: false }
+      const manual = { force: true }
+      ctx.commands.on(command, { success: false, stderr: failure })
+      services.runSync = runSync
+
+      const first = await call('POST', '/api/v1/pull_requests/sync', automatic)
+      const board = await call('GET', '/api/v1/pull_requests/board')
+      const second = await call('POST', '/api/v1/pull_requests/sync', automatic)
+
+      expect(dig(first.json, 'error', 'message')).toContain(failure)
+      expect(dig(board.json, 'sync_status', 'sync_needed')).toBe(false)
+      expect(second.status).toBe(200)
+      expect(dig(second.json, 'board', 'sync_status', 'status')).toBe('failed')
+      expect(ctx.commands.commandsMatching(command)).toHaveLength(1)
+
+      const forced = await call('POST', '/api/v1/pull_requests/sync', manual)
+
+      expect(dig(forced.json, 'error', 'message')).toContain(failure)
+      expect(ctx.commands.commandsMatching(command)).toHaveLength(2)
     })
   })
 
@@ -504,6 +531,84 @@ describe('API routes', () => {
 
       expect(status).toBe(422)
       expect(dig(json, 'error', 'message')).toBe('Switched repo but sync failed: boom')
+    })
+
+    test('adding a checkout tracks it, lists its siblings and syncs it', async () => {
+      const repoPath = createGitRepository(ctx.commands, tempFolder.path, repoName, slug)
+      const syncedPaths: Array<string | null> = []
+      const triggers: string[] = []
+      services.runSync = async (_ctx, options) => {
+        syncedPaths.push(options.repoPath)
+        triggers.push(options.trigger)
+        return syncResult()
+      }
+
+      const { status, json } = await call('POST', '/api/v1/repositories', { path: repoPath })
+
+      const settingStore = new SettingStore(ctx.db)
+      expect(status).toBe(201)
+      expect(dig(json, 'message')).toBe(`Added ${repoName} and synced`)
+      expect(dig(json, 'board', 'current_repo', 'slug')).toBe(slug)
+      expect(settingStore.currentRepo()).toBe(repoPath)
+      expect(settingStore.reposFolder()).toBe(tempFolder.path)
+      expect(syncedPaths).toEqual([repoPath])
+      expect(triggers).toEqual(['repo_add'])
+    })
+
+    test('adding a folder of several checkouts keeps it as the repos folder for picking', async () => {
+      const slugs = [slug, `${owner}/web`]
+      for (const repoSlug of slugs) createGitRepository(ctx.commands, tempFolder.path, repoSlug.split('/')[1] ?? repoSlug, repoSlug)
+
+      const { status, json } = await call('POST', '/api/v1/repositories', { path: tempFolder.path })
+
+      const settingStore = new SettingStore(ctx.db)
+      expect(status).toBe(200)
+      expect(dig(json, 'synced')).toBe(false)
+      expect(list(dig(json, 'repositories', 'items'))).toHaveLength(slugs.length)
+      expect(settingStore.reposFolder()).toBe(tempFolder.path)
+      expect(settingStore.currentRepo()).toBeNull()
+    })
+
+    test('adding rejects folders that hold no GitHub checkout', async () => {
+      const missingPath = `${tempFolder.path}/missing`
+
+      const missing = await call('POST', '/api/v1/repositories', { path: missingPath })
+      const empty = await call('POST', '/api/v1/repositories', { path: tempFolder.path })
+      const blank = await call('POST', '/api/v1/repositories', {})
+
+      expect(missing.status).toBe(422)
+      expect(dig(missing.json, 'error', 'message')).toBe(`${missingPath} is not a folder`)
+      expect(empty.status).toBe(422)
+      expect(dig(empty.json, 'error', 'message')).toBe(`No GitHub repositories found in ${tempFolder.path}`)
+      expect(dig(blank.json, 'error', 'code')).toBe('invalid_input')
+      expect(new SettingStore(ctx.db).currentRepo()).toBeNull()
+    })
+
+    test('a sync failure after adding is reported', async () => {
+      const repoPath = createGitRepository(ctx.commands, tempFolder.path, repoName, slug)
+      const failure = 'gh auth required'
+      services.runSync = async () => {
+        throw new SyncAdapterError(failure)
+      }
+
+      const { status, json } = await call('POST', '/api/v1/repositories', { path: repoPath })
+
+      expect(status).toBe(422)
+      expect(dig(json, 'error', 'message')).toBe(`Added repo but sync failed: ${failure}`)
+      expect(new SettingStore(ctx.db).currentRepo()).toBe(repoPath)
+    })
+
+    test('picking a repository folder uses the repository prompt', async () => {
+      const prompts: string[] = []
+      services.pickFolder = async (_ctx, prompt) => {
+        prompts.push(prompt)
+        return null
+      }
+
+      await call('POST', '/api/v1/settings/pick_folder', { purpose: 'repository' })
+      await call('POST', '/api/v1/settings/pick_folder')
+
+      expect(prompts).toEqual([REPOSITORY_FOLDER_PROMPT, DEFAULT_FOLDER_PROMPT])
     })
 
     test('settings update, theme and folder picking', async () => {

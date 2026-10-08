@@ -36,6 +36,12 @@ Ordem is a Bun + Elysia API with a React frontend.
 - PRs should include: purpose, test commands run, and linked issues.
 - Add screenshots or short clips for UI changes.
 
+## Pull Request Workflow (Greptile)
+- Greptile reviews PRs. Its `Greptile Review` check and summary comment (`Confidence Score: N/5`) are the review signal.
+- Babysit each PR right after opening it: read Greptile's inline comments, fix valid findings, push, repeat. Iterate on Greptile's feedback instead of waiting on human review.
+- At a confidence score of 5/5, merge without asking. Before merging, confirm `gh pr view --json mergeable` is not `CONFLICTING` and CI ran on the head SHA.
+- If Greptile posts no check or summary within ~5 min, tell the user. Silence is not a clean review; don't merge.
+
 ## Configuration Notes
 This app requires authenticated CLI tools: `gh` (GitHub CLI) and an AI review CLI (`claude`, `codex` or `opencode`). Ensure they are on your `PATH` before running reviews or syncs.
 

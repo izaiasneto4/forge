@@ -17,7 +17,7 @@ import { runSync } from './services/sync/engine'
 export const defaultServices: ApiServices = {
   runSync: (ctx, options) => runSync(ctx, options),
   submitReview: (ctx, task, options) => submitReview(ctx, task, options),
-  pickFolder: (ctx) => pickFolder(ctx),
+  pickFolder: (ctx, prompt) => pickFolder(ctx, prompt),
 }
 
 export interface AppOptions {

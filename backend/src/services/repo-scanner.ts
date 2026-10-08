@@ -11,7 +11,7 @@ export interface ScannedRepository {
   branch: string
 }
 
-function isGitRepository(path: string) {
+export function isGitRepository(path: string) {
   const gitPath = join(path, '.git')
   try {
     const stats = statSync(gitPath)

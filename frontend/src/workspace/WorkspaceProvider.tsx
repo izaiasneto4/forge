@@ -3,7 +3,7 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useState, type PropsWi
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { ConfirmSheet } from '../components/ConfirmSheet'
-import { api } from '../lib/api'
+import { api, ApiResponseError } from '../lib/api'
 import { errorMessage } from '../lib/errors'
 import { singlePane } from '../lib/layout'
 import {
@@ -227,7 +227,12 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     try {
       return await task()
     } catch (error) {
-      pushToast(errorMessage(error), 'error')
+      // The HTTP response and realtime event report the same sync failure.
+      // Share its key while keeping the response as a fallback if realtime is offline.
+      const options = error instanceof ApiResponseError && error.error.code === 'sync_failed'
+        ? { key: 'sync-status', title: 'Sync failed' }
+        : undefined
+      pushToast(errorMessage(error), 'error', options)
       return null
     } finally {
       if (key) setPending((current) => ({ ...current, [key]: false }))
@@ -238,6 +243,24 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     `/api/v1/pull_requests/${item.id}/review_task`,
     { cli_client: input.client, review_type: input.depth, focus: input.focus },
   ), [])
+
+  // Adding a repository syncs it, so it shares the sync spinner. A folder of
+  // several checkouts only becomes the repos folder; the user picks one next.
+  const addRepository = useCallback(async (path: string) => {
+    const response = await run('sync', () => api.post<UiMutationResponse>('/api/v1/repositories', { path }))
+    // A failed sync still leaves the repository tracked, so refresh either way.
+    queryClient.invalidateQueries({ queryKey: queryKeys.repositories })
+    queryClient.invalidateQueries({ queryKey: queryKeys.settings })
+    invalidateAll()
+    if (!response) return
+    applyBoard(response)
+    if (response.synced === false) {
+      pushToast(response.message ?? 'Pick the repository to track.', 'info', { title: 'Repositories found' })
+      return
+    }
+    pushToast(response.message ?? 'Repository added', 'success', { title: 'Repository added' })
+    navigate(mailboxPath('inbox'))
+  }, [run, applyBoard, queryClient, invalidateAll, pushToast, navigate])
 
   const actions = useMemo<WorkspaceActions>(() => ({
     startReview: async (item, input) => {
@@ -379,6 +402,13 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       navigate(mailboxPath('inbox'))
     },
 
+    addRepository,
+
+    pickRepository: async () => {
+      const response = await run(null, () => api.post<{ path: string | null }>('/api/v1/settings/pick_folder', { purpose: 'repository' }))
+      if (response?.path) await addRepository(response.path)
+    },
+
     setOnlyRequested: async (value) => {
       const response = await run(null, () => api.patch<UiMutationResponse>('/api/v1/pull_requests/review_scope', { requested_to_me_only: value }))
       if (response?.board) queryClient.setQueryData(queryKeys.pullRequestBoard, response.board)
@@ -407,7 +437,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       advanceFrom(item.id)
       invalidateAll()
     },
-  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login, applyBoard, resetRunDraft, items])
+  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login, applyBoard, resetRunDraft, items, addRepository])
 
   const maybeSync = useEffectEvent(() => {
     if (!board || document.visibilityState !== 'visible') return
@@ -457,6 +487,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     boardLoading: boardQuery.isLoading,
     boardError: boardQuery.error,
     items,
+    needsRepository: board !== undefined && board.current_repo.slug === null,
     login,
     route,
     mailbox,

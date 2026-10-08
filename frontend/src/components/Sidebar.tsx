@@ -87,7 +87,12 @@ export function Sidebar() {
           <button type="button" title="Repository settings" onClick={() => openSettings('repositories')}><Icon name="plus" size={14} /></button>
         </div>
 
-        {repositories.length === 0 ? <div className="sb-empty">Choose a repositories folder in Settings.</div> : null}
+        {repositories.length === 0 ? (
+          <button type="button" className="sb-item dim" onClick={() => void actions.pickRepository()}>
+            <Icon name="plus" />
+            <span className="label">Add repository…</span>
+          </button>
+        ) : null}
 
         {repositories.map((repo) => {
           const current = repo.path === currentRepo?.path || repo.current
