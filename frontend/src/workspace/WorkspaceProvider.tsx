@@ -3,7 +3,7 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useState, type PropsWi
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { ConfirmSheet } from '../components/ConfirmSheet'
-import { api } from '../lib/api'
+import { api, ApiResponseError } from '../lib/api'
 import { errorMessage } from '../lib/errors'
 import { singlePane } from '../lib/layout'
 import {
@@ -227,7 +227,12 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     try {
       return await task()
     } catch (error) {
-      pushToast(errorMessage(error), 'error')
+      // The HTTP response and realtime event report the same sync failure.
+      // Share its key while keeping the response as a fallback if realtime is offline.
+      const options = error instanceof ApiResponseError && error.error.code === 'sync_failed'
+        ? { key: 'sync-status', title: 'Sync failed' }
+        : undefined
+      pushToast(errorMessage(error), 'error', options)
       return null
     } finally {
       if (key) setPending((current) => ({ ...current, [key]: false }))

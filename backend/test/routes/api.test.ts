@@ -10,6 +10,7 @@ import type { ApiServices } from '../../src/routes/shared'
 import type { SyncStatusPayload } from '../../src/models/sync-state'
 import { DEFAULT_FOLDER_PROMPT, REPOSITORY_FOLDER_PROMPT } from '../../src/services/folder-picker'
 import type { SyncResult } from '../../src/services/sync/engine'
+import { runSync } from '../../src/services/sync/engine'
 import { SyncAdapterError } from '../../src/services/sync/github-adapter'
 import { createTestApp } from '../support/app'
 import { createTestContext, type TestContext } from '../support/context'
@@ -243,6 +244,31 @@ describe('API routes', () => {
 
       expect(status).toBe(422)
       expect(dig(json, 'error')).toEqual({ code: 'sync_failed', message: failure })
+    })
+
+    test('backs off after a real sync failure but lets force bypass the cooldown', async () => {
+      await useCurrentRepo()
+      const failure = 'gh is not authenticated'
+      const command = ['gh', 'api', 'user']
+      const automatic = { force: false }
+      const manual = { force: true }
+      ctx.commands.on(command, { success: false, stderr: failure })
+      services.runSync = runSync
+
+      const first = await call('POST', '/api/v1/pull_requests/sync', automatic)
+      const board = await call('GET', '/api/v1/pull_requests/board')
+      const second = await call('POST', '/api/v1/pull_requests/sync', automatic)
+
+      expect(dig(first.json, 'error', 'message')).toContain(failure)
+      expect(dig(board.json, 'sync_status', 'sync_needed')).toBe(false)
+      expect(second.status).toBe(200)
+      expect(dig(second.json, 'board', 'sync_status', 'status')).toBe('failed')
+      expect(ctx.commands.commandsMatching(command)).toHaveLength(1)
+
+      const forced = await call('POST', '/api/v1/pull_requests/sync', manual)
+
+      expect(dig(forced.json, 'error', 'message')).toContain(failure)
+      expect(ctx.commands.commandsMatching(command)).toHaveLength(2)
     })
   })
 
