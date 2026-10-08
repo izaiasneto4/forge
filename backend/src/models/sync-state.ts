@@ -45,16 +45,24 @@ export function updateSyncState(db: Db, state: SyncStateRecord, changes: SyncSta
   return updated
 }
 
+// Failed attempts use the same polling cooldown as successful syncs. Keeping
+// this in the persisted state also covers repository setup and page reloads.
+function cooldownStartedAt(state: SyncStateRecord) {
+  return state.status === 'failed' ? state.lastFinishedAt ?? state.lastSucceededAt : state.lastSucceededAt
+}
+
 export function syncNeeded(state: SyncStateRecord, now = new Date()) {
   if (state.status === 'running') return false
-  if (state.lastSucceededAt === null) return true
-  return secondsBetween(now, state.lastSucceededAt) >= POLL_INTERVAL_SECONDS
+  const startedAt = cooldownStartedAt(state)
+  if (startedAt === null) return true
+  return secondsBetween(now, startedAt) >= POLL_INTERVAL_SECONDS
 }
 
 export function secondsUntilSyncAllowed(state: SyncStateRecord, now = new Date()) {
-  if (state.lastSucceededAt === null) return 0
   if (state.status === 'running') return 0
-  return Math.trunc(Math.max(POLL_INTERVAL_SECONDS - secondsBetween(now, state.lastSucceededAt), 0))
+  const startedAt = cooldownStartedAt(state)
+  if (startedAt === null) return 0
+  return Math.trunc(Math.max(POLL_INTERVAL_SECONDS - secondsBetween(now, startedAt), 0))
 }
 
 export function syncStatePayload(state: SyncStateRecord, now = new Date()) {
