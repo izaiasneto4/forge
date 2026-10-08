@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 
 // The Bun API (backend/) listens on :3000 by default; ORDEM_API_URL points elsewhere.
@@ -7,6 +8,9 @@ const apiTarget = process.env.ORDEM_API_URL ?? process.env.FORGE_API_URL ?? 'htt
 export default defineConfig({
   base: '/frontend/',
   plugins: [react()],
+  resolve: {
+    alias: { '@shared': fileURLToPath(new URL('../shared', import.meta.url)) },
+  },
   build: {
     outDir: '../public/frontend',
     emptyOutDir: true,

@@ -10,3 +10,6 @@
 /tasks/
 **/node_modules/
 /backend/test/
+/desktop/
+/shared/
+/scripts/
