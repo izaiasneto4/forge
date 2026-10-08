@@ -55,6 +55,18 @@ async function run(command: string[], cwd = repositoryRoot, env: Record<string, 
   if ((await child.exited) !== 0) throw new Error(`Failed: ${command.join(' ')}`)
 }
 
+// CI passes missing secrets as empty strings; electron-builder treats an empty
+// CSC_LINK as a path and fails, so empty signing variables count as unset.
+const SIGNING_VARIABLES = ['CSC_LINK', 'CSC_KEY_PASSWORD', 'WIN_CSC_LINK', 'WIN_CSC_KEY_PASSWORD', 'APPLE_API_KEY', 'APPLE_API_KEY_ID', 'APPLE_API_ISSUER']
+
+export function withoutEmptySigningVariables(env: Record<string, string | undefined>) {
+  const cleaned = { ...env }
+  for (const name of SIGNING_VARIABLES) {
+    if (cleaned[name]?.trim() === '') delete cleaned[name]
+  }
+  return cleaned
+}
+
 function macSigningAvailable(env: Record<string, string | undefined>) {
   return Boolean(env.CSC_LINK && env.APPLE_API_KEY && env.APPLE_API_KEY_ID && env.APPLE_API_ISSUER)
 }
@@ -73,7 +85,8 @@ async function main() {
     if (!existsSync(required)) throw new Error(`Missing ${required}`)
   }
 
-  const macSigning = options.platform === 'mac' && macSigningAvailable(process.env)
+  const baseEnv = withoutEmptySigningVariables(process.env)
+  const macSigning = options.platform === 'mac' && macSigningAvailable(baseEnv)
   const desktopPackage: unknown = JSON.parse(readFileSync(join(desktopRoot, 'package.json'), 'utf8'))
   const version = typeof desktopPackage === 'object' && desktopPackage !== null && 'version' in desktopPackage && typeof desktopPackage.version === 'string' ? desktopPackage.version : ''
   const config = resolveBuildConfig({ platform: options.platform, arch: options.arch, macSigning, channel: channelForVersion(version) })
@@ -81,7 +94,7 @@ async function main() {
   mkdirSync(join(desktopRoot, 'release'), { recursive: true })
   writeFileSync(configPath, JSON.stringify(config, null, 2))
 
-  const env = { ...process.env }
+  const env = { ...baseEnv }
   // Signing is opt-in: without a certificate electron-builder must not go looking for one.
   if (!macSigning) env.CSC_IDENTITY_AUTO_DISCOVERY = 'false'
   const builder = join(desktopRoot, 'node_modules', 'electron-builder', 'cli.js')

@@ -577,7 +577,12 @@ compiled sidecar booting from `/tmp`, `bun run dist:mac` with `verify-mac.ts`, `
 on the packaged app, and a scripted click-through of the packaged app over CDP (starting page, token
 auth, About and updates, repositories folder, server crash and recovery with the banner, the CLI
 through the connection file, clean quit). Linux AppImage and deb and the Windows NSIS installer were
-cross-built from macOS; their smoke tests run in the release workflow on native runners.
+cross-built from macOS, then built natively in the release workflow (manual run 37801820154):
+all five artifacts (mac arm64 and x64, linux x64 and arm64, win x64) packaged and passed the app
+smoke test on their own runners. The same run's `linux-update` job installed a 0.0.1 AppImage,
+served 0.0.2's release folder over local HTTP (`ORDEM_UPDATE_FEED_URL`), and the app downloaded,
+installed and relaunched as 0.0.2. macOS updates need a Developer ID build (Squirrel.Mac refuses ad
+hoc signatures), so the phase 3 check on macOS waits on the Apple account.
 
 ## Appendix: probe results
 

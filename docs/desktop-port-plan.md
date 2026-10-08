@@ -45,7 +45,7 @@ C8 is code-complete but its done check needs an Apple Developer account and a pu
 - [x] C5 Linux (needs C4)
 - [x] C6 Windows (needs C4)
 - [x] C7 Release workflow (needs C5, C6). Milestone M2
-- [ ] C8 Signing, notarization, auto-update (needs C7, Apple account). Milestone M3. Code done; waits on secrets and a release to verify
+- [ ] C8 Signing, notarization, auto-update (needs C7, Apple account). Milestone M3. Linux auto-update verified in CI (`linux-update` job: a 0.0.1 AppImage updates itself to 0.0.2 from a local feed). macOS signing, notarization and updates wait on the Apple Developer account
 - [x] B3 Updates panel in Settings (needs C8)
 - [x] C9 Polish (needs C8)
 

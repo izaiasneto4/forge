@@ -16,13 +16,23 @@ export interface UpdaterOptions {
   env: Record<string, string | undefined>
   onState: (state: DesktopUpdateState) => void
   beforeInstall: () => Promise<void>
+  firstCheckDelayMs?: number
+  // Install as soon as the download finishes (the update smoke test).
+  installWhenReady?: boolean
+}
+
+// ORDEM_UPDATE_FEED_URL points a packaged build at a plain HTTP folder holding
+// latest*.yml and the artifacts, so CI can test an update without publishing.
+export function updateFeedOverride(env: Record<string, string | undefined>) {
+  const url = env.ORDEM_UPDATE_FEED_URL?.trim()
+  return url ? url : null
 }
 
 // electron-builder writes app-update.yml next to the app when a publish target
 // exists; without it (local builds) there is nothing to check against.
 function updatesAvailable(env: Record<string, string | undefined>) {
   if (!app.isPackaged || env.ORDEM_DISABLE_UPDATES === '1') return false
-  return existsSync(join(process.resourcesPath, 'app-update.yml'))
+  return updateFeedOverride(env) !== null || existsSync(join(process.resourcesPath, 'app-update.yml'))
 }
 
 function errorText(error: unknown) {
@@ -57,6 +67,8 @@ export class Updater {
       autoUpdater.channel = 'nightly'
       autoUpdater.allowPrerelease = true
     }
+    const feedOverride = updateFeedOverride(this.options.env)
+    if (feedOverride) autoUpdater.setFeedURL({ provider: 'generic', url: feedOverride })
     autoUpdater.autoDownload = true
     autoUpdater.autoInstallOnAppQuit = true
     autoUpdater.logger = { info: (message) => this.log(message), warn: (message) => this.log(message), error: (message) => this.log(message), debug: () => {} }
@@ -65,10 +77,13 @@ export class Updater {
     autoUpdater.on('update-not-available', () => this.update({ status: 'idle', checkedAt: new Date().toISOString() }))
     autoUpdater.on('update-available', (info) => this.update({ status: 'downloading', availableVersion: info.version, downloadPercent: 0, checkedAt: new Date().toISOString() }))
     autoUpdater.on('download-progress', (progress) => this.update({ status: 'downloading', downloadPercent: Math.round(progress.percent) }))
-    autoUpdater.on('update-downloaded', (info) => this.update({ status: 'ready', availableVersion: info.version, downloadPercent: 100 }))
+    autoUpdater.on('update-downloaded', (info) => {
+      this.update({ status: 'ready', availableVersion: info.version, downloadPercent: 100 })
+      if (this.options.installWhenReady) void this.install()
+    })
     autoUpdater.on('error', (error) => this.update({ status: 'error', error: errorText(error), checkedAt: new Date().toISOString() }))
 
-    this.timers.push(setTimeout(() => void this.check(), FIRST_CHECK_DELAY_MS))
+    this.timers.push(setTimeout(() => void this.check(), this.options.firstCheckDelayMs ?? FIRST_CHECK_DELAY_MS))
     this.timers.push(setInterval(() => void this.check(), CHECK_INTERVAL_MS))
   }
 

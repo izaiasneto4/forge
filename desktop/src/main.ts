@@ -25,6 +25,11 @@ const SMOKE_TIMEOUT_MS = 30_000
 const ALLOWED_PERMISSIONS = new Set(['notifications', 'clipboard-sanitized-write', 'fullscreen'])
 const development = !app.isPackaged
 const smoke = process.argv.includes('--smoke')
+// --update-smoke: check the feed at once, install what it offers, exit non-zero on error.
+const updateSmoke = process.argv.includes('--update-smoke')
+const UPDATE_SMOKE_TIMEOUT_MS = 180_000
+// Test modes run unattended: never open a dialog nobody can answer.
+const headless = smoke || updateSmoke
 const devServerUrl = development ? process.env.ORDEM_DEV_SERVER_URL?.trim() || null : null
 const appUrl = devServerUrl ? DEV_APP_URL : APP_URL
 const appOrigin = appUrl.replace(/\/$/, '')
@@ -84,8 +89,8 @@ function loadAppInStartingWindows() {
 
 // Returns true to retry. A failed first start offers Retry; a crash loop only Quit.
 async function showBackendFailure(message: string, paths: DesktopPaths, canRetry: boolean) {
-  if (smoke) {
-    console.error(`[smoke] ${message}`)
+  if (headless) {
+    console.error(`[${updateSmoke ? 'update-smoke' : 'smoke'}] ${message}`)
     app.exit(1)
     return false
   }
@@ -174,6 +179,13 @@ function restrictPermissions() {
 }
 
 async function boot() {
+  // Covers the whole run, server start included.
+  if (updateSmoke) {
+    setTimeout(() => {
+      console.error('[update-smoke] timed out')
+      app.exit(1)
+    }, UPDATE_SMOKE_TIMEOUT_MS)
+  }
   await app.whenReady()
 
   const paths = resolveDesktopPaths({
@@ -204,7 +216,14 @@ async function boot() {
   const activeUpdater = new Updater({
     log: shellLog,
     env: process.env,
-    onState: (state) => broadcast(CHANNELS.updateState, state),
+    firstCheckDelayMs: updateSmoke ? 0 : undefined,
+    installWhenReady: updateSmoke,
+    onState: (state) => {
+      broadcast(CHANNELS.updateState, state)
+      if (!updateSmoke) return
+      console.log(`[update-smoke] ${state.status}${state.availableVersion ? ` ${state.availableVersion}` : ''}${state.error ? `: ${state.error}` : ''}`)
+      if (state.status === 'error' || state.status === 'idle' || state.status === 'disabled') app.exit(1)
+    },
     beforeInstall: async () => {
       readyToQuit = true
       await manager.stop()
@@ -229,6 +248,10 @@ async function boot() {
   booted = true
   if (smoke) void runSmokeCheck(window, loaded)
   else activeUpdater.start()
+  if (updateSmoke && activeUpdater.current.status === 'disabled') {
+    console.error('[update-smoke] updates are disabled in this build')
+    app.exit(1)
+  }
 }
 
 if (process.argv.includes('--version')) {
@@ -255,7 +278,8 @@ if (process.argv.includes('--version')) {
   boot().catch((error: unknown) => {
     const message = error instanceof Error ? (error.stack ?? error.message) : String(error)
     logLine(`[shell] boot failed: ${message}`)
-    dialog.showErrorBox('Ordem could not start', message)
+    if (headless) console.error(message)
+    else dialog.showErrorBox('Ordem could not start', message)
     app.exit(1)
   })
 }
