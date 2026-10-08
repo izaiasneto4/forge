@@ -67,6 +67,7 @@ export function CommandPalette() {
       action('reviewing', 'Go to Reviewing', 'sparkles', () => goToMailbox('reviewing')),
       action('inspector', 'Toggle inspector', 'inspector', toggleInspector, 'I'),
       action('settings', 'Settings…', 'gear', () => openSettings(), '⌘,'),
+      action('add-repository', 'Add repository…', 'folder', () => void actions.pickRepository()),
       ...repositoryActions,
     ]
 

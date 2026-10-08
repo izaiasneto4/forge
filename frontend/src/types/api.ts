@@ -321,6 +321,7 @@ export interface BootstrapResponse {
 
 export interface UiMutationResponse {
   message?: string
+  synced?: boolean
   sync?: SyncStatus
   already_running?: boolean
   board?: PullRequestBoardResponse

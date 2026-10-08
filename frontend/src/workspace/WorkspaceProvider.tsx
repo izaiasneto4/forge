@@ -239,6 +239,24 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     { cli_client: input.client, review_type: input.depth, focus: input.focus },
   ), [])
 
+  // Adding a repository syncs it, so it shares the sync spinner. A folder of
+  // several checkouts only becomes the repos folder; the user picks one next.
+  const addRepository = useCallback(async (path: string) => {
+    const response = await run('sync', () => api.post<UiMutationResponse>('/api/v1/repositories', { path }))
+    // A failed sync still leaves the repository tracked, so refresh either way.
+    queryClient.invalidateQueries({ queryKey: queryKeys.repositories })
+    queryClient.invalidateQueries({ queryKey: queryKeys.settings })
+    invalidateAll()
+    if (!response) return
+    applyBoard(response)
+    if (response.synced === false) {
+      pushToast(response.message ?? 'Pick the repository to track.', 'info', { title: 'Repositories found' })
+      return
+    }
+    pushToast(response.message ?? 'Repository added', 'success', { title: 'Repository added' })
+    navigate(mailboxPath('inbox'))
+  }, [run, applyBoard, queryClient, invalidateAll, pushToast, navigate])
+
   const actions = useMemo<WorkspaceActions>(() => ({
     startReview: async (item, input) => {
       const response = await run('start', () => createReview(item, input))
@@ -379,6 +397,13 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       navigate(mailboxPath('inbox'))
     },
 
+    addRepository,
+
+    pickRepository: async () => {
+      const response = await run(null, () => api.post<{ path: string | null }>('/api/v1/settings/pick_folder', { purpose: 'repository' }))
+      if (response?.path) await addRepository(response.path)
+    },
+
     setOnlyRequested: async (value) => {
       const response = await run(null, () => api.patch<UiMutationResponse>('/api/v1/pull_requests/review_scope', { requested_to_me_only: value }))
       if (response?.board) queryClient.setQueryData(queryKeys.pullRequestBoard, response.board)
@@ -407,7 +432,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       advanceFrom(item.id)
       invalidateAll()
     },
-  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login, applyBoard, resetRunDraft, items])
+  }), [run, createReview, pushToast, invalidateAll, queryClient, navigate, bootstrap, requestedItems, advanceFrom, confirm, login, applyBoard, resetRunDraft, items, addRepository])
 
   const maybeSync = useEffectEvent(() => {
     if (!board || document.visibilityState !== 'visible') return
@@ -457,6 +482,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     boardLoading: boardQuery.isLoading,
     boardError: boardQuery.error,
     items,
+    needsRepository: board !== undefined && board.current_repo.slug === null,
     login,
     route,
     mailbox,

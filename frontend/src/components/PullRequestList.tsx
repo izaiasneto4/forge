@@ -115,7 +115,7 @@ function subtitleFor(mailbox: MailboxId, items: PullRequestItem[]) {
 export function PullRequestList() {
   const {
     mailbox, sections, selected, sort, setSort, board, actions, collapsedSections, toggleSection,
-    boardLoading, sidebarOpen, toggleSidebar, hiddenByScope,
+    boardLoading, sidebarOpen, toggleSidebar, hiddenByScope, needsRepository,
   } = useWorkspace()
   const items = sections.flatMap((section) => section.items)
   const onlyRequested = board?.settings.only_requested_reviews ?? false
@@ -127,7 +127,7 @@ export function PullRequestList() {
         {!sidebarOpen ? <button type="button" className="tb-btn" title="Show sidebar  ⌘\" onClick={toggleSidebar}><Icon name="sidebar" /></button> : null}
         <div className="ttl">
           <h2>{MAILBOX_LABELS[mailbox]}{board?.current_repo.name ? <span style={{ color: 'var(--t3)', fontWeight: 500 }}> · {board.current_repo.name}</span> : null}</h2>
-          <div className="sub">{subtitleFor(mailbox, items)}</div>
+          <div className="sub">{needsRepository ? 'No repository' : subtitleFor(mailbox, items)}</div>
         </div>
         <MenuButton
           className="tb-btn"
@@ -157,7 +157,15 @@ export function PullRequestList() {
           </div>
         ) : null}
 
-        {!boardLoading && items.length === 0 ? (
+        {!boardLoading && items.length === 0 && needsRepository ? (
+          <div className="list-empty">
+            <div className="big neutral"><Icon name="folder" size={24} /></div>
+            <b>No repository yet</b>
+            <span>Add one and Ordem starts tracking its pull requests.</span>
+          </div>
+        ) : null}
+
+        {!boardLoading && items.length === 0 && !needsRepository ? (
           <div className="list-empty">
             <div className="big"><Icon name="check" size={26} stroke={2.2} /></div>
             <b>{empty.title}</b>
