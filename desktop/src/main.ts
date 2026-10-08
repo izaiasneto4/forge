@@ -25,6 +25,9 @@ const SMOKE_TIMEOUT_MS = 30_000
 const ALLOWED_PERMISSIONS = new Set(['notifications', 'clipboard-sanitized-write', 'fullscreen'])
 const development = !app.isPackaged
 const smoke = process.argv.includes('--smoke')
+// --update-smoke: check the feed at once, install what it offers, exit non-zero on error.
+const updateSmoke = process.argv.includes('--update-smoke')
+const UPDATE_SMOKE_TIMEOUT_MS = 180_000
 const devServerUrl = development ? process.env.ORDEM_DEV_SERVER_URL?.trim() || null : null
 const appUrl = devServerUrl ? DEV_APP_URL : APP_URL
 const appOrigin = appUrl.replace(/\/$/, '')
@@ -204,7 +207,14 @@ async function boot() {
   const activeUpdater = new Updater({
     log: shellLog,
     env: process.env,
-    onState: (state) => broadcast(CHANNELS.updateState, state),
+    firstCheckDelayMs: updateSmoke ? 0 : undefined,
+    installWhenReady: updateSmoke,
+    onState: (state) => {
+      broadcast(CHANNELS.updateState, state)
+      if (!updateSmoke) return
+      console.log(`[update-smoke] ${state.status}${state.availableVersion ? ` ${state.availableVersion}` : ''}${state.error ? `: ${state.error}` : ''}`)
+      if (state.status === 'error' || state.status === 'idle' || state.status === 'disabled') app.exit(1)
+    },
     beforeInstall: async () => {
       readyToQuit = true
       await manager.stop()
@@ -229,6 +239,16 @@ async function boot() {
   booted = true
   if (smoke) void runSmokeCheck(window, loaded)
   else activeUpdater.start()
+  if (updateSmoke) {
+    if (activeUpdater.current.status === 'disabled') {
+      console.error('[update-smoke] updates are disabled in this build')
+      app.exit(1)
+    }
+    setTimeout(() => {
+      console.error('[update-smoke] timed out')
+      app.exit(1)
+    }, UPDATE_SMOKE_TIMEOUT_MS)
+  }
 }
 
 if (process.argv.includes('--version')) {
