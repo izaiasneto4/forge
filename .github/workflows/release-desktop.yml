@@ -2,15 +2,12 @@ name: Desktop release
 
 # Builds the JavaScript once, then packages it on each platform's own hardware
 # with a server compiled there, smoke-tests every build, and publishes one
-# GitHub Release. Tags with a suffix (v1.2.0-alpha.1) become pre-releases.
-# The nightly schedule publishes <version>-nightly.<date> pre-releases; their
-# version puts them on electron-updater's nightly channel, so stable installs
-# are never offered one.
+# GitHub Release. Tags with a suffix (v1.2.0-beta.1) become pre-releases.
+# Nightlies are off; a schedule trigger here would publish
+# <version>-nightly.<date> pre-releases on electron-updater's nightly channel.
 on:
   push:
     tags: ['v*']
-  schedule:
-    - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       version:
@@ -228,5 +225,7 @@ jobs:
           TAG: ${{ needs.preflight.outputs.tag }}
           PRERELEASE: ${{ needs.preflight.outputs.prerelease }}
         run: |
-          # Nightly tags do not exist yet; --target creates them at the built commit.
-          gh release create "$TAG" release/* --target "$GITHUB_SHA" --title "Ordem $TAG" --generate-notes $([ "$PRERELEASE" = "true" ] && echo --prerelease)
+          # Install notes first, then GitHub's generated changelog. --target
+          # creates the tag at the built commit when it doesn't exist yet.
+          sed "s/<version>/${TAG#v}/g" desktop/release-notes.md > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" release/* --target "$GITHUB_SHA" --title "Ordem $TAG" --notes-file "$RUNNER_TEMP/notes.md" --generate-notes $([ "$PRERELEASE" = "true" ] && echo --prerelease)
