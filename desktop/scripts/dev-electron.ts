@@ -31,7 +31,7 @@ async function viteAnswers() {
 await waitFor(() => existsSync(join(distDir, 'main.cjs')) && existsSync(join(distDir, 'preload.cjs')), 'dist-electron')
 await waitFor(viteAnswers, `Vite at ${devServerUrl}`)
 
-const env = { ...process.env, ORDEM_DEV_SERVER_URL: devServerUrl }
+const env: Record<string, string | undefined> = { ...process.env, ORDEM_DEV_SERVER_URL: devServerUrl }
 delete env.ELECTRON_RUN_AS_NODE
 
 let electron: ReturnType<typeof Bun.spawn> | null = null

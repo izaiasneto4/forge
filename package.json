@@ -21,7 +21,14 @@
     "desktop:dev": "bin/dev-desktop",
     "desktop:build": "bun desktop/scripts/build.ts",
     "desktop:test": "bun test ./desktop/test",
-    "desktop:typecheck": "npm --prefix desktop run typecheck"
+    "desktop:typecheck": "npm --prefix desktop run typecheck",
+    "desktop:icons": "bun desktop/scripts/icons.ts",
+    "desktop:smoke": "bun desktop/scripts/smoke.ts",
+    "dist:mac": "bun desktop/scripts/dist.ts --mac --arch arm64",
+    "dist:mac:x64": "bun desktop/scripts/dist.ts --mac --arch x64",
+    "dist:linux": "bun desktop/scripts/dist.ts --linux --arch x64",
+    "dist:linux:arm64": "bun desktop/scripts/dist.ts --linux --arch arm64",
+    "dist:win": "bun desktop/scripts/dist.ts --win --arch x64"
   },
   "keywords": [],
   "author": "",

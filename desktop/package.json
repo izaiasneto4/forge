@@ -1,6 +1,7 @@
 {
   "name": "ordem-desktop",
   "productName": "Ordem",
+  "desktopName": "ordem.desktop",
   "version": "1.0.0",
   "description": "Ordem desktop app: the web app in an Electron window with a bundled Bun server.",
   "homepage": "https://ordem.sh",
