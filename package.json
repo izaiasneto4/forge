@@ -17,7 +17,11 @@
     "server:build": "bun scripts/build-server.ts",
     "server:smoke": "bun scripts/smoke-server.ts",
     "scripts:typecheck": "backend/node_modules/.bin/tsc -p scripts --noEmit",
-    "scripts:test": "bun test ./scripts"
+    "scripts:test": "bun test ./scripts",
+    "desktop:dev": "bin/dev-desktop",
+    "desktop:build": "bun desktop/scripts/build.ts",
+    "desktop:test": "bun test ./desktop/test",
+    "desktop:typecheck": "npm --prefix desktop run typecheck"
   },
   "keywords": [],
   "author": "",

@@ -1,0 +1,24 @@
+{
+  "name": "ordem-desktop",
+  "productName": "Ordem",
+  "version": "1.0.0",
+  "description": "Ordem desktop app: the web app in an Electron window with a bundled Bun server.",
+  "homepage": "https://ordem.sh",
+  "author": "Izaias Oliveira",
+  "license": "MIT",
+  "private": true,
+  "main": "dist-electron/main.cjs",
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "bun test ./test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "@types/node": "^22.15.0",
+    "electron": "44.7.0",
+    "electron-builder": "^26.15.3",
+    "electron-updater": "^6.8.9",
+    "typescript": "~6.0.3"
+  }
+}
