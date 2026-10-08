@@ -1,8 +1,8 @@
-import { app, BrowserWindow, dialog, shell } from 'electron'
+import { app, BrowserWindow, dialog, session, shell } from 'electron'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { DesktopPlatform } from '@shared/desktop-bridge'
-import { BackendManager, type BackendState } from './backend'
+import { BackendManager, rendererBackendState, type BackendState } from './backend'
 import { CHANNELS } from './channels'
 import { broadcast, registerIpc } from './ipc'
 import { RotatingLog } from './log'
@@ -11,13 +11,17 @@ import { resolveDesktopPaths, type DesktopPaths } from './paths'
 import { handleAppProtocol, handleDevAppProtocol, registerSchemePrivileges } from './protocol'
 import { APP_URL, DEV_APP_URL } from './protocol-routes'
 import { recoverShellEnvironment } from './shell-env'
+import { STARTING_PAGE_URL } from './starting-page'
 import { Updater } from './updater'
 import { createMainWindow } from './window'
 
-// Boot order: single-instance lock, scheme privileges, ready, login-shell env,
-// server, protocol, IPC, window. Quit waits for the server to stop.
+// Boot order: single-instance lock, scheme privileges, ready, protocol, IPC,
+// window with a starting page, login-shell env, server, then the app page.
+// Quit waits for the server to stop.
 
 const SMOKE_TIMEOUT_MS = 30_000
+// Copy buttons need clipboard writes; review notifications need notifications.
+const ALLOWED_PERMISSIONS = new Set(['notifications', 'clipboard-sanitized-write', 'fullscreen'])
 const development = !app.isPackaged
 const smoke = process.argv.includes('--smoke')
 const devServerUrl = development ? process.env.ORDEM_DEV_SERVER_URL?.trim() || null : null
@@ -49,6 +53,7 @@ function focusMainWindow() {
 
 function onBackendState(state: BackendState, paths: DesktopPaths) {
   logLine(`[shell] server ${state.status}`)
+  broadcast(CHANNELS.backendState, rendererBackendState(state))
   if (state.status === 'ready') broadcast(CHANNELS.localEnvironmentChanged, state.environment)
   if (state.status === 'failed') void showBackendFailure(state.message, paths, false)
 }
@@ -86,14 +91,14 @@ async function startBackend(manager: BackendManager, paths: DesktopPaths) {
 }
 
 // Not __dirname: Bun's bundler bakes in the source folder at build time.
-function openWindow(paths: DesktopPaths) {
+function openWindow(paths: DesktopPaths, url: string) {
   const window = createMainWindow({ preloadPath: join(app.getAppPath(), 'dist-electron', 'preload.cjs'), settingsFile: paths.settingsFile, appOrigin })
   window.on('closed', () => {
     if (mainWindow === window) mainWindow = null
   })
   window.webContents.on('preload-error', (_event, preloadPath, error) => logLine(`[shell] preload ${preloadPath} failed: ${error.message}`))
   window.webContents.on('render-process-gone', (_event, details) => logLine(`[shell] renderer gone: ${details.reason}`))
-  void window.loadURL(appUrl)
+  void window.loadURL(url)
   mainWindow = window
   return window
 }
@@ -112,18 +117,22 @@ const SMOKE_PROBE = `(async () => {
   return response.status === 200 ? 'ok' : 'status ' + response.status
 })()`
 
-function runSmokeCheck(window: BrowserWindow) {
+async function runSmokeCheck(window: BrowserWindow, loaded: Promise<void>) {
   const timeout = setTimeout(() => {
     console.error('[smoke] timed out')
     app.exit(1)
   }, SMOKE_TIMEOUT_MS)
-  window.webContents.once('did-finish-load', async () => {
-    const result: unknown = await window.webContents.executeJavaScript(SMOKE_PROBE)
-    clearTimeout(timeout)
-    console.log(`[smoke] ${String(result)}`)
-    await backend?.stop()
-    app.exit(result === 'ok' ? 0 : 1)
-  })
+  await loaded
+  const result: unknown = await window.webContents.executeJavaScript(SMOKE_PROBE)
+  clearTimeout(timeout)
+  console.log(`[smoke] ${String(result)}`)
+  await backend?.stop()
+  app.exit(result === 'ok' ? 0 : 1)
+}
+
+function restrictPermissions() {
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => callback(ALLOWED_PERMISSIONS.has(permission)))
+  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => ALLOWED_PERMISSIONS.has(permission))
 }
 
 async function boot() {
@@ -140,23 +149,21 @@ async function boot() {
   shellLog = new RotatingLog(join(paths.logDir, 'desktop.log'))
   logLine(`[shell] Ordem ${app.getVersion()} (${development ? 'development' : 'packaged'}), state in ${paths.stateDir}`)
 
-  const shellEnv = await recoverShellEnvironment({ env: process.env, platform: process.platform, log: logLine })
-  backend = new BackendManager({
+  if (devServerUrl) handleDevAppProtocol(paths.publicDir, devServerUrl)
+  else handleAppProtocol(paths.publicDir)
+  restrictPermissions()
+
+  const manager = new BackendManager({
     server: paths.server,
     cwd: homedir(),
     inheritedEnv: process.env,
-    shellEnv,
+    shellEnv: {},
     values: { home: paths.home, stateDir: paths.stateDir, publicDir: paths.publicDir, migrationsDir: paths.migrationsDir, isPackaged: app.isPackaged },
     log: new RotatingLog(join(paths.logDir, 'server.log')),
     onState: (state) => onBackendState(state, paths),
   })
-  if (!(await startBackend(backend, paths))) return
-
-  if (devServerUrl) handleDevAppProtocol(paths.publicDir, devServerUrl)
-  else handleAppProtocol(paths.publicDir)
-
-  const manager = backend
-  updater = new Updater({
+  backend = manager
+  const activeUpdater = new Updater({
     log: shellLog,
     env: process.env,
     onState: (state) => broadcast(CHANNELS.updateState, state),
@@ -165,16 +172,24 @@ async function boot() {
       await manager.stop()
     },
   })
-  registerIpc({ appOrigin, platform: desktopPlatform(), environment: () => manager.environment, updater })
+  updater = activeUpdater
+  registerIpc({ appOrigin, platform: desktopPlatform(), environment: () => manager.environment, updater: activeUpdater })
   installMenu({ development })
 
-  const window = openWindow(paths)
-  if (smoke) runSmokeCheck(window)
-  else updater.start()
-
+  // A window right away; the app page replaces the starting page once the server answers.
+  openWindow(paths, STARTING_PAGE_URL)
   app.on('activate', () => {
-    if (!mainWindow) openWindow(paths)
+    if (mainWindow) focusMainWindow()
+    else openWindow(paths, manager.environment ? appUrl : STARTING_PAGE_URL)
   })
+
+  manager.setShellEnv(await recoverShellEnvironment({ env: process.env, platform: process.platform, log: logLine }))
+  if (!(await startBackend(manager, paths))) return
+
+  const window = mainWindow ?? openWindow(paths, STARTING_PAGE_URL)
+  const loaded = window.loadURL(appUrl)
+  if (smoke) void runSmokeCheck(window, loaded)
+  else activeUpdater.start()
 }
 
 if (process.argv.includes('--version')) {

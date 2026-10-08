@@ -11,4 +11,6 @@ export const CHANNELS = Object.freeze({
   updateState: 'ordem:update-state',
   checkForUpdates: 'ordem:check-for-updates',
   installUpdate: 'ordem:install-update',
+  backendState: 'ordem:backend-state',
+  setBadgeCount: 'ordem:set-badge-count',
 })

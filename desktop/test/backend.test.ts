@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { backoffDelayMs, BACKOFF_CAP_MS, BackendManager, BackendStartError, buildServerEnv, LOOPBACK_HOST, stripServerKeys, type BackendState } from '../src/backend'
+import { backoffDelayMs, BACKOFF_CAP_MS, BackendManager, BackendStartError, buildServerEnv, LOOPBACK_HOST, rendererBackendState, stripServerKeys, type BackendState } from '../src/backend'
 import { RotatingLog } from '../src/log'
 
 const values = {
@@ -50,6 +50,15 @@ describe('server environment', () => {
     const env = buildServerEnv({}, {}, { ...values, isPackaged: false, stateDir: '/Users/dev/.ordem/dev' })
 
     expect(env.NODE_ENV).toBe('development')
+  })
+})
+
+describe('rendererBackendState', () => {
+  test('passes the status and only a failure message', () => {
+    const message = 'The Ordem server did not start'
+
+    expect(rendererBackendState({ status: 'failed', message })).toEqual({ status: 'failed', message })
+    expect(rendererBackendState({ status: 'restarting', attempt: 2, delayMs: 2000 })).toEqual({ status: 'restarting', message: null })
   })
 })
 

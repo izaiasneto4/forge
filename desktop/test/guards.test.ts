@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { isExternalUrl, isLocalEnvironment, isUpdateState, pickFolderOptions } from '../src/guards'
+import { badgeCount, isBackendState, isExternalUrl, isLocalEnvironment, isUpdateState, pickFolderOptions } from '../src/guards'
 
 describe('IPC guards', () => {
   test('lets only https links leave the app', () => {
@@ -26,5 +26,19 @@ describe('IPC guards', () => {
     expect(isLocalEnvironment({ ...environment, token: 1 })).toBe(false)
     expect(isUpdateState(state)).toBe(true)
     expect(isUpdateState({ ...state, status: 'exploded' })).toBe(false)
+  })
+
+  test('accepts only whole, non-negative badge counts', () => {
+    const pending = 7
+
+    expect(badgeCount(pending)).toBe(pending)
+    expect(badgeCount(-1)).toBe(0)
+    expect(badgeCount(2.5)).toBe(0)
+    expect(badgeCount('3')).toBe(0)
+  })
+
+  test('recognises backend states', () => {
+    expect(isBackendState({ status: 'restarting', message: null })).toBe(true)
+    expect(isBackendState({ status: 'exploded', message: null })).toBe(false)
   })
 })

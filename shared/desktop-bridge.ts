@@ -28,6 +28,15 @@ export interface DesktopUpdateState {
   checkedAt: string | null
 }
 
+// The server the shell supervises. The page loads once it is ready; later
+// states tell the app the server is restarting or gave up.
+export type DesktopBackendStatus = 'starting' | 'ready' | 'restarting' | 'failed' | 'stopped'
+
+export interface DesktopBackendState {
+  status: DesktopBackendStatus
+  message: string | null
+}
+
 export interface PickFolderOptions {
   initialPath?: string
 }
@@ -41,4 +50,7 @@ export interface DesktopBridge {
   onUpdateState(listener: (state: DesktopUpdateState) => void): () => void
   checkForUpdates(): Promise<void>
   installUpdate(): Promise<void>
+  onBackendState(listener: (state: DesktopBackendState) => void): () => void
+  // Dock and launcher badge; 0 clears it.
+  setBadgeCount(count: number): void
 }

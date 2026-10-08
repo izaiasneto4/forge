@@ -27,6 +27,8 @@ export function buildDesktopBridge(overrides: Partial<DesktopBridge> = {}): Desk
     onUpdateState: vi.fn(() => () => {}),
     checkForUpdates: vi.fn(async () => {}),
     installUpdate: vi.fn(async () => {}),
+    onBackendState: vi.fn(() => () => {}),
+    setBadgeCount: vi.fn(),
     ...overrides,
   }
 }

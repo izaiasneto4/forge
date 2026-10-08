@@ -1,7 +1,8 @@
-import type { DesktopLocalEnvironment, DesktopUpdateState, DesktopUpdateStatus, PickFolderOptions } from '@shared/desktop-bridge'
+import type { DesktopBackendState, DesktopBackendStatus, DesktopLocalEnvironment, DesktopUpdateState, DesktopUpdateStatus, PickFolderOptions } from '@shared/desktop-bridge'
 
 // IPC payloads cross a trust boundary in both directions; narrow, never cast.
 
+const BACKEND_STATUSES: readonly DesktopBackendStatus[] = Object.freeze(['starting', 'ready', 'restarting', 'failed', 'stopped'])
 const UPDATE_STATUSES: readonly DesktopUpdateStatus[] = Object.freeze(['disabled', 'idle', 'checking', 'available', 'downloading', 'ready', 'error'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -49,4 +50,14 @@ export function isExternalUrl(value: unknown): value is string {
   } catch {
     return false
   }
+}
+
+export function isBackendState(value: unknown): value is DesktopBackendState {
+  return isRecord(value) && BACKEND_STATUSES.some((status) => status === value.status) && isNullableString(value.message)
+}
+
+// Badge counts arrive from the renderer: whole, non-negative and sane.
+export function badgeCount(value: unknown) {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) return 0
+  return Math.min(value, 9999)
 }

@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { createServer } from 'node:net'
-import type { DesktopLocalEnvironment } from '@shared/desktop-bridge'
+import type { DesktopBackendState, DesktopLocalEnvironment } from '@shared/desktop-bridge'
 import type { RotatingLog } from './log'
 import type { ServerCommand } from './paths'
 import type { Env } from './shell-env'
@@ -104,6 +104,11 @@ export type BackendState =
   | { status: 'failed'; message: string }
   | { status: 'stopped' }
 
+// What the renderer hears: no environment (it has that already), the failure text only.
+export function rendererBackendState(state: BackendState): DesktopBackendState {
+  return { status: state.status, message: state.status === 'failed' ? state.message : null }
+}
+
 export interface BackendManagerOptions {
   server: ServerCommand
   cwd: string
@@ -144,8 +149,16 @@ export class BackendManager {
   private restartTimer: ReturnType<typeof setTimeout> | null = null
   private readySince = 0
   private current: BackendState = { status: 'stopped' }
+  private shellEnv: Env
 
-  constructor(private readonly options: BackendManagerOptions) {}
+  constructor(private readonly options: BackendManagerOptions) {
+    this.shellEnv = options.shellEnv
+  }
+
+  // The login-shell probe finishes after the window opens; later spawns use it.
+  setShellEnv(shellEnv: Env) {
+    this.shellEnv = shellEnv
+  }
 
   get state() {
     return this.current
@@ -207,7 +220,7 @@ export class BackendManager {
   private async launch(): Promise<DesktopLocalEnvironment | null> {
     this.setState({ status: 'starting' })
     const { server, values } = this.options
-    const env = buildServerEnv(this.options.inheritedEnv, this.options.shellEnv, { ...values, port: this.port, token: this.token })
+    const env = buildServerEnv(this.options.inheritedEnv, this.shellEnv, { ...values, port: this.port, token: this.token })
     this.options.log.line(`[shell] starting ${server.command} ${server.args.join(' ')} on port ${this.port}`)
 
     const child = spawn(server.command, server.args, { cwd: this.options.cwd, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true })

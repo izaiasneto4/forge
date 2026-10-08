@@ -8,10 +8,12 @@ import { NewReview } from '../components/NewReview'
 import { PullRequestDetail, DetailEmpty } from '../components/PullRequestDetail'
 import { PullRequestList } from '../components/PullRequestList'
 import { RepositorySetup } from '../components/RepositorySetup'
+import { ServerStatus } from '../components/ServerStatus'
 import { SettingsSheet } from '../components/SettingsSheet'
 import { Sidebar } from '../components/Sidebar'
 import { subscribe } from '../lib/realtime'
 import { errorMessage } from '../lib/errors'
+import { useDesktopBadge } from '../lib/desktopStatus'
 import { MAILBOX_LABELS } from '../lib/lifecycle'
 import { desktopNotificationsEnabled } from '../lib/preferences'
 import { useToasts } from '../lib/toastContext'
@@ -172,11 +174,12 @@ function DetailPane() {
 }
 
 export function Workspace() {
-  const { sidebarOpen, inspectorOpen, route, selected, paletteOpen, settingsTab, needsRepository } = useWorkspace()
+  const { sidebarOpen, inspectorOpen, route, selected, paletteOpen, settingsTab, needsRepository, counts } = useWorkspace()
   const showInspector = inspectorOpen && route.kind !== 'new'
 
   useShortcuts()
   useLiveUpdates()
+  useDesktopBadge(counts.inbox)
 
   const classes = ['window']
   if (!sidebarOpen) classes.push('no-sidebar')
@@ -196,6 +199,7 @@ export function Workspace() {
       </div>
       {paletteOpen ? <CommandPalette /> : null}
       {settingsTab ? <SettingsSheet tab={settingsTab} /> : null}
+      <ServerStatus />
     </>
   )
 }

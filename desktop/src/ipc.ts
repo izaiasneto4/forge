@@ -1,7 +1,7 @@
-import { BrowserWindow, dialog, ipcMain, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import type { DesktopLocalEnvironment, DesktopPlatform } from '@shared/desktop-bridge'
 import { CHANNELS } from './channels'
-import { isExternalUrl, pickFolderOptions } from './guards'
+import { badgeCount, isExternalUrl, pickFolderOptions } from './guards'
 import type { Updater } from './updater'
 
 // Handlers behind the preload bridge. Each checks the caller is the app's own
@@ -38,6 +38,10 @@ export function registerIpc(options: IpcOptions) {
   })
   ipcMain.on(CHANNELS.getLocalEnvironment, (event) => {
     event.returnValue = fromApp(event, options.appOrigin) ? options.environment() : null
+  })
+  // Linux shows it only under Unity-style launchers; Windows ignores it.
+  ipcMain.on(CHANNELS.setBadgeCount, (event, count: unknown) => {
+    if (fromApp(event, options.appOrigin)) app.setBadgeCount(badgeCount(count))
   })
 
   guardedHandle(CHANNELS.pickFolder, async (event, rawOptions) => {
