@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
+import type { DesktopBridge, DesktopUpdateState } from '@shared/desktop-bridge'
 
 import { agentLabel } from '../lib/agents'
 import { api } from '../lib/api'
@@ -7,6 +8,7 @@ import { desktopBridge } from '../lib/desktop'
 import { errorMessage } from '../lib/errors'
 import { ACCENTS, desktopNotificationsEnabled, onAccentColor, saveAccent, setDesktopNotifications, storedAccent } from '../lib/preferences'
 import { queryKeys } from '../lib/queryKeys'
+import { updateSummary } from '../lib/updates'
 import { useToasts } from '../lib/toastContext'
 import type { RepositoryListResponse, SettingsResponse, UiMutationResponse } from '../types/api'
 import { useWorkspace } from '../workspace/context'
@@ -70,6 +72,7 @@ function General({ settings }: { settings: SettingsResponse }) {
   const mutation = useSettingsMutation()
   const [accent, setAccent] = useState(storedAccent)
   const [notify, setNotify] = useState(desktopNotificationsEnabled)
+  const bridge = desktopBridge()
 
   return (
     <>
@@ -105,6 +108,49 @@ function General({ settings }: { settings: SettingsResponse }) {
         </Row>
         <Row label="Desktop notifications" hint="Get a macOS notification when a review finishes while Ordem is in the background">
           <Switch label="Desktop notifications" on={notify} onChange={(value) => void setDesktopNotifications(value).then(setNotify)} />
+        </Row>
+      </div>
+
+      {bridge ? <About bridge={bridge} /> : null}
+    </>
+  )
+}
+
+function useUpdateState(bridge: DesktopBridge) {
+  const [state, setState] = useState<DesktopUpdateState | null>(null)
+  useEffect(() => {
+    let active = true
+    void bridge.getUpdateState().then((current) => {
+      if (active) setState(current)
+    })
+    const unsubscribe = bridge.onUpdateState(setState)
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [bridge])
+  return state
+}
+
+// Desktop only: the app version and its updater, driven through the bridge.
+function About({ bridge }: { bridge: DesktopBridge }) {
+  const state = useUpdateState(bridge)
+  const { pushToast } = useToasts()
+  if (!state) return null
+  const summary = updateSummary(state)
+  const busy = state.status === 'checking' || state.status === 'downloading'
+
+  return (
+    <>
+      <div className="group-label">About</div>
+      <div className="group">
+        <Row label="Version"><span className="mono">{state.currentVersion}</span></Row>
+        <Row label={summary.label} hint={summary.hint}>
+          {state.status === 'ready' ? (
+            <button type="button" className="btn primary" onClick={() => void bridge.installUpdate().catch((error: unknown) => pushToast(errorMessage(error), 'error'))}>Restart to update</button>
+          ) : state.status === 'disabled' ? null : (
+            <button type="button" className="btn" disabled={busy} onClick={() => void bridge.checkForUpdates().catch((error: unknown) => pushToast(errorMessage(error), 'error'))}>Check now</button>
+          )}
         </Row>
       </div>
     </>
