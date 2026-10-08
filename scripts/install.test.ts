@@ -125,4 +125,22 @@ describe('install.sh', () => {
     }
     expect(readdirSync(installDir).filter((entry) => entry.startsWith('.Ordem.installing'))).toEqual([])
   })
+
+  test('an install interrupted while waiting leaves the other run\'s lock alone', async () => {
+    const lock = join(installDir, '.Ordem.install.lock')
+    mkdirSync(lock)
+    checksums = `${sha256(artifact)}  ${releaseFile}\n`
+    const env = { PATH: process.env.PATH, HOME: workDir, XDG_DATA_HOME: join(workDir, 'share'), ORDEM_VERSION: version, ORDEM_DOWNLOAD_URL: `http://127.0.0.1:${release.port}`, ORDEM_ICON_URL: `http://127.0.0.1:${release.port}/icon.png`, ORDEM_INSTALL_DIR: installDir }
+    const waiting = Bun.spawn(['sh', installScript], { env, stdout: 'pipe', stderr: 'pipe' })
+    // It has staged its copy and is now polling for the lock.
+    for (let tries = 0; tries < 250 && !readdirSync(installDir).some((entry) => entry.startsWith('.Ordem.installing')); tries += 1) await Bun.sleep(20)
+    await Bun.sleep(300)
+    waiting.kill('SIGINT')
+    const code = await waiting.exited
+
+    expect(code).not.toBe(0)
+    expect(existsSync(lock)).toBe(true)
+    expect(readFileSync(existingInstall, 'utf8')).toBe(existingContents)
+    expect(readdirSync(installDir).filter((entry) => entry.startsWith('.Ordem.installing'))).toEqual([])
+  })
 })

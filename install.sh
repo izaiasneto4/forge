@@ -61,7 +61,20 @@ fi
 work=$(mktemp -d)
 staging=""
 lock=""
-trap 'rm -rf "$work"; [ -z "$staging" ] || rm -rf "$staging"; [ -z "$lock" ] || rmdir "$lock" 2>/dev/null' EXIT
+release_lock() {
+  [ -z "$lock" ] || rmdir "$lock" 2>/dev/null || true
+  lock=""
+}
+cleanup() {
+  rm -rf "$work"
+  [ -z "$staging" ] || rm -rf "$staging"
+  release_lock
+}
+trap cleanup EXIT
+# Ctrl-C, a closed terminal or kill must not leave the lock behind either.
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 143' TERM
+trap 'cleanup; exit 129' HUP
 
 # Serializes the final swap between overlapping installs into the same folder
 # (mkdir is atomic). Staging stays per run, so downloads and copies overlap freely.
@@ -102,7 +115,8 @@ install_mac() {
   app="$target_dir/Ordem.app"
 
   # Replacing a running app breaks it; ask that copy to quit (it stops its server first).
-  running() { pgrep -f "$app/Contents/MacOS/Ordem" >/dev/null 2>&1; }
+  # Exact executable paths (ps comm), so a pgrep or grep for the path never matches itself.
+  running() { ps -axo comm= | grep -Fqx "$app/Contents/MacOS/Ordem"; }
   if running; then
     say "Quitting the running Ordem…"
     osascript -e 'quit app "Ordem"' >/dev/null 2>&1 || true
@@ -127,6 +141,7 @@ install_mac() {
   take_lock "$target_dir"
   rm -rf "$app"
   mv "$staged" "$app"
+  release_lock
 
   say "Installed $app"
   say "Open it from Launchpad or with: open \"$app\""
@@ -145,11 +160,12 @@ install_linux() {
   chmod +x "$staged"
   take_lock "$target_dir"
   mv -f "$staged" "$appimage"
+  release_lock
 
   data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
   icon="$data_home/icons/hicolor/512x512/apps/ordem.png"
   mkdir -p "$(dirname "$icon")" "$data_home/applications"
-  curl -fsSL -o "$icon" "${ORDEM_ICON_URL:-https://raw.githubusercontent.com/$REPO/$tag/public/icon.png}" 2>/dev/null || true
+  curl -fsSL --max-time 20 -o "$icon" "${ORDEM_ICON_URL:-https://raw.githubusercontent.com/$REPO/$tag/public/icon.png}" 2>/dev/null || true
   cat >"$data_home/applications/ordem.desktop" <<EOF
 [Desktop Entry]
 Name=Ordem
