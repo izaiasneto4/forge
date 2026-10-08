@@ -439,7 +439,7 @@ function locationLabel(location: string) {
 function FindingLocation({ location }: { location: string }) {
   const [expanded, setExpanded] = useState(false)
   const short = locationLabel(location)
-  if (short === location) return <span className="f-loc">{location}</span>
+  const label = expanded ? location : short
 
   return (
     <button
@@ -449,7 +449,7 @@ function FindingLocation({ location }: { location: string }) {
       aria-expanded={expanded}
       onClick={() => setExpanded((current) => !current)}
     >
-      {expanded ? location : short}
+      {label}
     </button>
   )
 }
