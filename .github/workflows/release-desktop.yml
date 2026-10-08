@@ -194,6 +194,21 @@ jobs:
           bun scripts/sync-version.ts 0.0.2
           bun desktop/scripts/dist.ts --linux --arch x64 --skip-frontend --skip-shell --skip-server
       - run: xvfb-run -a bun desktop/scripts/update-smoke.ts --old "$RUNNER_TEMP/old.AppImage" --feed "$PWD/desktop/release" --expect 0.0.2
+      - name: Install with install.sh from a local release
+        run: |
+          feed="$RUNNER_TEMP/feed/v0.0.2"
+          mkdir -p "$feed"
+          cp desktop/release/Ordem-0.0.2-x86_64.AppImage "$feed/"
+          (cd "$feed" && sha256sum -- * > SHA256SUMS)
+          (cd "$RUNNER_TEMP/feed" && python3 -m http.server 8765 --bind 127.0.0.1 &)
+          sleep 1
+          export HOME="$RUNNER_TEMP/home"
+          mkdir -p "$HOME"
+          ORDEM_VERSION=0.0.2 ORDEM_DOWNLOAD_URL=http://127.0.0.1:8765 sh install.sh
+          test -f "$HOME/.local/share/applications/ordem.desktop"
+          version=$(APPIMAGE_EXTRACT_AND_RUN=1 xvfb-run -a "$HOME/Applications/Ordem.AppImage" --version --no-sandbox)
+          echo "installed version: $version"
+          test "$version" = 0.0.2
 
   publish:
     needs: [preflight, package, linux-update]
@@ -218,6 +233,8 @@ jobs:
             bun desktop/scripts/merge-manifests.ts $(find artifacts -name "$feed") "release/$feed"
           done
           find artifacts -type f ! -name '*-mac.yml' -exec cp {} release/ \;
+          # install.sh refuses any download that does not match this list.
+          (cd release && sha256sum -- * > SHA256SUMS)
           ls -la release
       - name: Create GitHub Release
         env:

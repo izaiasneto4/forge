@@ -25,7 +25,15 @@ If you want to expose a running Ordem instance publicly, add authentication, TLS
 
 ## Download
 
-Desktop builds for macOS, Linux and Windows are on the [Releases page](https://github.com/izaiasneto4/ordem/releases): a `.dmg` for macOS, an `.AppImage` or `.deb` for Linux, and an installer for Windows. Each release lists which file to pick and how to open it. You still need `git`, `gh` and one of the review CLIs below installed.
+On macOS or Linux, install or upgrade with one command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/izaiasneto4/ordem/main/install.sh | sh
+```
+
+It downloads the right build from the newest release, checks it against the release's `SHA256SUMS`, and installs it (`/Applications/Ordem.app` on macOS, `~/Applications/Ordem.AppImage` plus a launcher entry on Linux). The macOS build isn't signed with an Apple Developer ID; installing this way skips the "Apple could not verify" prompt a browser download gets. Run it again to upgrade on macOS; Linux installs update themselves.
+
+Desktop builds for macOS, Linux and Windows are also on the [Releases page](https://github.com/izaiasneto4/ordem/releases): a `.dmg` for macOS, an `.AppImage` or `.deb` for Linux, and an installer for Windows. Each release lists which file to pick and how to open it. You still need `git`, `gh` and one of the review CLIs below installed.
 
 ## Supported environment
 
