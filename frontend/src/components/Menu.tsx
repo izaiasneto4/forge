@@ -98,6 +98,14 @@ export function MenuButton({ sections, onSelect, align = 'left', className = 'pi
     }
   }, [open, items, highlight, onSelect])
 
+  useEffect(() => {
+    if (!open || highlight < 0) return
+    const key = items[highlight]?.key
+    if (!key || !menuRef.current) return
+    const option = menuRef.current.querySelector(`[data-menu-key="${CSS.escape(key)}"]`)
+    if (option instanceof HTMLElement) option.scrollIntoView({ block: 'nearest' })
+  }, [open, highlight, items])
+
   const highlightedKey = highlight >= 0 ? items[highlight]?.key : null
 
   return (
@@ -133,6 +141,7 @@ export function MenuButton({ sections, onSelect, align = 'left', className = 'pi
                   key={item.key}
                   type="button"
                   role="menuitemcheckbox"
+                  data-menu-key={item.key}
                   aria-checked={Boolean(item.checked)}
                   className={item.key === highlightedKey ? 'mi hl' : 'mi'}
                   disabled={item.disabled}

@@ -335,7 +335,7 @@ function Finding({ comment, editable, included, onToggle, onStatus }: FindingPro
                 {comment.status === 'dismissed' ? 'Restore' : 'Dismiss'}
               </button>
             )}
-            <span className="f-loc" title={comment.location}>{comment.file_path.split('/').pop()}{comment.line_number ? `:${comment.line_number}` : ''}</span>
+            <FindingLocation location={comment.location || `${comment.file_path}${comment.line_number ? `:${comment.line_number}` : ''}`} />
           </span>
         </div>
         <Html html={comment.body_html} className="md f-body" />
@@ -436,6 +436,24 @@ function locationLabel(location: string) {
   return match ? match[1] : location
 }
 
+function FindingLocation({ location }: { location: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const short = locationLabel(location)
+  if (short === location) return <span className="f-loc">{location}</span>
+
+  return (
+    <button
+      type="button"
+      className={expanded ? 'f-loc f-loc-toggle open' : 'f-loc f-loc-toggle'}
+      title={expanded ? 'Hide full path' : `Show full path · ${location}`}
+      aria-expanded={expanded}
+      onClick={() => setExpanded((current) => !current)}
+    >
+      {expanded ? location : short}
+    </button>
+  )
+}
+
 function ParsedItems({ items }: { items: ParsedReviewItem[] }) {
   return (
     <Block title="Findings" delay={6}>
@@ -447,7 +465,7 @@ function ParsedItems({ items }: { items: ParsedReviewItem[] }) {
               <span className="f-title">{entry.title ?? 'Finding'}</span>
               <span className="f-meta">
                 <span className="chip">{entry.severity}</span>
-                <span className="f-loc" title={entry.location}>{locationLabel(entry.location)}</span>
+                <FindingLocation location={entry.location} />
               </span>
             </div>
             <Html html={entry.comment_html} className="md f-body" />

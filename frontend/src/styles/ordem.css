@@ -243,6 +243,14 @@ h1.pr-title { font-size: 23px; line-height: 1.22; font-weight: 700; letter-spaci
   font: 11.5px var(--mono); color: var(--t3); margin-left: auto; min-width: 0; max-width: 45%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.finding .f-loc-toggle {
+  appearance: none; background: none; border: 0; padding: 0; cursor: pointer; text-align: right;
+  color: var(--t3); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 2px;
+}
+.finding .f-loc-toggle:hover, .finding .f-loc-toggle:focus-visible { color: var(--t2); text-decoration-color: var(--t3); }
+.finding .f-loc-toggle.open {
+  max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; text-align: left;
+}
 .finding .f-body { color: var(--t2); margin-top: 5px; line-height: 1.55; user-select: text; }
 .finding .f-body code { color: var(--t1); background: var(--field); padding: 0 4px; border-radius: 4px; }
 .finding .f-actions { display: flex; gap: 2px; margin-top: 8px; margin-left: -7px; }

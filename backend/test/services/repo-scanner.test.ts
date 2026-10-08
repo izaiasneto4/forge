@@ -50,4 +50,27 @@ describe('scanRepositories', () => {
     expect(scanned[0]?.branch).toBe('main')
     expect(scanned[0]?.remote_url).toContain('acme/api')
   })
+
+  test('applies an absolute ceiling when the repos folder is relative', async () => {
+    const root = createTempFolder()
+    folders.push(root)
+
+    const parentInit = await bunCommandRunner.run(['git', 'init', root.path])
+    expect(parentInit.success).toBe(true)
+    await bunCommandRunner.run(['git', '-C', root.path, 'remote', 'add', 'origin', 'https://github.com/parent/repo.git'])
+    await bunCommandRunner.run(['git', '-C', root.path, 'commit', '--allow-empty', '-m', 'init'])
+
+    const incomplete = join(root.path, 'ghost-checkout')
+    mkdirSync(join(incomplete, '.git'), { recursive: true })
+    writeFileSync(join(incomplete, '.git', 'HEAD'), 'ref: refs/heads/main\n')
+
+    const previousCwd = process.cwd()
+    process.chdir(root.path)
+    try {
+      const scanned = await scanRepositories(bunCommandRunner, '.')
+      expect(scanned.map((repo) => repo.name)).not.toContain('ghost-checkout')
+    } finally {
+      process.chdir(previousCwd)
+    }
+  })
 })
