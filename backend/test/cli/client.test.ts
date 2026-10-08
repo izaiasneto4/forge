@@ -306,3 +306,36 @@ describe('Client', () => {
     })
   })
 })
+
+describe('Client desktop token', () => {
+  const apiToken = 'desktop-token-value'
+  let savedToken: string | undefined
+
+  beforeEach(() => {
+    savedToken = process.env.ORDEM_API_TOKEN
+  })
+
+  afterEach(() => {
+    if (savedToken === undefined) delete process.env.ORDEM_API_TOKEN
+    else process.env.ORDEM_API_TOKEN = savedToken
+  })
+
+  test('sends ORDEM_API_TOKEN as a bearer credential', async () => {
+    process.env.ORDEM_API_TOKEN = apiToken
+    const http = okHttp()
+
+    await new Client({ baseUrl, fetch: http.fetch }).sync()
+
+    expect(http.requests[0]?.headers.get('authorization')).toBe(`Bearer ${apiToken}`)
+    expect(http.requests[0]?.headers.get('content-type')).toBe('application/json')
+  })
+
+  test('sends no authorization header without a token', async () => {
+    delete process.env.ORDEM_API_TOKEN
+    const http = okHttp()
+
+    await new Client({ baseUrl, fetch: http.fetch }).status()
+
+    expect(http.requests[0]?.headers.get('authorization')).toBeNull()
+  })
+})

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runtimeConfig } from '../src/config'
@@ -100,5 +100,23 @@ describe('startServer', () => {
 
     client.close()
     await server.stop()
+  }, 15_000)
+
+  test('listens on the configured host and creates the state directory', async () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'ordem-server-'))
+    const host = '127.0.0.1'
+    const home = join(tempDir, 'home')
+    const config = runtimeConfig({ PORT: '0', ORDEM_HOST: host, ORDEM_HOME: home })
+    const server = startServer({ config, jobWorker: false })
+
+    try {
+      const response = await fetch(`http://${host}:${server.port}/up`)
+
+      expect(response.status).toBe(200)
+      expect(server.app.server?.hostname).toBe(host)
+      expect(existsSync(join(home, 'dev', 'ordem.sqlite3'))).toBe(true)
+    } finally {
+      await server.stop()
+    }
   }, 15_000)
 })

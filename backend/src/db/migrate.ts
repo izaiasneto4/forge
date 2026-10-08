@@ -1,9 +1,8 @@
 import { sql } from 'drizzle-orm'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator'
+import { DEFAULT_MIGRATIONS_DIR } from '../config'
 import type { Db } from './client'
-
-const migrationsFolder = new URL('../../drizzle', import.meta.url).pathname
 
 // The last Rails migration folded into drizzle/0000_rails_baseline.sql.
 export const RAILS_BASELINE_VERSION = '20260307120000'
@@ -20,7 +19,7 @@ function tableExists(db: Db, table: string) {
 
 // Databases created by Rails already contain the baseline tables. Record the
 // baseline as applied so only Bun-era migrations run against them.
-function adoptRailsDatabase(db: Db) {
+function adoptRailsDatabase(db: Db, migrationsFolder: string) {
   const latest = firstRow(db.all<{ version: string | null }>(sql`SELECT max(version) AS version FROM schema_migrations`))
   const railsVersion = latest?.version ?? ''
   if (railsVersion < RAILS_BASELINE_VERSION) {
@@ -48,9 +47,9 @@ function hasRecordedMigrations(db: Db) {
   return (row?.recorded ?? 0) > 0
 }
 
-export function migrateDatabase(db: Db) {
+export function migrateDatabase(db: Db, migrationsFolder = DEFAULT_MIGRATIONS_DIR) {
   if (tableExists(db, 'schema_migrations') && !hasRecordedMigrations(db)) {
-    adoptRailsDatabase(db)
+    adoptRailsDatabase(db, migrationsFolder)
   }
   migrate(db, { migrationsFolder })
 }

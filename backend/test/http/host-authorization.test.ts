@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { allowedHostsFromEnv, DEFAULT_ALLOWED_HOSTS, isAllowedHost, requestHostAllowed, websocketOriginAllowed } from '../../src/http/host-authorization'
+import { allowedHostsFromEnv, DEFAULT_ALLOWED_HOSTS, DESKTOP_RENDERER_ORIGINS, isAllowedHost, requestHostAllowed, websocketOriginAllowed } from '../../src/http/host-authorization'
 
 function requestWith(headers: Record<string, string>, url = 'http://localhost:3100/ws') {
   return new Request(url, { headers })
@@ -38,5 +38,11 @@ describe('host authorization', () => {
     expect(websocketOriginAllowed(viteDevServer, { development: true })).toBe(true)
     expect(websocketOriginAllowed(viteDevServer, { development: false })).toBe(false)
     expect(websocketOriginAllowed(crossSite, { development: true })).toBe(false)
+  })
+
+  test.each([...DESKTOP_RENDERER_ORIGINS])('accepts websocket requests from the desktop renderer %p', (origin) => {
+    const desktopRequest = requestWith({ host: '127.0.0.1:51234', origin }, 'http://127.0.0.1:51234/ws')
+
+    expect(websocketOriginAllowed(desktopRequest, { development: false })).toBe(true)
   })
 })

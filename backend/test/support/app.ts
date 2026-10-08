@@ -12,13 +12,14 @@ export function unusedService(name: string): never {
 // The full app wired to a test context; external services fail unless stubbed.
 // Hosts are unrestricted unless a test asks for the real defaults (Eden Treaty
 // requests use a placeholder host).
-export function createTestApp(ctx: TestContext, services: Partial<ApiServices> = {}, options: { allowedHosts?: string[] } = {}) {
+export function createTestApp(ctx: TestContext, services: Partial<ApiServices> = {}, options: { allowedHosts?: string[]; desktopToken?: string | null } = {}) {
   const realtime = new RealtimeServer(ctx.db)
   return createApp({
     ctx,
     realtime,
     publicDir: testPublicDir,
     allowedHosts: options.allowedHosts ?? ['*'],
+    desktopToken: options.desktopToken ?? null,
     services: {
       runSync: async () => unusedService('runSync'),
       submitReview: async () => unusedService('submitReview'),

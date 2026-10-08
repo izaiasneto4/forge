@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+# Runs the desktop app from source: Vite, the Electron shell bundle in watch mode,
+# and Electron, which starts its own server (bun --watch backend) with state in
+# ~/.ordem/dev (or $ORDEM_HOME/dev). bin/dev keeps running the web app.
+set -e
+cd "$(dirname "$0")/.."
+
+# Set when this runs inside another Electron app; it would make Electron act as Node.
+unset ELECTRON_RUN_AS_NODE
+export ORDEM_DEV_SERVER_URL="${ORDEM_DEV_SERVER_URL:-http://localhost:5173}"
+trap 'kill 0' INT TERM EXIT
+
+[ -d desktop/node_modules ] || npm --prefix desktop install
+
+ORDEM_DESKTOP_DEV=1 npm --prefix frontend run dev &
+bun desktop/scripts/build.ts --watch &
+bun desktop/scripts/dev-electron.ts

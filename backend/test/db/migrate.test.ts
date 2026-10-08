@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { sql } from 'drizzle-orm'
-import { readFileSync } from 'node:fs'
+import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { DEFAULT_MIGRATIONS_DIR } from '../../src/config'
 import { openDatabase, type Db } from '../../src/db/client'
 import { migrateDatabase, RAILS_BASELINE_VERSION } from '../../src/db/migrate'
 
@@ -74,5 +77,30 @@ describe('migrateDatabase', () => {
     const db = createRailsDatabase(olderVersion)
 
     expect(() => migrateDatabase(db)).toThrow(olderVersion)
+  })
+
+  test('reads migrations from an explicit folder', () => {
+    const copiedMigrations = mkdtempSync(join(tmpdir(), 'ordem-migrations-'))
+    cpSync(DEFAULT_MIGRATIONS_DIR, copiedMigrations, { recursive: true })
+    const db = openDatabase(':memory:')
+
+    try {
+      migrateDatabase(db, copiedMigrations)
+    } finally {
+      rmSync(copiedMigrations, { recursive: true, force: true })
+    }
+
+    expect(tableNames(db)).toEqual(expect.arrayContaining(['pull_requests', 'jobs']))
+  })
+
+  test('fails on a folder without migrations', () => {
+    const emptyFolder = mkdtempSync(join(tmpdir(), 'ordem-migrations-'))
+    const db = openDatabase(':memory:')
+
+    try {
+      expect(() => migrateDatabase(db, emptyFolder)).toThrow()
+    } finally {
+      rmSync(emptyFolder, { recursive: true, force: true })
+    }
   })
 })

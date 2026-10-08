@@ -1,4 +1,5 @@
 import type { ApiError } from '../types/api'
+import { apiBase, authHeaders, isDesktop } from './desktop'
 
 type JsonBody = Record<string, unknown> | Array<unknown>
 
@@ -17,11 +18,13 @@ export class ApiResponseError extends Error {
 function buildInit(method: string, body?: JsonBody | FormData): RequestInit {
   const headers = new Headers({
     Accept: 'application/json',
+    ...authHeaders(),
   })
 
+  // On desktop the API is another origin (and there are no cookies to send).
   const init: RequestInit = {
     method,
-    credentials: 'same-origin',
+    credentials: isDesktop() ? 'omit' : 'same-origin',
     headers,
   }
 
@@ -39,7 +42,7 @@ function buildInit(method: string, body?: JsonBody | FormData): RequestInit {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, init)
+  const response = await fetch(apiBase() + path, init)
   const json = await response.json().catch(() => null)
 
   if (!response.ok || !json?.ok) {

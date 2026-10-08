@@ -2,8 +2,8 @@
 
 Spec for shipping Ordem as a macOS, Linux and Windows app, built the way T3 Code
 (https://github.com/pingdotgg/t3code) builds its desktop app. Part 1 is what T3 Code does and
-why. Part 2 is how to apply it here. Nothing in this document is implemented, except the
-feasibility probe in the appendix.
+why. Part 2 is how to apply it here. Implemented on 2026-10-08; where the code departs from
+this text, "Implementation notes" at the end says how and why.
 
 T3 Code snapshot studied: `main` on 2026-10-08 (desktop 0.0.45, Electron 44, electron-builder 26).
 
@@ -551,6 +551,33 @@ Auth rules when `ORDEM_DESKTOP_TOKEN` is set: `/api/*` needs `Authorization: Bea
 `/ws` needs `?token=<token>` on the upgrade request, `/up` and static files are open. Failure is
 401 with the standard envelope and code `unauthorized`. Compare tokens with
 `crypto.timingSafeEqual`.
+
+## Implementation notes
+
+What shipped differs from Part 2 in these places:
+
+| Topic | Spec said | Implemented | Why |
+|---|---|---|---|
+| Window chrome on Windows and Linux | `titleBarStyle: 'hidden'` | native frame, menu bar hidden until Alt | a hidden frame needs window-controls-overlay CSS on whichever pane is rightmost; the native frame is correct everywhere today |
+| Bridge | eight members | ten: adds `onBackendState` (reconnecting banner) and `setBadgeCount` (dock badge from the Inbox count) | phase 4 items, both through the bridge as 1.10 rule 3 asks |
+| Dev server | `bin/dev-desktop` starts `bun --watch backend` on port 3000 with a fixed token | the shell spawns `bun --watch backend/src/index.ts` itself, free port and fresh token, as in a packaged run | one code path for dev and prod; `bin/dev-desktop` runs Vite, the shell bundle watcher and `desktop/scripts/dev-electron.ts` |
+| Vite HMR over `ordem-dev://` | not covered | `ORDEM_DESKTOP_DEV=1` sets `server.hmr` host and client port in `vite.config.ts` | the custom scheme has no host or port for Vite's client to derive its socket from |
+| electron-builder config | `electron-builder.config.ts` loaded by electron-builder | the same file exports `resolveBuildConfig`; `desktop/scripts/dist.ts` writes it to `release/builder-config.json` and runs the CLI | no TS loader needed; one script owns sync-version, frontend build, shell bundle, server compile, packaging and checks |
+| `afterSign` hook | assert or sign the sidecar | `desktop/scripts/verify-mac.ts` after packaging: signature, `allow-jit` entitlement, hardened runtime and Developer ID when signed, then boots the sidecar from inside the bundle | electron-builder signs `Resources/server/ordem-server` itself (seen in the ad hoc build); the check is what matters |
+| Unsigned macOS builds | DMG ships unsigned | ad hoc signed (`identity: '-'`) and no update feed (`publish: null`) | arm64 refuses unsigned code; Squirrel.Mac refuses ad hoc builds, so the app reports updates off instead of failing |
+| Icons | `icon.icns`, `icon.ico`, `icons/*.png` in the repo | one `resources/icon.png` (1024 px, macOS grid) rendered from `public/icon.svg` by `desktop/scripts/icons.ts`; electron-builder derives the rest | fewer generated files to keep in sync |
+| Windows installer name | `Ordem Setup x.y.z-x64.exe` | `Ordem-Setup-x.y.z-x64.exe` | GitHub turns spaces in asset names into dots, which breaks the URL in `latest.yml` |
+| CLI shim | shim pointing at the sidecar | the sidecar entry (`backend/src/sidecar.ts`) runs the CLI when its first argument is `cli`; the shell keeps `desktop-connection.env` (URL, token and the CLI command, mode 0600) in the state dir while the server is up; the shim sources it | one binary; the token never lands in the shim, and an AppImage's per-launch mount path stays current |
+| Inherited env stripping | `ORDEM_*` | also `FORGE_*`, `DATABASE_PATH`, `PORT`, `NODE_ENV`, `RAILS_ROOT`, `FRONTEND_DEV_URL`, `ELECTRON_RUN_AS_NODE` | the server still honours the legacy `FORGE_*` names, and `DATABASE_PATH` would move the database |
+| macOS mac x64 runner | `macos-13` | `macos-15-intel` | `macos-13` is retired |
+| Renderer permissions | not covered | only `notifications`, `clipboard-sanitized-write` and `fullscreen` are granted | review notifications already use the web `Notification` API, which Electron shows natively |
+
+Verified locally on macOS arm64: unit tests for every pure module (`bun test ./desktop/test`), the
+compiled sidecar booting from `/tmp`, `bun run dist:mac` with `verify-mac.ts`, `bun run desktop:smoke`
+on the packaged app, and a scripted click-through of the packaged app over CDP (starting page, token
+auth, About and updates, repositories folder, server crash and recovery with the banner, the CLI
+through the connection file, clean quit). Linux AppImage and deb and the Windows NSIS installer were
+cross-built from macOS; their smoke tests run in the release workflow on native runners.
 
 ## Appendix: probe results
 

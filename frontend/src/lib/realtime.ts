@@ -1,3 +1,5 @@
+import { wsUrl } from './desktop'
+
 type SubscriptionParams = {
   channel: string
   review_task_id?: number
@@ -21,19 +23,6 @@ function subscriptionKey(params: SubscriptionParams) {
   return params.review_task_id === undefined
     ? params.channel
     : `${params.channel}:${params.review_task_id}`
-}
-
-function realtimeUrl() {
-  if (import.meta.env.VITE_WS_URL) {
-    return import.meta.env.VITE_WS_URL
-  }
-
-  if (typeof window === 'undefined') {
-    return 'ws://localhost:3000/ws'
-  }
-
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${protocol}//${window.location.host}/ws`
 }
 
 function clearReconnectTimer() {
@@ -60,7 +49,7 @@ function ensureSocket() {
     return
   }
 
-  const next = new WebSocket(realtimeUrl())
+  const next = new WebSocket(wsUrl())
   socket = next
 
   next.addEventListener('open', () => {
