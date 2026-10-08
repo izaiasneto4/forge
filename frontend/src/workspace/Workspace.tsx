@@ -14,7 +14,9 @@ import { Sidebar } from '../components/Sidebar'
 import { subscribe } from '../lib/realtime'
 import { errorMessage } from '../lib/errors'
 import { useDesktopBadge } from '../lib/desktopStatus'
+import { useFloatingInspector, useFloatingSidebar } from '../lib/layout'
 import { MAILBOX_LABELS } from '../lib/lifecycle'
+import { overlayOpen } from '../lib/overlay'
 import { desktopNotificationsEnabled } from '../lib/preferences'
 import { useToasts } from '../lib/toastContext'
 import { handleReviewNotification, handleUiEvent, type ReviewNotificationPayload } from '../lib/uiEvents'
@@ -93,8 +95,14 @@ function useLiveUpdates() {
 function useShortcuts() {
   const workspace = useWorkspace()
 
+  const floatingSidebar = useFloatingSidebar()
+  const floatingInspector = useFloatingInspector()
+
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
-    const { paletteOpen, setPaletteOpen, settingsTab, toggleSidebar, openSettings, moveSelection, toggleInspector, selected, actions, openNew } = workspace
+    const {
+      paletteOpen, setPaletteOpen, settingsTab, sidebarOpen, toggleSidebar, inspectorOpen,
+      openSettings, moveSelection, toggleInspector, selected, actions, openNew,
+    } = workspace
     const mod = event.metaKey || event.ctrlKey
     const key = event.key.toLowerCase()
 
@@ -112,6 +120,19 @@ function useShortcuts() {
       event.preventDefault()
       openSettings()
       return
+    }
+
+    if (event.key === 'Escape' && !paletteOpen && !settingsTab && !overlayOpen()) {
+      if (sidebarOpen && floatingSidebar) {
+        event.preventDefault()
+        toggleSidebar()
+        return
+      }
+      if (inspectorOpen && floatingInspector) {
+        event.preventDefault()
+        toggleInspector()
+        return
+      }
     }
 
     if (paletteOpen || settingsTab || mod || event.altKey || document.querySelector('.menu, .alert')) return
@@ -174,8 +195,15 @@ function DetailPane() {
 }
 
 export function Workspace() {
-  const { sidebarOpen, inspectorOpen, route, selected, paletteOpen, settingsTab, needsRepository, counts } = useWorkspace()
+  const {
+    sidebarOpen, inspectorOpen, route, selected, paletteOpen, settingsTab,
+    toggleSidebar, toggleInspector, needsRepository, counts,
+  } = useWorkspace()
   const showInspector = inspectorOpen && route.kind !== 'new'
+  const floatingSidebar = useFloatingSidebar()
+  const floatingInspector = useFloatingInspector()
+  const sidebarOverlay = sidebarOpen && floatingSidebar
+  const inspectorOverlay = showInspector && floatingInspector
 
   useShortcuts()
   useLiveUpdates()
@@ -191,6 +219,17 @@ export function Workspace() {
     <>
       <div className="desktop">
         <div className={classes.join(' ')}>
+          {sidebarOverlay || inspectorOverlay ? (
+            <button
+              type="button"
+              className="pane-scrim"
+              aria-label={sidebarOverlay ? 'Close sidebar' : 'Close inspector'}
+              onClick={() => {
+                if (sidebarOverlay) toggleSidebar()
+                else toggleInspector()
+              }}
+            />
+          ) : null}
           <Sidebar />
           <PullRequestList />
           <DetailPane />

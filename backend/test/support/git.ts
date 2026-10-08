@@ -22,8 +22,9 @@ export function createCheckoutFolder(parentFolder: string, directoryName: string
   return path
 }
 
-// Answers the git queries the app makes about a checkout: its origin remote and branch.
+// Answers the git queries the app makes about a checkout: its toplevel, origin remote and branch.
 export function stubGitRepository(commands: FakeCommandRunner, path: string, slug: string, branch = DEFAULT_BRANCH) {
+  commands.on(['git', '-C', path, 'rev-parse', '--show-toplevel'], { stdout: `${path}\n` })
   commands.on(['git', '-C', path, 'remote', 'get-url', 'origin'], { stdout: `${githubRemote(slug)}\n` })
   commands.on(['git', '-C', path, 'branch', '--show-current'], { stdout: `${branch}\n` })
 }

@@ -41,12 +41,21 @@ export function MenuButton({ sections, onSelect, align = 'left', className = 'pi
 
     const anchor = anchorRef.current.getBoundingClientRect()
     const size = menu.getBoundingClientRect()
-    const openUp = anchor.bottom + size.height + 8 > window.innerHeight
-    const left = align === 'right'
-      ? Math.max(8, anchor.right - size.width)
-      : Math.min(anchor.left, window.innerWidth - size.width - 8)
+    const spaceBelow = window.innerHeight - anchor.bottom - 8
+    const spaceAbove = anchor.top - 8
+    const openUp = size.height > spaceBelow && spaceAbove > spaceBelow
+    const maxHeight = Math.max(120, openUp ? spaceAbove : spaceBelow)
+    menu.style.maxHeight = `${Math.min(size.height, maxHeight)}px`
 
-    menu.style.top = `${openUp ? anchor.top - size.height - 6 : anchor.bottom + 6}px`
+    const fitted = menu.getBoundingClientRect()
+    const top = openUp
+      ? Math.max(8, anchor.top - fitted.height - 6)
+      : Math.min(anchor.bottom + 6, window.innerHeight - fitted.height - 8)
+    const left = align === 'right'
+      ? Math.max(8, Math.min(anchor.right - fitted.width, window.innerWidth - fitted.width - 8))
+      : Math.max(8, Math.min(anchor.left, window.innerWidth - fitted.width - 8))
+
+    menu.style.top = `${top}px`
     menu.style.left = `${left}px`
     menu.style.transformOrigin = `${openUp ? 'bottom' : 'top'} ${align}`
     menu.style.visibility = 'visible'
@@ -89,6 +98,14 @@ export function MenuButton({ sections, onSelect, align = 'left', className = 'pi
     }
   }, [open, items, highlight, onSelect])
 
+  useEffect(() => {
+    if (!open || highlight < 0) return
+    const key = items[highlight]?.key
+    if (!key || !menuRef.current) return
+    const option = menuRef.current.querySelector(`[data-menu-key="${CSS.escape(key)}"]`)
+    if (option instanceof HTMLElement) option.scrollIntoView({ block: 'nearest' })
+  }, [open, highlight, items])
+
   const highlightedKey = highlight >= 0 ? items[highlight]?.key : null
 
   return (
@@ -124,6 +141,7 @@ export function MenuButton({ sections, onSelect, align = 'left', className = 'pi
                   key={item.key}
                   type="button"
                   role="menuitemcheckbox"
+                  data-menu-key={item.key}
                   aria-checked={Boolean(item.checked)}
                   className={item.key === highlightedKey ? 'mi hl' : 'mi'}
                   disabled={item.disabled}

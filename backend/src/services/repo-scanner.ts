@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import type { CommandRunner } from '../commands/runner'
 import { isBlank } from '../lib/ruby'
 import { gitOutput, isDirectory } from './git'
@@ -25,13 +25,21 @@ export function isGitRepository(path: string) {
   }
 }
 
-async function describeRepository(commands: CommandRunner, name: string, path: string): Promise<ScannedRepository> {
+async function describeRepository(commands: CommandRunner, name: string, path: string): Promise<ScannedRepository | null> {
+  // Incomplete `.git` dirs still pass `isGitRepository`; without a ceiling, git
+  // walks into a parent checkout and reports that remote/branch instead.
+  // Git ignores relative GIT_CEILING_DIRECTORIES entries, so always resolve.
+  const absolutePath = resolve(path)
+  const ceiling = resolve(dirname(absolutePath))
+  const toplevel = await gitOutput(commands, absolutePath, ['rev-parse', '--show-toplevel'], { ceiling })
+  if (isBlank(toplevel)) return null
+
   const [remoteUrl, branch] = await Promise.all([
-    gitOutput(commands, path, ['remote', 'get-url', 'origin']),
-    gitOutput(commands, path, ['branch', '--show-current']),
+    gitOutput(commands, absolutePath, ['remote', 'get-url', 'origin'], { ceiling }),
+    gitOutput(commands, absolutePath, ['branch', '--show-current'], { ceiling }),
   ])
 
-  return { name, path, remote_url: remoteUrl ?? '', branch: branch ?? '' }
+  return { name, path: absolutePath, remote_url: remoteUrl ?? '', branch: branch ?? '' }
 }
 
 // Lists git repositories directly under `baseFolder`, sorted case-insensitively.
@@ -40,12 +48,14 @@ export async function scanRepositories(commands: CommandRunner, baseFolder: stri
     return []
   }
 
-  const repositoryEntries = readdirSync(baseFolder)
+  const absoluteBase = resolve(baseFolder)
+  const repositoryEntries = readdirSync(absoluteBase)
     .filter((entry) => !entry.startsWith('.'))
-    .map((entry) => ({ name: entry, path: join(baseFolder, entry) }))
+    .map((entry) => ({ name: entry, path: join(absoluteBase, entry) }))
     .filter(({ path }) => isDirectory(path) && isGitRepository(path))
 
-  const repositories = await Promise.all(repositoryEntries.map(({ name, path }) => describeRepository(commands, name, path)))
+  const described = await Promise.all(repositoryEntries.map(({ name, path }) => describeRepository(commands, name, path)))
+  const repositories = described.filter((repository): repository is ScannedRepository => repository !== null)
   return repositories.sort((left, right) => {
     const leftName = left.name.toLowerCase()
     const rightName = right.name.toLowerCase()
