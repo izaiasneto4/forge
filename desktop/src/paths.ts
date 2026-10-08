@@ -39,9 +39,12 @@ export function serverBinaryName(platform: NodeJS.Platform) {
 }
 
 // ORDEM_HOME lets a developer point the shell elsewhere (a worktree, a scratch dir).
+// Expands a leading ~ the way the server does, so both agree on the folder.
 export function ordemHome(inputs: Pick<PathInputs, 'homeDir' | 'env'>) {
   const override = inputs.env.ORDEM_HOME?.trim()
-  return override ? resolve(override) : join(inputs.homeDir, '.ordem')
+  if (!override) return join(inputs.homeDir, '.ordem')
+  if (override === '~' || override.startsWith('~/')) return join(inputs.homeDir, override.slice(1))
+  return resolve(override)
 }
 
 export function resolveDesktopPaths(inputs: PathInputs): DesktopPaths {

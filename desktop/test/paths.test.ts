@@ -55,4 +55,10 @@ describe('resolveDesktopPaths', () => {
     expect(() => assertDevelopmentStateDir(realState, false)).toThrow(realState)
     expect(() => assertDevelopmentStateDir(realState, true)).not.toThrow()
   })
+
+  test('expands a leading ~ in ORDEM_HOME against the home directory', () => {
+    const paths = resolveDesktopPaths({ isPackaged: true, platform: 'linux', homeDir, resourcesPath, appPath, env: { ORDEM_HOME: '~/.ordem-alt' } })
+
+    expect(paths.stateDir).toBe(join(homeDir, '.ordem-alt', 'userdata'))
+  })
 })

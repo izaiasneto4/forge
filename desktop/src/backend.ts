@@ -150,6 +150,7 @@ export class BackendManager {
   private readySince = 0
   private current: BackendState = { status: 'stopped' }
   private shellEnv: Env
+  private lastEnvironment: DesktopLocalEnvironment | null = null
 
   constructor(private readonly options: BackendManagerOptions) {
     this.shellEnv = options.shellEnv
@@ -164,8 +165,11 @@ export class BackendManager {
     return this.current
   }
 
+  // The last environment the server was ready on. It stays set while a crashed
+  // server restarts (same port and token unless the port was taken), so a page
+  // loaded meanwhile still gets a bridge and follows the change event.
   get environment(): DesktopLocalEnvironment | null {
-    return this.current.status === 'ready' ? this.current.environment : null
+    return this.lastEnvironment
   }
 
   get pid() {
@@ -241,6 +245,7 @@ export class BackendManager {
     }
 
     this.readySince = Date.now()
+    this.lastEnvironment = environment
     this.options.log.line(`[shell] server ready on ${environment.httpBaseUrl} (pid ${child.pid ?? '?'})`)
     this.setState({ status: 'ready', environment, pid: child.pid ?? 0 })
     return environment

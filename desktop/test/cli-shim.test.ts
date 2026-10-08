@@ -24,7 +24,7 @@ describe('CLI shim', () => {
   afterEach(() => rmSync(tempDir, { recursive: true, force: true }))
 
   test('keeps the connection in an owner-only file and removes it on stop', () => {
-    const path = writeConnectionFile(stateDir, environment)
+    const path = writeConnectionFile(stateDir, environment, cli)
 
     const contents = readFileSync(path, 'utf8')
     const mode = statSync(path).mode & 0o777
@@ -32,35 +32,36 @@ describe('CLI shim', () => {
 
     expect(contents).toContain(`ORDEM_API_URL='${environment.httpBaseUrl}'`)
     expect(contents).toContain(`ORDEM_API_TOKEN='${environment.token}'`)
+    expect(contents).toContain(`exec '${cli.command}' 'cli' "$@"`)
     expect(mode).toBe(0o600)
     expect(() => statSync(path)).toThrow()
   })
 
   test('installs an executable shim and links it onto PATH', () => {
-    const result = installCliShim({ home, stateDir, cli, systemBinDir })
+    const result = installCliShim({ home, stateDir, systemBinDir })
 
     const script = readFileSync(result.shimPath, 'utf8')
     expect(result.linkedAt).toBe(join(systemBinDir, 'ordem'))
     expect(readlinkSync(join(systemBinDir, 'ordem'))).toBe(result.shimPath)
     expect(statSync(result.shimPath).mode & 0o111).toBeGreaterThan(0)
     expect(script).toContain(join(stateDir, CONNECTION_FILE))
-    expect(script).toContain(`exec '${cli.command}' 'cli' "$@"`)
+    expect(script).not.toContain(cli.command)
   })
 
   test('leaves an unrelated ordem on PATH alone', () => {
     const existing = join(systemBinDir, 'ordem')
     writeFileSync(existing, '#!/bin/sh\necho other\n')
 
-    const result = installCliShim({ home, stateDir, cli, systemBinDir })
+    const result = installCliShim({ home, stateDir, systemBinDir })
 
     expect(result.linkedAt).toBeNull()
     expect(readFileSync(existing, 'utf8')).toContain('other')
   })
 
-  test('runs the CLI with the connection loaded', async () => {
-    writeConnectionFile(stateDir, environment)
+  test('runs the CLI command from the current connection file', async () => {
     const echo = { command: '/bin/sh', args: ['-c', 'echo "$ORDEM_API_URL $ORDEM_API_TOKEN $1"', 'sh'] }
-    const { shimPath } = installCliShim({ home, stateDir, cli: echo, systemBinDir })
+    const { shimPath } = installCliShim({ home, stateDir, systemBinDir })
+    writeConnectionFile(stateDir, environment, echo)
     const argument = 'status'
 
     const run = Bun.spawn([shimPath, argument], { stdout: 'pipe' })

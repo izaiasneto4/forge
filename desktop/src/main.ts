@@ -34,6 +34,8 @@ let backend: BackendManager | null = null
 let updater: Updater | null = null
 let shellLog: RotatingLog | null = null
 let readyToQuit = false
+// Set once boot loaded the app page; later ready states move starting-page windows over.
+let booted = false
 
 function desktopPlatform(): DesktopPlatform {
   if (process.platform === 'darwin' || process.platform === 'win32') return process.platform
@@ -57,11 +59,19 @@ function onBackendState(state: BackendState, paths: DesktopPaths) {
   broadcast(CHANNELS.backendState, rendererBackendState(state))
   if (state.status === 'ready') {
     broadcast(CHANNELS.localEnvironmentChanged, state.environment)
-    writeConnectionFile(paths.stateDir, state.environment)
+    writeConnectionFile(paths.stateDir, state.environment, paths.cli)
+    if (booted) loadAppInStartingWindows()
   } else {
     removeConnectionFile(paths.stateDir)
   }
   if (state.status === 'failed') void showBackendFailure(state.message, paths, false)
+}
+
+// A window opened while the server was down shows the starting page until now.
+function loadAppInStartingWindows() {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed() && window.webContents.getURL() === STARTING_PAGE_URL) void window.loadURL(appUrl)
+  }
 }
 
 // Returns true to retry. A failed first start offers Retry; a crash loop only Quit.
@@ -138,7 +148,7 @@ async function runSmokeCheck(window: BrowserWindow, loaded: Promise<void>) {
 
 async function installCommandLineTool(paths: DesktopPaths) {
   try {
-    const { shimPath, linkedAt } = installCliShim({ home: paths.home, stateDir: paths.stateDir, cli: paths.cli })
+    const { shimPath, linkedAt } = installCliShim({ home: paths.home, stateDir: paths.stateDir })
     const detail = linkedAt
       ? `Run \`ordem status\` in a terminal while Ordem is open. Linked ${linkedAt} to ${shimPath}.`
       : `Installed ${shimPath}. Add ${dirname(shimPath)} to your PATH, then run \`ordem status\` while Ordem is open.`
@@ -198,7 +208,7 @@ async function boot() {
   openWindow(paths, STARTING_PAGE_URL)
   app.on('activate', () => {
     if (mainWindow) focusMainWindow()
-    else openWindow(paths, manager.environment ? appUrl : STARTING_PAGE_URL)
+    else openWindow(paths, manager.state.status === 'ready' ? appUrl : STARTING_PAGE_URL)
   })
 
   manager.setShellEnv(await recoverShellEnvironment({ env: process.env, platform: process.platform, log: logLine }))
@@ -206,6 +216,7 @@ async function boot() {
 
   const window = mainWindow ?? openWindow(paths, STARTING_PAGE_URL)
   const loaded = window.loadURL(appUrl)
+  booted = true
   if (smoke) void runSmokeCheck(window, loaded)
   else activeUpdater.start()
 }

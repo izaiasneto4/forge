@@ -120,9 +120,13 @@ describe('BackendManager', () => {
     const firstPid = started.pid
 
     if (firstPid !== null) process.kill(firstPid, 'SIGKILL')
+    const statusOf = (manager: BackendManager) => manager.state.status
+    while (statusOf(started) === 'ready') await Bun.sleep(10)
+    const environmentDuringRestart = started.environment
     const deadline = Date.now() + 10_000
-    while (Date.now() < deadline && !(started.pid !== null && started.pid !== firstPid && started.state.status === 'ready')) await Bun.sleep(50)
+    while (Date.now() < deadline && !(started.pid !== null && started.pid !== firstPid && statusOf(started) === 'ready')) await Bun.sleep(50)
 
+    expect(environmentDuringRestart).toEqual(environment)
     expect(started.pid).not.toBe(firstPid)
     expect(started.environment).toEqual(environment)
     expect(states.map((state) => state.status)).toContain('restarting')

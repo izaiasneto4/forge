@@ -162,6 +162,7 @@ jobs:
             desktop/release/*.exe
             desktop/release/*.blockmap
             desktop/release/latest*.yml
+            desktop/release/nightly*.yml
           if-no-files-found: error
 
   publish:
