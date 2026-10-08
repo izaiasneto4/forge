@@ -59,7 +59,22 @@ else
 fi
 
 work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
+staging=""
+lock=""
+trap 'rm -rf "$work"; [ -z "$staging" ] || rm -rf "$staging"; [ -z "$lock" ] || rmdir "$lock" 2>/dev/null' EXIT
+
+# Serializes the final swap between overlapping installs into the same folder
+# (mkdir is atomic). Staging stays per run, so downloads and copies overlap freely.
+take_lock() {
+  candidate="$1/.Ordem.install.lock"
+  tries=0
+  until mkdir "$candidate" 2>/dev/null; do
+    tries=$((tries + 1))
+    [ "$tries" -lt 240 ] || fail "another install is still running (remove $candidate if none is)"
+    sleep 0.5
+  done
+  lock="$candidate"
+}
 
 say "Downloading Ordem $version for $os ($arch)…"
 curl -fL --progress-bar -o "$work/$file" "$DOWNLOAD_URL/$tag/$file" || fail "download failed: $DOWNLOAD_URL/$tag/$file"
@@ -103,11 +118,13 @@ install_mac() {
   [ -d "$work/unpacked/Ordem.app" ] || fail "the download did not contain Ordem.app"
   # Copy next to the target first, so a failed copy (a full disk) leaves the
   # installed app alone; the swap afterwards is a rename on the same disk.
-  staged="$target_dir/.Ordem.app.installing"
-  rm -rf "$staged"
-  ditto "$work/unpacked/Ordem.app" "$staged" || { rm -rf "$staged"; fail "could not copy Ordem.app into $target_dir"; }
+  # Each run stages in its own folder, so overlapping installs never share one.
+  staging=$(mktemp -d "$target_dir/.Ordem.installing.XXXXXX")
+  staged="$staging/Ordem.app"
+  ditto "$work/unpacked/Ordem.app" "$staged" || fail "could not copy Ordem.app into $target_dir"
   # A copy that came through a browser before would still carry the flag.
   xattr -dr com.apple.quarantine "$staged" 2>/dev/null || true
+  take_lock "$target_dir"
   rm -rf "$app"
   mv "$staged" "$app"
 
@@ -122,9 +139,11 @@ install_linux() {
   appimage="$target_dir/Ordem.AppImage"
   # Same path every time: the in-app updater replaces this file in place.
   # Staged on the target disk, then renamed over the old one in a single step.
-  staged="$target_dir/.Ordem.AppImage.installing"
-  cp "$work/$file" "$staged" || { rm -f "$staged"; fail "could not copy the AppImage into $target_dir"; }
+  staging=$(mktemp -d "$target_dir/.Ordem.installing.XXXXXX")
+  staged="$staging/Ordem.AppImage"
+  cp "$work/$file" "$staged" || fail "could not copy the AppImage into $target_dir"
   chmod +x "$staged"
+  take_lock "$target_dir"
   mv -f "$staged" "$appimage"
 
   data_home="${XDG_DATA_HOME:-$HOME/.local/share}"

@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -92,6 +92,22 @@ describe('install.sh', () => {
     expect(result.code).not.toBe(0)
     expect(result.stderr).toContain(message)
     expect(readFileSync(existingInstall, 'utf8')).toBe(existingContents)
+    expect(readdirSync(installDir).filter((entry) => entry.startsWith('.Ordem.installing'))).toEqual([])
+  })
+
+  test('lets overlapping installs each finish with a complete app', async () => {
+    checksums = `${sha256(artifact)}  ${releaseFile}\n`
+
+    const results = await Promise.all([runInstaller(), runInstaller(), runInstaller()])
+
+    expect(results.map((result) => result.code)).toEqual([0, 0, 0])
+    if (isMac) {
+      expect(existsSync(join(installDir, 'Ordem.app', 'Contents', 'Info.plist'))).toBe(true)
+      expect(existsSync(join(installDir, 'Ordem.app', 'Ordem.app'))).toBe(false)
+    } else {
+      expect(new Uint8Array(readFileSync(existingInstall))).toEqual(artifact)
+    }
+    expect(readdirSync(installDir).filter((entry) => entry.startsWith('.Ordem.install'))).toEqual([])
   })
 
   test('installs a verified download over the previous one', async () => {
@@ -107,6 +123,6 @@ describe('install.sh', () => {
       expect(new Uint8Array(readFileSync(existingInstall))).toEqual(artifact)
       expect(existsSync(join(workDir, 'share', 'applications', 'ordem.desktop'))).toBe(true)
     }
-    expect(existsSync(join(installDir, isMac ? '.Ordem.app.installing' : '.Ordem.AppImage.installing'))).toBe(false)
+    expect(readdirSync(installDir).filter((entry) => entry.startsWith('.Ordem.installing'))).toEqual([])
   })
 })
