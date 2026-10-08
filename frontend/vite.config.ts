@@ -24,6 +24,11 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      // App icons and brand files live in the repository's public/, which the API serves.
+      '^/(favicon\\.(svg|ico)|apple-touch-icon\\.png|icon\\.(png|svg)|brand/)': {
+        target: apiTarget,
+        changeOrigin: true,
+      },
     },
   },
 })
