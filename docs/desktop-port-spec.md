@@ -240,12 +240,13 @@ Other decisions:
 |                                                  |
 | Resources/server/ordem-server   (Bun executable) |
 | Resources/drizzle/              (migrations)     |
-| app.asar: dist-electron/, public/                |
+| Resources/public/               (web build)      |
+| app.asar: dist-electron/ only                    |
 +--------------------------------------------------+
           | spawn + env                 ^ IPC
           v                             |
    ordem-server 127.0.0.1:<port>  <--  renderer at ordem://app
-   ORDEM_HOME=~/.ordem/userdata        fetch http://127.0.0.1:<port>/api/v1/...
+   ORDEM_HOME=~/.ordem                 fetch http://127.0.0.1:<port>/api/v1/...
    ORDEM_DESKTOP_TOKEN=...             ws://127.0.0.1:<port>/ws?token=...
 ```
 
@@ -360,18 +361,30 @@ into `dist-electron/`. The preload must import nothing but `electron`.
 Spawn:
 
 ```ts
-spawn(resources.serverBinary, [], {
+// Inherited env first, recovered login-shell values on top (a GUI launch's short PATH must
+// lose), then drop every inherited ORDEM_* key, then the desktop values.
+const inherited = stripOrdemKeys({ ...process.env, ...shellEnv })
+spawn(paths.serverBinary, [], {
   cwd: os.homedir(),
   env: {
-    ...shellEnv, ...stripOrdemKeys(process.env),
-    ORDEM_MODE: 'desktop', ORDEM_HOME, NODE_ENV: 'production',
-    ORDEM_HOST: '127.0.0.1', PORT: String(port),
-    ORDEM_DESKTOP_TOKEN: token, ORDEM_PUBLIC_DIR: resources.publicDir,
-    ORDEM_MIGRATIONS_DIR: resources.drizzleDir, ORDEM_LOG_LEVEL: 'info',
+    ...inherited,
+    ORDEM_MODE: 'desktop',
+    ORDEM_HOME: paths.home,
+    ORDEM_STATE_DIR: paths.stateDir,   // <home>/userdata when packaged, <home>/dev otherwise
+    NODE_ENV: app.isPackaged ? 'production' : 'development',
+    ORDEM_HOST: '127.0.0.1',
+    PORT: String(port),
+    ORDEM_DESKTOP_TOKEN: token,
+    ORDEM_PUBLIC_DIR: paths.publicDir,       // Resources/public, real files
+    ORDEM_MIGRATIONS_DIR: paths.drizzleDir,  // Resources/drizzle
+    ORDEM_LOG_LEVEL: 'info',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 })
 ```
+
+A development shell refuses to start when `paths.stateDir` ends in `userdata`, so a dev launch can
+never open the real database.
 
 Port: ask the OS for a free one (`net.createServer().listen(0)`), close it, pass it. Token: 32
 random bytes, hex. Both are per launch. In development the shell spawns
@@ -385,10 +398,11 @@ repo.
 ```
 appId: <to decide>                       productName: Ordem
 artifactName: Ordem-${version}-${arch}.${ext}
-files: [dist-electron/**, public/**, package.json, "!**/*.map"]
-extraResources:
-  - { from: prod-resources/server/${platform}-${arch}, to: server }   # must be a real file: spawn cannot read inside asar
+files: [dist-electron/**, package.json, "!**/*.map"]     # app.asar holds only Electron main and preload
+extraResources:                                          # real files under Resources/; the Bun sidecar cannot read inside app.asar
+  - { from: prod-resources/server/${platform}-${arch}, to: server }   # folder names in the table below
   - { from: ../backend/drizzle, to: drizzle }
+  - { from: ../public, to: public }                      # repo-root public/, with public/frontend from the Vite build
 directories.buildResources: resources
 publish: [{ provider: github, owner, repo }]
 mac:   target [dmg, zip]; category public.app-category.developer-tools; hardenedRuntime true;
@@ -401,6 +415,21 @@ linux: target [AppImage, deb]; executableName ordem; category Development;
        toolsets.appimage "1.0.3"; deb.depends copied from T3 Code's list
 win:   target [nsis]; nsis.differentialPackage true; signAndEditExecutable true; signing optional
 ```
+
+One target-to-folder mapping, owned by `scripts/build-server.ts` and used verbatim by the
+`extraResources` entry above (`${platform}` is electron-builder's name, so Windows is `win32`):
+
+| Bun target | Folder under `desktop/prod-resources/server/` | Binary |
+|---|---|---|
+| `bun-darwin-arm64` | `darwin-arm64` | `ordem-server` |
+| `bun-darwin-x64` | `darwin-x64` | `ordem-server` |
+| `bun-linux-x64` | `linux-x64` | `ordem-server` |
+| `bun-linux-arm64` | `linux-arm64` | `ordem-server` |
+| `bun-windows-x64` | `win32-x64` | `ordem-server.exe` |
+
+Asset layout in the installed app: `Resources/server/ordem-server`, `Resources/drizzle/`,
+`Resources/public/` (the protocol handler and `ORDEM_PUBLIC_DIR` both point here), and
+`app.asar` with `dist-electron/` only.
 
 Things T3 Code needs that Ordem does not: `asarUnpack` rules (no native addons; the sidecar lives
 outside the asar already), the Windows `server.asar` trick (the sidecar is one file), Rust helpers,
@@ -501,10 +530,10 @@ must see no change.
 |---|---|---|---|
 | `ORDEM_MODE` | `server` | `desktop` | `index.ts` (skip `chdir`), logging prefix |
 | `ORDEM_HOME` | unset | `~/.ordem` | state dir, database path, logs |
-| `ORDEM_STATE_DIR` | `$ORDEM_HOME/userdata`, or `$ORDEM_HOME/dev` when `NODE_ENV !== production` | derived | database, worktree metadata later |
+| `ORDEM_STATE_DIR` | `$ORDEM_HOME/userdata`, or `$ORDEM_HOME/dev` when `NODE_ENV !== production` | passed explicitly: `<home>/userdata` packaged, `<home>/dev` in development | database, logs |
 | `DATABASE_PATH` | `storage/<env>.sqlite3` under `ORDEM_ROOT`; `$ORDEM_STATE_DIR/ordem.sqlite3` when `ORDEM_HOME` is set | derived | `db/client.ts` |
 | `ORDEM_ROOT` | repo root | unset | relative paths, `public/` default |
-| `ORDEM_PUBLIC_DIR` | `$ORDEM_ROOT/public` | `<resources>/public` (inside app.asar, readable) | `http/frontend.ts` |
+| `ORDEM_PUBLIC_DIR` | `$ORDEM_ROOT/public` | `<resources>/public` (real files, shipped as extraResources) | `http/frontend.ts`, protocol handler |
 | `ORDEM_MIGRATIONS_DIR` | `backend/drizzle` next to the source | `<resources>/drizzle` | `db/migrate.ts` |
 | `ORDEM_HOST` | `0.0.0.0` | `127.0.0.1` | `server.ts` listen |
 | `PORT` | `3000` | a free port chosen per launch | `server.ts` listen |
@@ -512,7 +541,7 @@ must see no change.
 | `ORDEM_ALLOWED_HOSTS` | unchanged | unset | `http/host-authorization.ts` |
 | `ORDEM_LOG_LEVEL` | `info` | `info` | `lib/logger.ts` |
 | `ORDEM_DISABLE_JOB_WORKER` | unset | unset | `index.ts` |
-| `NODE_ENV` | unset in dev, `production` in Docker | `production` | state dir split, allowed hosts |
+| `NODE_ENV` | unset in dev, `production` in Docker | `production` when packaged, `development` otherwise | state dir split, allowed hosts |
 
 Desktop renderer origins, one constant in `http/host-authorization.ts`:
 `ordem://app` (packaged) and `ordem-dev://app` (development). Both are accepted by the WebSocket

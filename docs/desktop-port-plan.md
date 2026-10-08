@@ -107,9 +107,10 @@ Files: `scripts/build-server.ts` (new, Bun), root `package.json` scripts, `.gith
 
 Change:
 - `scripts/build-server.ts [--target <bun-target>|--all]`: runs
-  `bun build --compile --target=<t> backend/src/index.ts --outfile desktop/prod-resources/server/<t>/ordem-server[.exe]`
-  with `--windows-hide-console` on Windows targets. Targets: `bun-darwin-arm64`, `bun-darwin-x64`,
-  `bun-linux-x64`, `bun-linux-arm64`, `bun-windows-x64`.
+  `bun build --compile --target=<t> backend/src/index.ts --outfile desktop/prod-resources/server/<platform>-<arch>/ordem-server[.exe]`
+  with `--windows-hide-console` on Windows targets. The folder uses electron-builder's names
+  (`darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`, `win32-x64`); the Bun target to folder
+  table lives in spec 2.7 and this script is its only owner.
 - `desktop/prod-resources/` gitignored.
 - CI job `sidecar` (ubuntu): compile host target, copy `backend/drizzle` to a temp dir, run the
   binary from `/tmp` with `ORDEM_HOME`, `ORDEM_MIGRATIONS_DIR`, `ORDEM_PUBLIC_DIR`,
@@ -246,12 +247,14 @@ Files: `desktop/src/paths.ts`, `desktop/src/backend.ts`, `desktop/src/shell-env.
 Change:
 - `paths.ts`: `ORDEM_HOME` (default `~/.ordem`), state dir (`userdata`, or `dev` when
   `!app.isPackaged`), log dir, and resource paths: packaged -> `process.resourcesPath/server`,
-  `.../drizzle`, `.../public` (asar); dev -> repo paths and `bun --watch backend/src/index.ts`.
+  `.../drizzle`, `.../public` (all real files, shipped as extraResources); dev -> repo paths and
+  `bun --watch backend/src/index.ts`. A dev launch throws if the state dir ends in `userdata`.
 - `shell-env.ts`: on darwin and linux run `$SHELL -ilc 'env'` with a 3 s timeout and
   `launchctl getenv PATH` on darwin; on win32 run PowerShell with the profile; parse `KEY=value`
   lines; merge PATH-like keys over `process.env`. Failure falls back to `process.env` with a log line.
 - `backend.ts`: `startBackend()`: free port via `net.createServer().listen(0)`, 32-byte hex token,
-  spawn with the env from spec 2.6 (strip inherited `ORDEM_*` first), pipe stdout and stderr to
+  spawn with the env from spec 2.6 (inherited env, shell-env values on top, strip
+  `ORDEM_*`, then the desktop values; `NODE_ENV` and `ORDEM_STATE_DIR` follow `app.isPackaged`), pipe stdout and stderr to
   `logs/server.log` (rotate at 5 MB, keep 3), poll `GET /up` every 100 ms up to 20 s, resolve
   `{ httpBaseUrl, wsBaseUrl, token, pid }`. On unexpected exit: restart with backoff
   (1 s, 2 s, 4 s, cap 30 s, give up after 5 and show a dialog). `stopBackend()`: SIGTERM, wait up to
@@ -306,8 +309,8 @@ Files: `desktop/electron-builder.config.ts`, `desktop/resources/icon.icns`, `ico
 `dist:mac`, `desktop/scripts/smoke.ts`.
 
 Change:
-- Config per `(platform, arch)` as in spec 2.7: `extraResources` for the sidecar and `drizzle`,
-  `files` for `dist-electron` and `public`, no `.map`.
+- Config per `(platform, arch)` as in spec 2.7: `extraResources` for the sidecar, `drizzle` and the
+  repo-root `public/`; `files` for `dist-electron` only, no `.map`.
 - `dist:mac` = `bun scripts/sync-version.ts && npm --prefix frontend run build && bun desktop/scripts/build.ts && bun scripts/build-server.ts --target bun-darwin-arm64 && electron-builder --mac --arm64 --publish never`.
 - `smoke.ts`: launches the packaged app with `--smoke`, which makes `main.ts` exit 0 once `/up`
   answered and the window emitted `did-finish-load`, else exit 1 after 30 s. Used by CI in C7.
