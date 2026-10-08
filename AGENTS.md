@@ -9,7 +9,9 @@ Ordem is a Bun + Elysia API with a React frontend.
 - `frontend/` — React + Vite app (dark, macOS-style design; styles in `frontend/src/styles/ordem.css`). Its production build in `public/frontend` is committed: rebuild with `npm --prefix frontend run build`.
 - `public/` — static assets and error pages served by the API.
 - `storage/` — SQLite databases.
-- `bin/` — developer helpers (`setup`, `dev`, `ordem`).
+- `desktop/` — Electron shell (`src/`: server supervisor, `ordem://` protocol, preload bridge, updater), electron-builder config as code, packaging scripts. The bridge contract the web app and preload share is `shared/desktop-bridge.ts`. Spec and plan: `docs/desktop-port-spec.md`, `docs/desktop-port-plan.md`.
+- `scripts/` — `build-server.ts` (compiles the backend into the desktop sidecar), `smoke-server.ts`, `sync-version.ts`.
+- `bin/` — developer helpers (`setup`, `dev`, `dev-desktop`, `ordem`).
 
 ## Build, Test, and Development Commands
 - `bin/setup` — install dependencies and prepare the database.
@@ -18,6 +20,9 @@ Ordem is a Bun + Elysia API with a React frontend.
 - `bun test backend/test/models/pull-request.test.ts` — run a single test file.
 - `bun run --cwd backend typecheck` — strict TypeScript check.
 - `npm --prefix frontend test` / `npm --prefix frontend run build` — frontend tests and build.
+- `bin/dev-desktop` — run the desktop app from source (unsets `ELECTRON_RUN_AS_NODE`, which breaks Electron when inherited).
+- `bun test ./desktop/test` / `npm --prefix desktop run typecheck` — desktop shell tests and typecheck; `bun test ./scripts` for the build scripts.
+- `bun run dist:mac` (and `dist:linux`, `dist:win`) — build installers into `desktop/release/`; `bun run desktop:smoke` launches the packaged app with `--smoke`.
 
 ## Coding Style & Naming Conventions
 - TypeScript is strict: no `any`, no type assertions (`as`, including `as const`), no non-null `!`. Narrow `unknown` with type guards or TypeBox. For literal constants use `literals(...)` (`backend/src/lib/literals.ts`) or `Object.freeze({...})`.

@@ -39,8 +39,7 @@ Tested assumptions in the repository:
 Platform notes:
 
 - The core app runs anywhere Bun and the CLIs above are available.
-- The folder picker UI uses `osascript`, so the interactive folder-picking flow is currently macOS-specific.
-- On non-macOS systems, configure the repositories folder directly in settings or through persisted app state instead of relying on the picker dialog.
+- In the web app, the folder picker uses `osascript`, so it is macOS-specific; elsewhere, type the repositories folder in Settings. The desktop app opens a native folder dialog on every platform.
 
 ## Quick start
 
@@ -61,6 +60,19 @@ bin/dev
 4. Open `/settings` and set your repositories folder to a directory containing local Git repositories.
 
 5. Ensure `gh` is authenticated and at least one supported review CLI is available on your `PATH`.
+
+## Desktop app
+
+Ordem also ships as a macOS, Linux and Windows app: the same web app in an Electron window, with the Bun server compiled into a single binary that the app starts, watches and stops for you. Data lives in `~/.ordem/userdata` (development runs use `~/.ordem/dev`). Design and rationale: [docs/desktop-port-spec.md](docs/desktop-port-spec.md).
+
+```bash
+npm --prefix desktop install   # once; needs Node 22.12 or newer
+bin/dev-desktop                # Vite + Electron, with the server from source
+bun run dist:mac               # or dist:mac:x64, dist:linux, dist:linux:arm64, dist:win
+bun run desktop:smoke          # launch the packaged app and check it reaches its server
+```
+
+Installers land in `desktop/release/`. Without Apple signing secrets, macOS builds are ad hoc signed: they run (after `xattr -d com.apple.quarantine` on a downloaded copy) but cannot update themselves. Pushing a `v*` tag runs `.github/workflows/release-desktop.yml`, which builds every platform on its own hardware and publishes one GitHub Release; a nightly schedule publishes pre-releases on a separate update channel. On macOS and Linux, *Install Command Line Tool…* in the app menu installs an `ordem` command that talks to the running app.
 
 ## Configuration
 

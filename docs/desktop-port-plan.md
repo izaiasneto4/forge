@@ -29,24 +29,25 @@ Docker image and `bun run --cwd backend test` green. Desktop is additive until t
 ## Status
 
 Tick a box when the PR is merged. The next unchecked item whose dependencies are ticked is the
-next thing to do.
+next thing to do. Implemented together on 2026-10-08 (see "Implementation notes" in the spec);
+C8 is code-complete but its done check needs an Apple Developer account and a published release.
 
-- [ ] A1 Config: home dir, mode, host, resource dirs
-- [ ] A2 Sidecar build script and CI boot test (needs A1)
-- [ ] A3 Desktop token auth (needs A1)
-- [ ] A4 Desktop origins and CORS (needs A1)
-- [ ] B1 Bridge contract and base URL indirection
-- [ ] B2 Folder picker through the bridge, platform chrome (needs B1)
-- [ ] C1 Scaffold `desktop/` and a dev launcher
-- [ ] C2 Backend supervisor, paths, shell env (needs A1, C1)
-- [ ] C3 Custom protocol, preload bridge, IPC, window (needs A3, A4, B1, B2, C2)
-- [ ] C4 electron-builder config and macOS DMG (needs A2, C3). Milestone M1
-- [ ] C5 Linux (needs C4)
-- [ ] C6 Windows (needs C4)
-- [ ] C7 Release workflow (needs C5, C6). Milestone M2
-- [ ] C8 Signing, notarization, auto-update (needs C7, Apple account). Milestone M3
-- [ ] B3 Updates panel in Settings (needs C8)
-- [ ] C9 Polish (needs C8)
+- [x] A1 Config: home dir, mode, host, resource dirs
+- [x] A2 Sidecar build script and CI boot test (needs A1)
+- [x] A3 Desktop token auth (needs A1)
+- [x] A4 Desktop origins and CORS (needs A1)
+- [x] B1 Bridge contract and base URL indirection
+- [x] B2 Folder picker through the bridge, platform chrome (needs B1)
+- [x] C1 Scaffold `desktop/` and a dev launcher
+- [x] C2 Backend supervisor, paths, shell env (needs A1, C1)
+- [x] C3 Custom protocol, preload bridge, IPC, window (needs A3, A4, B1, B2, C2)
+- [x] C4 electron-builder config and macOS DMG (needs A2, C3). Milestone M1
+- [x] C5 Linux (needs C4)
+- [x] C6 Windows (needs C4)
+- [x] C7 Release workflow (needs C5, C6). Milestone M2
+- [ ] C8 Signing, notarization, auto-update (needs C7, Apple account). Milestone M3. Code done; waits on secrets and a release to verify
+- [x] B3 Updates panel in Settings (needs C8)
+- [x] C9 Polish (needs C8)
 
 Three tracks run in parallel from day one: A (backend), B (frontend), C (shell). The critical
 path is A1 -> C2 -> C3 -> C4.
