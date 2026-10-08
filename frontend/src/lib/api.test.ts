@@ -10,7 +10,7 @@ describe('api client', () => {
   })
 
   function recordingFetch() {
-    return vi.fn(async (_input: string, _init?: RequestInit) => ({ ok: true, json: async () => ({ ok: true }) }))
+    return vi.fn<(input: string, init?: RequestInit) => Promise<{ ok: boolean; json: () => Promise<unknown> }>>(async () => ({ ok: true, json: async () => ({ ok: true }) }))
   }
 
   it('calls same-origin paths with cookies and no authorization in a browser', async () => {
