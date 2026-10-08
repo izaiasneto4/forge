@@ -23,6 +23,10 @@ Important:
 
 If you want to expose a running Ordem instance publicly, add authentication, TLS, host protection, and a CSP first.
 
+## Download
+
+Desktop builds for macOS, Linux and Windows are on the [Releases page](https://github.com/izaiasneto4/ordem/releases): a `.dmg` for macOS, an `.AppImage` or `.deb` for Linux, and an installer for Windows. Each release lists which file to pick and how to open it. You still need `git`, `gh` and one of the review CLIs below installed.
+
 ## Supported environment
 
 Tested assumptions in the repository:
@@ -72,7 +76,7 @@ bun run dist:mac               # or dist:mac:x64, dist:linux, dist:linux:arm64, 
 bun run desktop:smoke          # launch the packaged app and check it reaches its server
 ```
 
-Installers land in `desktop/release/`. Without Apple signing secrets, macOS builds are ad hoc signed: they run (after `xattr -d com.apple.quarantine` on a downloaded copy) but cannot update themselves. Pushing a `v*` tag runs `.github/workflows/release-desktop.yml`, which builds every platform on its own hardware and publishes one GitHub Release; a nightly schedule publishes pre-releases on a separate update channel. On macOS and Linux, *Install Command Line Tool…* in the app menu installs an `ordem` command that talks to the running app.
+Installers land in `desktop/release/`. Without Apple signing secrets, macOS builds are ad hoc signed: they run (after `xattr -d com.apple.quarantine` on a downloaded copy) but cannot update themselves. Pushing a `v*` tag runs `.github/workflows/release-desktop.yml`, which builds every platform on its own hardware and publishes one GitHub Release, with the install notes from `desktop/release-notes.md`. Tags with a suffix (`v1.0.0-beta.1`) become pre-releases. On macOS and Linux, *Install Command Line Tool…* in the app menu installs an `ordem` command that talks to the running app.
 
 ## Configuration
 
