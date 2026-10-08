@@ -36,6 +36,8 @@ let shellLog: RotatingLog | null = null
 let readyToQuit = false
 // Set once boot loaded the app page; later ready states move starting-page windows over.
 let booted = false
+// Windows showing the starting page; tracked explicitly rather than by comparing URLs.
+const startingWindows = new Set<BrowserWindow>()
 
 function desktopPlatform(): DesktopPlatform {
   if (process.platform === 'darwin' || process.platform === 'win32') return process.platform
@@ -67,10 +69,16 @@ function onBackendState(state: BackendState, paths: DesktopPaths) {
   if (state.status === 'failed') void showBackendFailure(state.message, paths, false)
 }
 
+function loadApp(window: BrowserWindow) {
+  startingWindows.delete(window)
+  return window.loadURL(appUrl)
+}
+
 // A window opened while the server was down shows the starting page until now.
 function loadAppInStartingWindows() {
-  for (const window of BrowserWindow.getAllWindows()) {
-    if (!window.isDestroyed() && window.webContents.getURL() === STARTING_PAGE_URL) void window.loadURL(appUrl)
+  for (const window of [...startingWindows]) {
+    if (window.isDestroyed()) startingWindows.delete(window)
+    else void loadApp(window)
   }
 }
 
@@ -110,10 +118,12 @@ async function startBackend(manager: BackendManager, paths: DesktopPaths) {
 function openWindow(paths: DesktopPaths, url: string) {
   const window = createMainWindow({ preloadPath: join(app.getAppPath(), 'dist-electron', 'preload.cjs'), settingsFile: paths.settingsFile, appOrigin })
   window.on('closed', () => {
+    startingWindows.delete(window)
     if (mainWindow === window) mainWindow = null
   })
   window.webContents.on('preload-error', (_event, preloadPath, error) => logLine(`[shell] preload ${preloadPath} failed: ${error.message}`))
   window.webContents.on('render-process-gone', (_event, details) => logLine(`[shell] renderer gone: ${details.reason}`))
+  if (url === STARTING_PAGE_URL) startingWindows.add(window)
   void window.loadURL(url)
   mainWindow = window
   return window
@@ -215,7 +225,7 @@ async function boot() {
   if (!(await startBackend(manager, paths))) return
 
   const window = mainWindow ?? openWindow(paths, STARTING_PAGE_URL)
-  const loaded = window.loadURL(appUrl)
+  const loaded = loadApp(window)
   booted = true
   if (smoke) void runSmokeCheck(window, loaded)
   else activeUpdater.start()
