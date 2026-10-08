@@ -18,8 +18,12 @@ const home = mkdtempSync(join(tmpdir(), 'ordem-app-smoke-'))
 const env: Record<string, string | undefined> = { ...process.env, ORDEM_HOME: home }
 delete env.ELECTRON_RUN_AS_NODE
 
+// The unpacked Linux build's chrome-sandbox is not setuid root (an installed
+// .deb's is), so Chromium refuses to start sandboxed there.
+const sandboxArgs = process.platform === 'linux' ? ['--no-sandbox'] : []
+
 async function launch(extra: string[]) {
-  const child = Bun.spawn([executable, ...extra], { env, stdout: 'pipe', stderr: 'pipe' })
+  const child = Bun.spawn([executable, ...extra, ...sandboxArgs], { env, stdout: 'pipe', stderr: 'pipe' })
   const [stdout, stderr, code] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited])
   return { code, stdout, stderr }
 }
@@ -29,7 +33,7 @@ try {
   console.log(`version: ${version.stdout.trim()}`)
   if (version.code !== 0) throw new Error(`--version exited ${version.code}: ${version.stderr}`)
 
-  const smoke = await launch(['--smoke', ...(process.platform === 'linux' ? ['--no-sandbox'] : [])])
+  const smoke = await launch(['--smoke'])
   console.log(smoke.stdout.trim())
   if (smoke.code !== 0) {
     console.error(smoke.stderr)
