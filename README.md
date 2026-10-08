@@ -79,6 +79,8 @@ Common variables:
 - `ORDEM_STATE_DIR`: overrides the `dev`/`userdata` folder under `ORDEM_HOME`
 - `ORDEM_PUBLIC_DIR`: static files and the frontend build. Default: `public/`
 - `ORDEM_MIGRATIONS_DIR`: SQL migrations. Default: `backend/drizzle`
+- `ORDEM_DESKTOP_TOKEN`: when set, `/api/*` requires `Authorization: Bearer <token>` and `/ws` requires `?token=<token>`. `/up` and static files stay open. The desktop app sets a new one per launch
+- `ORDEM_API_TOKEN`: token the `ordem` CLI sends as a bearer credential
 - `ORDEM_MODE`: `server` (default) or `desktop`. Desktop mode skips changing into the app root, since it runs from a read-only bundle
 - `ANTHROPIC_MODEL` or `CLAUDE_MODEL`
 

@@ -25,6 +25,7 @@ export interface RuntimeConfig {
   development: boolean
   allowedHosts: string[]
   frontendDevUrl: string
+  desktopToken: string | null
 }
 
 function presentValue(value: string | undefined) {
@@ -68,5 +69,6 @@ export function runtimeConfig(env: Record<string, string | undefined>): RuntimeC
     development,
     allowedHosts: allowedHostsFromEnv(env.ORDEM_ALLOWED_HOSTS ?? env.FORGE_ALLOWED_HOSTS, development),
     frontendDevUrl: env.FRONTEND_DEV_URL ?? 'http://localhost:5173',
+    desktopToken: presentValue(env.ORDEM_DESKTOP_TOKEN) ?? null,
   }
 }
