@@ -24,3 +24,5 @@ async function shutdown(signal: string) {
 
 process.on('SIGINT', () => void shutdown('SIGINT'))
 process.on('SIGTERM', () => void shutdown('SIGTERM'))
+// Windows has no SIGTERM; Ctrl-Break and console close arrive as SIGBREAK.
+process.on('SIGBREAK', () => void shutdown('SIGBREAK'))
