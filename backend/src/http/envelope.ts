@@ -15,6 +15,7 @@ export function okSchema<Properties extends Record<string, TSchema>>(properties:
 export const ERROR_CODES = Object.freeze({
   invalidInput: 'invalid_input',
   notFound: 'not_found',
+  unauthorized: 'unauthorized',
   internal: 'internal_error',
   upstreamUnavailable: 'upstream_unavailable',
 })

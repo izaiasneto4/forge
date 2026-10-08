@@ -35,6 +35,8 @@ export interface ClientOptions {
   timeoutSeconds?: number
   signal?: AbortSignal
   fetch?: FetchFunction
+  // Bearer token for a server started with ORDEM_DESKTOP_TOKEN (the desktop app's).
+  token?: string
 }
 
 export interface ReviewParams {
@@ -70,14 +72,17 @@ export class Client implements OrdemApi {
   private readonly timeoutSeconds: number
   private readonly interrupt: AbortSignal | undefined
   private readonly fetch: FetchFunction
+  private readonly token: string | undefined
 
   constructor({
     baseUrl = process.env.ORDEM_API_URL ?? process.env.FORGE_API_URL ?? DEFAULT_API_URL,
     timeoutSeconds = 10,
     signal,
     fetch: fetchFunction = (url, init) => fetch(url, init),
+    token = process.env.ORDEM_API_TOKEN,
   }: ClientOptions = {}) {
     this.baseUrl = baseUrl
+    this.token = token === '' ? undefined : token
     this.timeoutSeconds = timeoutSeconds
     this.interrupt = signal
     this.fetch = fetchFunction
@@ -148,7 +153,7 @@ export class Client implements OrdemApi {
 
     try {
       // Net::HTTP never follows redirects; a 3xx is just another non-2xx answer.
-      const response = await this.fetch(url, { ...init, signal, redirect: 'manual' })
+      const response = await this.fetch(url, { ...init, headers: this.headersFor(init), signal, redirect: 'manual' })
       return { status: response.status, body: await response.text() }
     } catch (error) {
       if (this.interrupt?.aborted) throw new Interrupt()
@@ -156,6 +161,12 @@ export class Client implements OrdemApi {
       if (isConnectionRefused(error)) throw new ConnectionError(connectionRefusedMessage(url))
       throw error
     }
+  }
+
+  private headersFor(init: RequestInit) {
+    const headers = new Headers(init.headers)
+    if (this.token !== undefined) headers.set('Authorization', `Bearer ${this.token}`)
+    return headers
   }
 
   // URI.join(base + "/", path without its leading slash), so base paths are kept.

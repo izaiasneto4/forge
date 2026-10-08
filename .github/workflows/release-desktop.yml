@@ -1,0 +1,199 @@
+name: Desktop release
+
+# Builds the JavaScript once, then packages it on each platform's own hardware
+# with a server compiled there, smoke-tests every build, and publishes one
+# GitHub Release. Tags with a suffix (v1.2.0-alpha.1) become pre-releases.
+# The nightly schedule publishes <version>-nightly.<date> pre-releases; their
+# version puts them on electron-updater's nightly channel, so stable installs
+# are never offered one.
+on:
+  push:
+    tags: ['v*']
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to stamp on a manual build (artifacts only, nothing is published)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BUN_VERSION: 1.2.20
+  NODE_VERSION: 24.21.0
+
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      tag: ${{ steps.version.outputs.tag }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          base="$(node -p "require('./package.json').version")"
+          publish=false
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then version="${GITHUB_REF_NAME#v}"; publish=true
+          elif [ "$GITHUB_EVENT_NAME" = "schedule" ]; then version="$base-nightly.$(date -u +%Y%m%d).$GITHUB_RUN_NUMBER"; publish=true
+          elif [ -n "$INPUT_VERSION" ]; then version="${INPUT_VERSION#v}"
+          else version="$base"
+          fi
+          case "$version" in *-*) prerelease=true ;; *) prerelease=false ;; esac
+          {
+            echo "version=$version"
+            echo "prerelease=$prerelease"
+            echo "tag=v$version"
+            echo "publish=$publish"
+          } >> "$GITHUB_OUTPUT"
+          echo "Building $version (prerelease: $prerelease, publish: $publish)"
+
+  bundle:
+    needs: preflight
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            desktop/package-lock.json
+      - run: bun scripts/sync-version.ts "${{ needs.preflight.outputs.version }}"
+      - run: npm --prefix frontend ci
+      - run: npm --prefix desktop ci
+      - run: npm --prefix frontend run build
+      - run: bun desktop/scripts/build.ts
+      - uses: actions/upload-artifact@v7
+        with:
+          name: js-bundle
+          path: |
+            public/frontend
+            desktop/dist-electron
+          if-no-files-found: error
+
+  package:
+    needs: [preflight, bundle]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: mac-arm64, runner: macos-14, platform: mac, arch: arm64, bun_target: bun-darwin-arm64 }
+          - { name: mac-x64, runner: macos-15-intel, platform: mac, arch: x64, bun_target: bun-darwin-x64 }
+          - { name: linux-x64, runner: ubuntu-24.04, platform: linux, arch: x64, bun_target: bun-linux-x64 }
+          - { name: linux-arm64, runner: ubuntu-24.04-arm, platform: linux, arch: arm64, bun_target: bun-linux-arm64 }
+          - { name: win-x64, runner: windows-2022, platform: win, arch: x64, bun_target: bun-windows-x64 }
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - uses: actions/download-artifact@v8
+        with:
+          name: js-bundle
+          path: .
+      - run: bun scripts/sync-version.ts "${{ needs.preflight.outputs.version }}"
+      - run: bun install --cwd backend --frozen-lockfile
+      - run: npm --prefix desktop ci
+
+      # Compiled on the runner's own hardware, then booted from a temp dir.
+      - run: bun scripts/build-server.ts --target ${{ matrix.bun_target }}
+      - run: bun scripts/smoke-server.ts
+
+      - name: Install Linux runtime libraries
+        if: matrix.platform == 'linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0t64 libnss3 libgbm1 libasound2t64 libxss1 libxtst6
+
+      - name: Package
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          if [ -n "$APPLE_API_KEY" ]; then
+            # electron-builder's notarize step wants the .p8 key as a file.
+            printf '%s' "$APPLE_API_KEY" > "$RUNNER_TEMP/apple-api-key.p8"
+            export APPLE_API_KEY="$RUNNER_TEMP/apple-api-key.p8"
+          fi
+          bun desktop/scripts/dist.ts --${{ matrix.platform }} --arch ${{ matrix.arch }} --skip-frontend --skip-shell --skip-server
+
+      - name: Smoke test the app
+        run: |
+          if [ "${{ matrix.platform }}" = "linux" ]; then
+            xvfb-run -a bun desktop/scripts/smoke.ts --arch ${{ matrix.arch }}
+          else
+            bun desktop/scripts/smoke.ts --arch ${{ matrix.arch }}
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-${{ matrix.name }}
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.zip
+            desktop/release/*.AppImage
+            desktop/release/*.deb
+            desktop/release/*.exe
+            desktop/release/*.blockmap
+            desktop/release/latest*.yml
+            desktop/release/nightly*.yml
+          if-no-files-found: error
+
+  publish:
+    needs: [preflight, package]
+    if: needs.preflight.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: desktop-*
+          path: artifacts
+      - name: Collect release files
+        run: |
+          mkdir -p release
+          # Both macOS jobs write <channel>-mac.yml; electron-updater needs one feed per channel.
+          for feed in $(find artifacts -name '*-mac.yml' -exec basename {} \; | sort -u); do
+            bun desktop/scripts/merge-manifests.ts $(find artifacts -name "$feed") "release/$feed"
+          done
+          find artifacts -type f ! -name '*-mac.yml' -exec cp {} release/ \;
+          ls -la release
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.preflight.outputs.tag }}
+          PRERELEASE: ${{ needs.preflight.outputs.prerelease }}
+        run: |
+          # Nightly tags do not exist yet; --target creates them at the built commit.
+          gh release create "$TAG" release/* --target "$GITHUB_SHA" --title "Ordem $TAG" --generate-notes $([ "$PRERELEASE" = "true" ] && echo --prerelease)

@@ -1,5 +1,7 @@
 import { Elysia } from 'elysia'
 import type { AppContext } from './context'
+import { corsHeaders, preflightResponse } from './http/cors'
+import { apiRequestAuthorized, isApiPath, unauthorizedResponse, websocketHandshakeAuthorized } from './http/desktop-auth'
 import { errorHandling } from './http/envelope'
 import { frontendRoutes } from './http/frontend'
 import { blockedHostResponse, DEFAULT_ALLOWED_HOSTS, requestHostAllowed, websocketOriginAllowed } from './http/host-authorization'
@@ -28,25 +30,39 @@ export interface AppOptions {
   development?: boolean
   allowedHosts?: string[]
   frontendDevUrl?: string
+  // Per-launch token from the desktop shell; null leaves the API open as before.
+  desktopToken?: string | null
 }
 
 function isWebsocketHandshake(request: Request) {
   return new URL(request.url).pathname === WS_PATH && request.headers.get('upgrade')?.toLowerCase() === 'websocket'
 }
 
+function desktopTokenRejects(request: Request, desktopToken: string) {
+  const { pathname } = new URL(request.url)
+  if (pathname === WS_PATH) return !websocketHandshakeAuthorized(request, desktopToken)
+  return isApiPath(pathname) && !apiRequestAuthorized(request, desktopToken)
+}
+
 export function createApp(options: AppOptions) {
   const development = options.development ?? true
   const allowedHosts = options.allowedHosts ?? DEFAULT_ALLOWED_HOSTS
+  const desktopToken = options.desktopToken ?? null
   const deps = { ctx: options.ctx, services: options.services ?? defaultServices, queueKick: new QueueKick() }
 
   // normalize: false keeps Elysia from silently dropping payload keys a
   // response schema doesn't list; schemas still reject missing/mistyped keys.
   return new Elysia({ normalize: false, websocket: realtimeWebSocketOptions() })
-    .onRequest(({ request }) => {
+    .onRequest(({ request, set }) => {
       if (!requestHostAllowed(request, allowedHosts)) return blockedHostResponse(request)
       if (isWebsocketHandshake(request) && !websocketOriginAllowed(request, { development })) {
         return new Response('Request origin not allowed', { status: 404 })
       }
+      const preflight = preflightResponse(request)
+      if (preflight) return preflight
+      const cors = corsHeaders(request)
+      if (desktopToken !== null && desktopTokenRejects(request, desktopToken)) return unauthorizedResponse(cors)
+      Object.assign(set.headers, cors)
       return undefined
     })
     .use(errorHandling)

@@ -1,3 +1,4 @@
+import { mkdirSync } from 'node:fs'
 import { createApp } from './app'
 import { bunCommandRunner, type CommandRunner } from './commands/runner'
 import type { RuntimeConfig } from './config'
@@ -27,14 +28,15 @@ export function startServer(options: ServerOptions) {
   const { config } = options
   const shutdownTimeoutMs = options.shutdownTimeoutMs ?? SHUTDOWN_TIMEOUT_MS
 
+  if (config.stateDir) mkdirSync(config.stateDir, { recursive: true })
   const db = openDatabase(config.databasePath)
-  migrateDatabase(db)
+  migrateDatabase(db, config.migrationsDir)
 
   const realtime = new RealtimeServer(db)
   const ctx: AppContext = { db, events: realtime, jobs: new JobQueue(db), commands: options.commands ?? bunCommandRunner }
   const worker = options.jobWorker === false ? { stop: async () => {} } : startJobWorker(ctx.jobs, jobHandlers(ctx), { shutdownTimeoutMs })
   const recurring = startRecurringTasks(ctx)
-  const app = createApp({ ctx, realtime, ...config }).listen({ port: config.port, hostname: '0.0.0.0' })
+  const app = createApp({ ctx, realtime, ...config }).listen({ port: config.port, hostname: config.host })
 
   return {
     app,

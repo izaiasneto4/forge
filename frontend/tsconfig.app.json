@@ -22,7 +22,10 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+
+    /* Types shared with the desktop shell */
+    "paths": { "@shared/*": ["../shared/*"] }
   },
-  "include": ["src"]
+  "include": ["src", "../shared"]
 }

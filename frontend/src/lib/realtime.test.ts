@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { fakeLocalEnvironment, installDesktopBridge, removeDesktopBridge } from '../test/desktopBridge'
+
 type Listener = (event: { data?: string }) => void
 
 class FakeWebSocket {
@@ -52,6 +54,7 @@ class FakeWebSocket {
 describe('realtime subscribe', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    removeDesktopBridge()
     vi.resetModules()
     FakeWebSocket.instances = []
     vi.useRealTimers()
@@ -98,5 +101,28 @@ describe('realtime subscribe', () => {
     await vi.advanceTimersByTimeAsync(1500)
 
     expect(FakeWebSocket.instances).toHaveLength(1)
+  })
+
+  it('connects to the same host in a browser', async () => {
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+    const { subscribe } = await import('./realtime')
+    const sameOriginSocket = `ws://${window.location.host}/ws`
+
+    const unsubscribe = subscribe({ channel: 'ui_events' }, { received: vi.fn() })
+
+    expect(FakeWebSocket.instances[0]?.url).toBe(sameOriginSocket)
+    unsubscribe()
+  })
+
+  it('connects to the sidecar with the token on desktop', async () => {
+    installDesktopBridge()
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+    const { subscribe } = await import('./realtime')
+    const desktopSocket = `${fakeLocalEnvironment.wsBaseUrl}/ws?token=${fakeLocalEnvironment.token}`
+
+    const unsubscribe = subscribe({ channel: 'ui_events' }, { received: vi.fn() })
+
+    expect(FakeWebSocket.instances[0]?.url).toBe(desktopSocket)
+    unsubscribe()
   })
 })

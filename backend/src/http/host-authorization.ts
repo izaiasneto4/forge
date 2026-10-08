@@ -7,6 +7,14 @@ import { isIP } from 'node:net'
 export const DEFAULT_ALLOWED_HOSTS = ['.localhost', '.test']
 export const ALLOW_ALL_HOSTS = ['*']
 
+// Where the desktop renderer runs: the packaged app and the development shell.
+// The only cross-origin callers the API answers (websocket origin check and CORS).
+export const DESKTOP_RENDERER_ORIGINS: readonly string[] = Object.freeze(['ordem://app', 'ordem-dev://app'])
+
+export function isDesktopRendererOrigin(origin: string | null) {
+  return origin !== null && DESKTOP_RENDERER_ORIGINS.includes(origin)
+}
+
 export function allowedHostsFromEnv(value: string | undefined, development = true) {
   if (value === undefined || value.trim() === '') return development ? DEFAULT_ALLOWED_HOSTS : ALLOW_ALL_HOSTS
   return value
@@ -37,11 +45,12 @@ export function requestHostAllowed(request: Request, allowedHosts: string[]) {
   return isAllowedHost(request.headers.get('host') ?? new URL(request.url).host, allowedHosts)
 }
 
-// Same origin as the Host header, plus any localhost port in development.
+// Same origin as the Host header, the desktop renderer, plus any localhost port in development.
 export function websocketOriginAllowed(request: Request, options: { development: boolean }) {
   const origin = request.headers.get('origin')
   const host = request.headers.get('host')
   if (origin === null) return false
+  if (isDesktopRendererOrigin(origin)) return true
   const scheme = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() || new URL(request.url).protocol.replace(':', '')
   if (host !== null && origin === `${scheme}://${host}`) return true
   return options.development && /^https?:\/\/localhost:\d+$/.test(origin)

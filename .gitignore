@@ -20,3 +20,11 @@ node_modules/
 
 # IDE/tools
 .automaker/
+
+# Desktop build output
+/desktop/prod-resources/
+/desktop/dist-electron/
+/desktop/release/
+
+# SQLite files from a DATABASE_PATH of :memory: resolved as a path
+/:memory:*
