@@ -172,7 +172,7 @@ function DetailPane() {
 }
 
 export function Workspace() {
-  const { sidebarOpen, inspectorOpen, route, selected, paletteOpen, settingsTab } = useWorkspace()
+  const { sidebarOpen, inspectorOpen, route, selected, paletteOpen, settingsTab, needsRepository } = useWorkspace()
   const showInspector = inspectorOpen && route.kind !== 'new'
 
   useShortcuts()
@@ -181,7 +181,8 @@ export function Workspace() {
   const classes = ['window']
   if (!sidebarOpen) classes.push('no-sidebar')
   if (showInspector) classes.push('with-inspector')
-  if (route.kind !== 'mailbox' || route.id !== null) classes.push('has-selection')
+  // In the single-pane layout this shows the detail pane, which holds repository setup.
+  if (route.kind !== 'mailbox' || route.id !== null || needsRepository) classes.push('has-selection')
 
   return (
     <>

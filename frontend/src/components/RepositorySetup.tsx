@@ -10,6 +10,7 @@ export function RepositorySetup() {
   const { board, actions, pending, sidebarOpen, toggleSidebar } = useWorkspace()
   const [path, setPath] = useState('')
   const reposFolder = board?.repositories.repos_folder ?? null
+  // Added by path, so two clones of the same GitHub repository stay distinct.
   const found = (board?.repositories.items ?? []).flatMap((repo) => (repo.slug ? [{ path: repo.path, slug: repo.slug }] : []))
   const busy = pending.sync
 
@@ -44,7 +45,7 @@ export function RepositorySetup() {
             <div className="repo-setup-found">Found in {reposFolder}</div>
             <div className="suggestions">
               {found.map((repo) => (
-                <button key={repo.path} type="button" className="suggestion" disabled={busy} onClick={() => void actions.switchRepo(repo.slug)}>
+                <button key={repo.path} type="button" className="suggestion" disabled={busy} onClick={() => void actions.addRepository(repo.path)}>
                   <Icon name="github" size={14} />{repo.slug}
                 </button>
               ))}

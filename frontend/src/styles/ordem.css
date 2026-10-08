@@ -178,8 +178,6 @@ kbd { font: 500 11px var(--font); color: var(--t3); letter-spacing: .02em; }
 .list-empty .big { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: color-mix(in oklab, var(--green) 14%, transparent); color: var(--green); }
 .list-empty b { color: var(--t1); font-size: 14px; }
 .list-empty .big.neutral { background: var(--field); color: var(--t2); }
-/* The detail pane carries the same action until the list fills the window. */
-.list-empty .single-pane-only { display: none; }
 .scope-bar { display: flex; align-items: center; gap: 7px; margin: 2px 2px 8px; padding: 7px 10px; border-radius: 9px; background: var(--field); color: var(--t3); font-size: 11.5px; }
 .scope-bar span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scope-bar .link { font-size: 11.5px; flex-shrink: 0; }
@@ -517,7 +515,6 @@ h1.pr-title { font-size: 23px; line-height: 1.22; font-weight: 700; letter-spaci
   .window > .detail { display: none; }
   .window.has-selection > .list { display: none; }
   .window.has-selection > .detail { display: flex; }
-  .list-empty .single-pane-only { display: inline-flex; }
   .back-btn { display: inline-flex; }
   .page { padding-left: 16px; padding-right: 16px; }
   .composer-wrap { padding: 28px 12px 12px; }

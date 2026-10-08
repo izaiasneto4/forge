@@ -115,7 +115,7 @@ function subtitleFor(mailbox: MailboxId, items: PullRequestItem[]) {
 export function PullRequestList() {
   const {
     mailbox, sections, selected, sort, setSort, board, actions, collapsedSections, toggleSection,
-    boardLoading, sidebarOpen, toggleSidebar, hiddenByScope, needsRepository, pending,
+    boardLoading, sidebarOpen, toggleSidebar, hiddenByScope, needsRepository,
   } = useWorkspace()
   const items = sections.flatMap((section) => section.items)
   const onlyRequested = board?.settings.only_requested_reviews ?? false
@@ -162,7 +162,6 @@ export function PullRequestList() {
             <div className="big neutral"><Icon name="folder" size={24} /></div>
             <b>No repository yet</b>
             <span>Add one and Ordem starts tracking its pull requests.</span>
-            <button type="button" className="btn primary single-pane-only" disabled={pending.sync} onClick={() => void actions.pickRepository()}>Add repository…</button>
           </div>
         ) : null}
 
