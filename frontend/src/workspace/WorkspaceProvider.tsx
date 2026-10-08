@@ -243,11 +243,12 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
   // several checkouts only becomes the repos folder; the user picks one next.
   const addRepository = useCallback(async (path: string) => {
     const response = await run('sync', () => api.post<UiMutationResponse>('/api/v1/repositories', { path }))
-    if (!response) return
-    applyBoard(response)
+    // A failed sync still leaves the repository tracked, so refresh either way.
     queryClient.invalidateQueries({ queryKey: queryKeys.repositories })
     queryClient.invalidateQueries({ queryKey: queryKeys.settings })
     invalidateAll()
+    if (!response) return
+    applyBoard(response)
     if (response.synced === false) {
       pushToast(response.message ?? 'Pick the repository to track.', 'info', { title: 'Repositories found' })
       return
