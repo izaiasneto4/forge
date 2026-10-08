@@ -1,5 +1,6 @@
 import { Elysia } from 'elysia'
 import type { AppContext } from './context'
+import { corsHeaders, preflightResponse } from './http/cors'
 import { apiRequestAuthorized, isApiPath, unauthorizedResponse, websocketHandshakeAuthorized } from './http/desktop-auth'
 import { errorHandling } from './http/envelope'
 import { frontendRoutes } from './http/frontend'
@@ -52,12 +53,16 @@ export function createApp(options: AppOptions) {
   // normalize: false keeps Elysia from silently dropping payload keys a
   // response schema doesn't list; schemas still reject missing/mistyped keys.
   return new Elysia({ normalize: false, websocket: realtimeWebSocketOptions() })
-    .onRequest(({ request }) => {
+    .onRequest(({ request, set }) => {
       if (!requestHostAllowed(request, allowedHosts)) return blockedHostResponse(request)
       if (isWebsocketHandshake(request) && !websocketOriginAllowed(request, { development })) {
         return new Response('Request origin not allowed', { status: 404 })
       }
-      if (desktopToken !== null && desktopTokenRejects(request, desktopToken)) return unauthorizedResponse()
+      const preflight = preflightResponse(request)
+      if (preflight) return preflight
+      const cors = corsHeaders(request)
+      if (desktopToken !== null && desktopTokenRejects(request, desktopToken)) return unauthorizedResponse(cors)
+      Object.assign(set.headers, cors)
       return undefined
     })
     .use(errorHandling)
