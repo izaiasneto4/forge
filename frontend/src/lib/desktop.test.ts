@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { fakeLocalEnvironment, installDesktopBridge, removeDesktopBridge } from '../test/desktopBridge'
-import { apiBase, authHeaders, isDesktop, wsUrl } from './desktop'
+import { apiBase, applyDesktopPlatform, authHeaders, isDesktop, wsUrl } from './desktop'
 
 describe('desktop helpers', () => {
   afterEach(() => removeDesktopBridge())
@@ -23,5 +23,22 @@ describe('desktop helpers', () => {
     expect(apiBase()).toBe(fakeLocalEnvironment.httpBaseUrl)
     expect(authHeaders()).toEqual({ Authorization: `Bearer ${fakeLocalEnvironment.token}` })
     expect(wsUrl()).toBe(expectedSocket)
+  })
+})
+
+describe('applyDesktopPlatform', () => {
+  afterEach(() => removeDesktopBridge())
+
+  it('marks the root with the bridge platform only on desktop', () => {
+    const browserRoot = document.createElement('html')
+    const desktopRoot = document.createElement('html')
+    const bridge = installDesktopBridge()
+
+    applyDesktopPlatform(desktopRoot)
+    removeDesktopBridge()
+    applyDesktopPlatform(browserRoot)
+
+    expect(desktopRoot.dataset.platform).toBe(bridge.platform)
+    expect(browserRoot.dataset.platform).toBeUndefined()
   })
 })

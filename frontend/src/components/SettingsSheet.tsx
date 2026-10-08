@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 
 import { agentLabel } from '../lib/agents'
 import { api } from '../lib/api'
+import { desktopBridge } from '../lib/desktop'
 import { errorMessage } from '../lib/errors'
 import { ACCENTS, desktopNotificationsEnabled, onAccentColor, saveAccent, setDesktopNotifications, storedAccent } from '../lib/preferences'
 import { queryKeys } from '../lib/queryKeys'
@@ -138,6 +139,14 @@ function Agents({ settings }: { settings: SettingsResponse }) {
   )
 }
 
+// The desktop app opens a native dialog; the web app asks the server (osascript on macOS).
+async function pickFolder(initialPath: string) {
+  const bridge = desktopBridge()
+  if (bridge) return bridge.pickFolder(initialPath === '' ? {} : { initialPath })
+  const response = await api.post<{ path: string | null }>('/api/v1/settings/pick_folder')
+  return response.path
+}
+
 function Repositories({ settings }: { settings: SettingsResponse }) {
   const mutation = useSettingsMutation()
   const { actions } = useWorkspace()
@@ -162,10 +171,10 @@ function Repositories({ settings }: { settings: SettingsResponse }) {
             className="btn"
             onClick={async () => {
               try {
-                const response = await api.post<{ path: string | null }>('/api/v1/settings/pick_folder')
-                if (response.path) {
-                  setFolder(response.path)
-                  save(response.path)
+                const picked = await pickFolder(folder)
+                if (picked) {
+                  setFolder(picked)
+                  save(picked)
                 }
               } catch (error) {
                 pushToast(errorMessage(error), 'error')

@@ -656,3 +656,17 @@ button.grow { width: 100%; text-align: left; }
 .hero .composer textarea { min-height: 28px; }
 .composer .attachment { font: 12px var(--mono); color: var(--t3); }
 .stale-note { display: flex; gap: 8px; align-items: center; color: var(--orange); font-size: 12px; margin-top: 10px; }
+
+/* ── Desktop app on macOS ───────────────── */
+/* The shell hides the title bar, so the 52px bars become the window's drag area
+   and the leftmost one leaves room for the traffic lights. */
+[data-platform="darwin"] .titlebar,
+[data-platform="darwin"] .toolbar { -webkit-app-region: drag; }
+[data-platform="darwin"] :is(.titlebar, .toolbar) :is(button, a, input, select, textarea, label, [role="button"], [role="tab"]) { -webkit-app-region: no-drag; }
+/* Drag regions ignore stacking, so anything floating above the bars opts out. */
+[data-platform="darwin"] :is(.menu, .scrim, .palette, .sheet, .notif-stack, .alert) { -webkit-app-region: no-drag; }
+[data-platform="darwin"] .sidebar .titlebar,
+[data-platform="darwin"] .window.no-sidebar > .list .toolbar { padding-left: var(--desktop-window-controls-inset, 16px); }
+@media (max-width: 640px) {
+  [data-platform="darwin"] .window.has-selection > .detail .toolbar { padding-left: var(--desktop-window-controls-inset, 16px); }
+}

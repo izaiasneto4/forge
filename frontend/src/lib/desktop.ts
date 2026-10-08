@@ -34,3 +34,9 @@ export function wsUrl() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${protocol}//${window.location.host}/ws`
 }
+
+// Lets CSS adapt the window chrome per platform (traffic lights on macOS).
+export function applyDesktopPlatform(root: HTMLElement = document.documentElement) {
+  const bridge = desktopBridge()
+  if (bridge) root.dataset.platform = bridge.platform
+}
