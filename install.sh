@@ -12,6 +12,7 @@
 #   ORDEM_VERSION=1.0.0       install that version instead of the newest release
 #   ORDEM_INSTALL_DIR=<dir>   where the app goes
 #   ORDEM_DOWNLOAD_URL=<url>  release files base URL (tests serve them locally)
+#   ORDEM_ICON_URL=<url>      Linux launcher icon
 set -eu
 
 REPO="izaiasneto4/ordem"
@@ -85,24 +86,30 @@ install_mac() {
   mkdir -p "$target_dir"
   app="$target_dir/Ordem.app"
 
-  # Replacing a running app breaks it; ask it to quit (it stops its server first).
-  if pgrep -x Ordem >/dev/null 2>&1; then
+  # Replacing a running app breaks it; ask that copy to quit (it stops its server first).
+  running() { pgrep -f "$app/Contents/MacOS/Ordem" >/dev/null 2>&1; }
+  if running; then
     say "Quitting the running Ordem…"
     osascript -e 'quit app "Ordem"' >/dev/null 2>&1 || true
     tries=0
-    while pgrep -x Ordem >/dev/null 2>&1 && [ "$tries" -lt 20 ]; do
+    while running && [ "$tries" -lt 20 ]; do
       sleep 0.5
       tries=$((tries + 1))
     done
-    pgrep -x Ordem >/dev/null 2>&1 && fail "quit Ordem, then run this again"
+    running && fail "quit Ordem, then run this again"
   fi
 
   ditto -x -k "$work/$file" "$work/unpacked"
   [ -d "$work/unpacked/Ordem.app" ] || fail "the download did not contain Ordem.app"
-  rm -rf "$app"
-  ditto "$work/unpacked/Ordem.app" "$app"
+  # Copy next to the target first, so a failed copy (a full disk) leaves the
+  # installed app alone; the swap afterwards is a rename on the same disk.
+  staged="$target_dir/.Ordem.app.installing"
+  rm -rf "$staged"
+  ditto "$work/unpacked/Ordem.app" "$staged" || { rm -rf "$staged"; fail "could not copy Ordem.app into $target_dir"; }
   # A copy that came through a browser before would still carry the flag.
-  xattr -dr com.apple.quarantine "$app" 2>/dev/null || true
+  xattr -dr com.apple.quarantine "$staged" 2>/dev/null || true
+  rm -rf "$app"
+  mv "$staged" "$app"
 
   say "Installed $app"
   say "Open it from Launchpad or with: open \"$app\""
@@ -114,13 +121,16 @@ install_linux() {
   mkdir -p "$target_dir"
   appimage="$target_dir/Ordem.AppImage"
   # Same path every time: the in-app updater replaces this file in place.
-  mv "$work/$file" "$appimage"
-  chmod +x "$appimage"
+  # Staged on the target disk, then renamed over the old one in a single step.
+  staged="$target_dir/.Ordem.AppImage.installing"
+  cp "$work/$file" "$staged" || { rm -f "$staged"; fail "could not copy the AppImage into $target_dir"; }
+  chmod +x "$staged"
+  mv -f "$staged" "$appimage"
 
   data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
   icon="$data_home/icons/hicolor/512x512/apps/ordem.png"
   mkdir -p "$(dirname "$icon")" "$data_home/applications"
-  curl -fsSL -o "$icon" "https://raw.githubusercontent.com/$REPO/$tag/public/icon.png" 2>/dev/null || true
+  curl -fsSL -o "$icon" "${ORDEM_ICON_URL:-https://raw.githubusercontent.com/$REPO/$tag/public/icon.png}" 2>/dev/null || true
   cat >"$data_home/applications/ordem.desktop" <<EOF
 [Desktop Entry]
 Name=Ordem
