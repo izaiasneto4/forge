@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { DEFAULT_HOST, DEFAULT_MIGRATIONS_DIR, runtimeConfig } from '../src/config'
 import { ALLOW_ALL_HOSTS, DEFAULT_ALLOWED_HOSTS, isAllowedHost } from '../src/http/host-authorization'
@@ -137,5 +138,13 @@ describe('runtimeConfig', () => {
     const config = runtimeConfig({ ORDEM_MODE: 'kiosk' })
 
     expect(config.mode).toBe('server')
+  })
+
+  test('expands a leading ~ in ORDEM_HOME', () => {
+    const homeSetting = '~/.ordem'
+
+    const config = runtimeConfig({ ORDEM_HOME: homeSetting })
+
+    expect(config.stateDir).toBe(join(homedir(), '.ordem', 'dev'))
   })
 })

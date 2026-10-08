@@ -1,3 +1,4 @@
+import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { allowedHostsFromEnv } from './http/host-authorization'
@@ -30,13 +31,18 @@ function presentValue(value: string | undefined) {
   return value === undefined || value.trim() === '' ? undefined : value
 }
 
+// Shells expand `~`, .env files do not.
+function expandHome(path: string) {
+  return path === '~' || path.startsWith('~/') ? join(homedir(), path.slice(1)) : path
+}
+
 // ORDEM_STATE_DIR wins; otherwise ORDEM_HOME holds `userdata` for production
 // and `dev` for everything else, so a development run never opens real data.
 function stateDirFrom(env: Record<string, string | undefined>, appRoot: string, development: boolean) {
   const explicit = presentValue(env.ORDEM_STATE_DIR)
-  if (explicit) return resolve(appRoot, explicit)
+  if (explicit) return resolve(appRoot, expandHome(explicit))
   const home = presentValue(env.ORDEM_HOME)
-  if (home) return resolve(appRoot, home, development ? 'dev' : 'userdata')
+  if (home) return resolve(appRoot, expandHome(home), development ? 'dev' : 'userdata')
   return null
 }
 
