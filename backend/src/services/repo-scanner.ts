@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../commands/runner'
 import { isBlank } from '../lib/ruby'
 import { gitOutput, isDirectory } from './git'
@@ -25,10 +25,16 @@ function isGitRepository(path: string) {
   }
 }
 
-async function describeRepository(commands: CommandRunner, name: string, path: string): Promise<ScannedRepository> {
+async function describeRepository(commands: CommandRunner, name: string, path: string): Promise<ScannedRepository | null> {
+  // Incomplete `.git` dirs still pass `isGitRepository`; without a ceiling, git
+  // walks into a parent checkout and reports that remote/branch instead.
+  const ceiling = dirname(path)
+  const toplevel = await gitOutput(commands, path, ['rev-parse', '--show-toplevel'], { ceiling })
+  if (isBlank(toplevel)) return null
+
   const [remoteUrl, branch] = await Promise.all([
-    gitOutput(commands, path, ['remote', 'get-url', 'origin']),
-    gitOutput(commands, path, ['branch', '--show-current']),
+    gitOutput(commands, path, ['remote', 'get-url', 'origin'], { ceiling }),
+    gitOutput(commands, path, ['branch', '--show-current'], { ceiling }),
   ])
 
   return { name, path, remote_url: remoteUrl ?? '', branch: branch ?? '' }
@@ -45,7 +51,8 @@ export async function scanRepositories(commands: CommandRunner, baseFolder: stri
     .map((entry) => ({ name: entry, path: join(baseFolder, entry) }))
     .filter(({ path }) => isDirectory(path) && isGitRepository(path))
 
-  const repositories = await Promise.all(repositoryEntries.map(({ name, path }) => describeRepository(commands, name, path)))
+  const described = await Promise.all(repositoryEntries.map(({ name, path }) => describeRepository(commands, name, path)))
+  const repositories = described.filter((repository): repository is ScannedRepository => repository !== null)
   return repositories.sort((left, right) => {
     const leftName = left.name.toLowerCase()
     const rightName = right.name.toLowerCase()

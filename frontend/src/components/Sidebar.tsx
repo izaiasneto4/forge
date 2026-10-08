@@ -104,7 +104,7 @@ export function Sidebar() {
             >
               <span className="repo-dot" style={{ background: current ? 'var(--t1)' : 'var(--t4)' }} />
               <span className="label">{repo.name}</span>
-              {repo.branch ? <span className="sb-repo-branch">{repo.branch}</span> : null}
+              {repo.branch ? <span className="sb-repo-branch" title={repo.branch}>{repo.branch}</span> : null}
             </button>
           )
         })}

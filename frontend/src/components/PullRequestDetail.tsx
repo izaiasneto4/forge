@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import { agentLabel, DEPTHS, EVENTS, isReviewEvent } from '../lib/agents'
 import { errorMessage } from '../lib/errors'
@@ -110,6 +110,22 @@ function Header({ item }: { item: PullRequestItem }) {
   )
 }
 
+function DescriptionBody({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const long = text.length > 420 || text.split('\n').length > 10
+
+  return (
+    <div className="card">
+      <div className={expanded || !long ? 'description open' : 'description'}>{text}</div>
+      {long ? (
+        <button type="button" className="link description-more" onClick={() => setExpanded((current) => !current)}>
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
 function Brief({ item }: { item: PullRequestItem }) {
   const summary = item.ai_summary
   const aside = <span className="ai-mark"><Icon name="sparkles" size={12} />Brief{summary.stale ? ' · older commit' : ''}</span>
@@ -126,7 +142,7 @@ function Brief({ item }: { item: PullRequestItem }) {
     if (!item.description?.trim()) return null
     return (
       <Block title="Description" delay={4}>
-        <div className="card"><div className="description">{item.description}</div></div>
+        <DescriptionBody text={item.description} />
       </Block>
     )
   }
@@ -415,6 +431,11 @@ function Findings({ item, detail }: { item: PullRequestItem; detail: ReviewTaskD
   )
 }
 
+function locationLabel(location: string) {
+  const match = location.match(/([^/]+(?::\d+(?:-\d+)?)?)\s*$/)
+  return match ? match[1] : location
+}
+
 function ParsedItems({ items }: { items: ParsedReviewItem[] }) {
   return (
     <Block title="Findings" delay={6}>
@@ -424,7 +445,10 @@ function ParsedItems({ items }: { items: ParsedReviewItem[] }) {
           <div style={{ minWidth: 0 }}>
             <div className="top">
               <span className="f-title">{entry.title ?? 'Finding'}</span>
-              <span className="f-meta"><span className="chip">{entry.severity}</span><span className="f-loc">{entry.location}</span></span>
+              <span className="f-meta">
+                <span className="chip">{entry.severity}</span>
+                <span className="f-loc" title={entry.location}>{locationLabel(entry.location)}</span>
+              </span>
             </div>
             <Html html={entry.comment_html} className="md f-body" />
             <Html html={entry.suggested_fix_html} className="md finding-fix" />
