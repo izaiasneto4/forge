@@ -30,7 +30,7 @@ Use "Ordem" (capitalized) in running text, titles and alt text.
 | Ink | `#0E0E0E` | Primary: mark on light backgrounds, app icon tile |
 | Paper | `#F5F5F5` | Secondary: mark on dark backgrounds |
 
-The app's default accent (`#ff7a3d`) is a UI color, not part of the logo.
+The app's default accent is Paper, so primary buttons are light with dark text. Users can still pick ember (`#ff7a3d`) or an Apple system color in Settings.
 
 ## Files
 

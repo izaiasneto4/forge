@@ -1,7 +1,8 @@
 const ACCENT_KEY = 'ordem.accent'
 const NOTIFY_KEY = 'ordem.notify'
 
-export const ACCENTS = ['#ff7a3d', '#0a84ff', '#bf5af2', '#ff375f', '#30d158', '#ffd60a', '#98989d']
+// Ordem's paper is the default; ember stays for anyone who picked it before the rebrand.
+export const ACCENTS = ['#f5f5f5', '#ff7a3d', '#0a84ff', '#bf5af2', '#ff375f', '#30d158', '#ffd60a', '#98989d']
 export const DEFAULT_ACCENT = ACCENTS[0]
 
 function read(key: string) {

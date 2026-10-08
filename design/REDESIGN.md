@@ -60,7 +60,7 @@ Expose this as `lifecycle` on the PR payload so the UI and `bin/ordem` share one
 
 - System font (SF Pro / SF Mono) at a 13px base, which is the macOS default. Drop Inter.
 - Translucent sidebar (vibrancy), opaque content panes, 0.5px hairlines, 12px window radius.
-- One user-selectable accent (default ember `#ff7a3d`). Apple system colors for semantics. The brand itself is monochrome; see [BRAND.md](BRAND.md).
+- One user-selectable accent (default paper `#f5f5f5` from the brand; ember `#ff7a3d` and the Apple colors stay as options). Apple system colors for semantics. See [BRAND.md](BRAND.md).
 - Status is a glyph, not a text badge: ring, spinner, filled send, red alert, half-moon, check.
 - Motion: 120–300ms ease-out, spring on toggles and sheets, shimmer on the live agent step. Respects `prefers-reduced-motion`.
 

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ACCENTS, contrastRatio, DARK_ON_ACCENT, desktopNotificationsEnabled, LIGHT_ON_ACCENT, onAccentColor, storedAccent } from './preferences'
+import { ACCENTS, contrastRatio, DARK_ON_ACCENT, DEFAULT_ACCENT, desktopNotificationsEnabled, LIGHT_ON_ACCENT, onAccentColor, storedAccent } from './preferences'
 
 const WCAG_AA = 4.5
 
@@ -24,6 +24,17 @@ describe('upgraded preferences', () => {
 
     localStorage.setItem('ordem.accent', ordemAccent)
     expect(storedAccent()).toBe(ordemAccent)
+  })
+
+  it('defaults to the brand paper but keeps an accent saved before the rebrand', () => {
+    const brandPaper = '#f5f5f5'
+    const previousDefault = '#ff7a3d'
+
+    expect(DEFAULT_ACCENT).toBe(brandPaper)
+    expect(storedAccent()).toBe(brandPaper)
+
+    localStorage.setItem('ordem.accent', previousDefault)
+    expect(storedAccent()).toBe(previousDefault)
   })
 
   it('keeps existing notification consent and lets a new off setting override it', () => {
